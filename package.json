@@ -1,0 +1,20 @@
+{
+  "name": "of-dragons-deep",
+  "version": "1.0.0",
+  "description": "<h1>Of Dragons Deep - A FFXIV Fishing Tracker</h1> <p>\"Erratic flows of aether released after the Calamity not only resulted in a warping of the landscape, but of the creatures that dwell upon it as well. Such is the case of the Nepto Dragon─a little Thalaos grown to epic proportions.\"</p>",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jadedzilla/of-dragons-deep.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jadedzilla/of-dragons-deep/issues"
+  },
+  "homepage": "https://github.com/jadedzilla/of-dragons-deep#readme"
+}
