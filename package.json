@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/jadedzilla/of-dragons-deep/issues"
   },
-  "homepage": "https://github.com/jadedzilla/of-dragons-deep#readme"
+  "homepage": "https://github.com/jadedzilla/of-dragons-deep#readme",
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
 }
