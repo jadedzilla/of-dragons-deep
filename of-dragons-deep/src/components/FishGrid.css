@@ -1,0 +1,96 @@
+.fish-grid-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.controls {
+  margin-bottom: 20px;
+}
+
+.fish-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr); /* Adjust the number of columns to fit your layout */
+  gap: 10px; /* Space between items */
+  width: 60%; /* Adjust width to fit the smaller items */
+  max-width: 1000px; /* Adjust as needed */
+}
+
+.fish-item {
+  position: relative;
+  width: 100%; /* Full width of the grid item cell */
+  aspect-ratio: 1; /* Maintain a square aspect ratio */
+  background-color: #f0f0f0; /* Background color for non-checked items */
+  border: 1px solid #ddd;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  /* align-items: center; */
+}
+
+.fish-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ensure the image covers the entire grid item */
+}
+
+.fish-item.checked {
+  background-color: #d4edda; /* Background color for checked items */
+}
+
+.checkmark {
+  position: absolute;
+  font-size: 24px;
+  color: green;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.pagination {
+  margin-top: 20px;
+}
+
+.pagination-button {
+  width: 41px;
+  height: 41px;
+  margin: 2px;
+  border: 1px solid #ddd;
+  background-color: #f9f9f9;
+  cursor: pointer;
+}
+
+.pagination-button.active {
+  background-color: #ddd;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 600px;
+  position: relative;
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  cursor: pointer;
+  font-size: 24px;
+}
