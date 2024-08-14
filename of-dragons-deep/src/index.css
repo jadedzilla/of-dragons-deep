@@ -1,0 +1,88 @@
+/* Reset some default browser styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  /* Set basic body styles */
+  body {
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    background-color: #f4f4f4;
+    color: #333;
+    padding: 20px;
+  }
+  
+  /* Center the app's content */
+  .App {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  /* Headings styling */
+  h1 {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+  /* Add some spacing to all paragraphs */
+  p {
+    margin-bottom: 10px;
+  }
+  
+  /* Basic styling for links */
+  a {
+    color: #007bff;
+    text-decoration: none;
+  }
+  
+  a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Styling for the grid container */
+  .fish-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  /* Styling for individual fish items */
+  .fish-item {
+    position: relative;
+    cursor: pointer;
+    width: 150px;
+    text-align: center;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  .fish-item:hover {
+    transform: scale(1.05);
+  }
+  
+  /* Styling for fish images */
+  .fish-item img {
+    width: 100%;
+    height: auto;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 10px;
+  }
+  
+  /* Checkmark styling */
+  .checkmark {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 24px;
+    color: green;
+  }
+  
