@@ -1,14 +1,5 @@
+/* Center the app's content */
 .App {
-  text-align: center;
-}
-
-h1 {
-  font-size: 2rem;
-  color: #333;
-}
-.banner-image {
-  width: 100%;
-  max-width: 500px; /* Adjust to fit your design */
-  height: auto; /* Maintain aspect ratio */
-  margin-bottom: 10px;
+  max-width: 1200px;
+  margin: 0 auto;
 }

@@ -1,0 +1,138 @@
+* {
+  margin: 0 auto;
+  padding: 0;
+}
+
+.guide-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #333;
+  border-width: 2px;
+  border-style: ridge;
+  border-color: #fc8 #c84 #c84 #fc8;
+  border-radius: 8px;
+  -ms-border-radius: 8px;
+  box-shadow: 1px 1px 8px black, 0 0 2px 1px black inset;
+  min-width: 512px;
+  max-width: 512px;
+}
+
+table {
+  border-spacing: 0;
+  border-collapse: separate;
+}
+
+.guide {
+  width: auto;
+  padding: 8px;
+  margin: 8px;
+  text-align: left;
+}
+
+.icon {
+  display: inline-block;
+  position: relative;
+  width: 48px;
+  height: 48px;
+  line-height: 48px;
+  vertical-align: middle;
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  filter: brightness(50%);
+}
+.icon img {
+  margin: 2px 4px 6px 4px;
+  width: 40px;
+  height: 40px;
+}
+
+.icon:after {
+  content: "";
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  left: 0;
+  top: 0;
+  background-image: url(/public/icons/reflection_frame_48.png);
+}
+
+.fish-item:hover {
+  transform: scale(1.05);
+}
+
+.checkmark {
+  position: absolute;
+  font-size: 24px;
+  color: green;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.checked {
+  filter: brightness(100%);
+}
+
+.pagination {
+  width: auto;
+  padding: 8px;
+  margin: 8px 8px 0 8px;
+  text-align: left;
+}
+
+.pagination-button {
+  width: 28px;
+  height: 28px;
+  margin: 2px;
+  font-size:12pt;
+  cursor: pointer;
+  background-color: #333;
+  background-image: linear-gradient( /* chrome */
+    hsla(0, 0%, 100%, 0.6), hsla(0, 0%, 100%, 0) 50%,
+    hsla(0, 0%, 0%, 0.3) 50%, hsla(0, 0%, 100%, 0.2)
+  );
+  border: none;
+  border-radius: 5px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  color: white;
+}
+
+.pagination-button.active {
+  background-color: #555;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 600px;
+  position: relative;
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  cursor: pointer;
+  font-size: 24px;
+}
+
+img {
+  border-style: none;
+}
