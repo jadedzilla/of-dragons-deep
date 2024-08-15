@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import FISH_DATA from '../data/fish_info_data';
-import './FishGrid.css';
+import './FishGuide.css';
 import Cookies from 'js-cookie';
 
 const COOKIE_NAME = 'checkedFish';
 const ITEMS_PER_PAGE = 100;
+const ITEMS_PER_ROW = 10;
 
-const FishGrid = () => {
+const FishGuide = () => {
   // Load checked fish from cookies
   const getInitialCheckedFish = () => {
     const cookie = Cookies.get(COOKIE_NAME);
@@ -19,26 +20,6 @@ const FishGrid = () => {
   const [importString, setImportString] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState(''); // 'export' or 'import'
-  const [fishIcons, setFishIcons] = useState({});
-
-  // Fetch fish icons from XIVAPI
-  useEffect(() => {
-    const fetchIcons = async () => {
-      const icons = {};
-      for (const fish of FISH_DATA) {
-        try {
-          const response = await fetch(`https://xivapi.com/item/${fish.id}`);
-          const data = await response.json();
-          icons[fish.id] = data.IconHD;
-        } catch (error) {
-          console.error('Error fetching icon for fish ID', fish.id, error);
-        }
-      }
-      setFishIcons(icons);
-    };
-
-    fetchIcons();
-  }, []);
 
   // Save checked fish to cookies whenever it changes
   useEffect(() => {
@@ -61,8 +42,8 @@ const FishGrid = () => {
     setCheckedFish(new Set());
   };
 
-  // Sort fish data alphabetically by name_en
-  const sortedFishData = [...FISH_DATA].sort((a, b) => a.name_en.localeCompare(b.name_en));
+  // Sort fish data by id
+  const sortedFishData = [...FISH_DATA].sort((a, b) => a.id - b.id);
 
   // Calculate the start and end index for the current page
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -105,25 +86,11 @@ const FishGrid = () => {
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   return (
-    <div className="fish-grid-container">
+    <div className="guide-container">
       <div className="controls">
         <button onClick={handleExport}>Export Checked Fish</button>
         <button onClick={() => { setIsModalOpen(true); setModalMode('import'); }}>Import Checked Fish</button>
         <button onClick={handleClearCheckedFish}>Clear Checked Fish</button>
-      </div>
-      <div className="fish-grid">
-        {paginatedFishData.map((fish) => (
-          <div
-            key={fish.id}
-            className={`fish-item ${checkedFish.has(fish.id) ? 'checked' : ''}`}
-            onClick={() => handleClick(fish.id)}
-          >
-            <div className="fish-icon">
-              <img title={fish.name_en} src={`https://xivapi.com${fishIcons[fish.id]}`} alt={fish.name_en} />
-            </div>
-            {checkedFish.has(fish.id) && <span className="checkmark">&#10003;</span>}
-          </div>
-        ))}
       </div>
       <div className="pagination">
         {pageNumbers.map((number) => (
@@ -136,6 +103,25 @@ const FishGrid = () => {
           </button>
         ))}
       </div>
+      <table className="guide">
+        <tbody>
+          {Array.from({ length: 10 }, (_, rowIndex) => (
+            <tr key={rowIndex}>
+              {paginatedFishData.slice(rowIndex * ITEMS_PER_ROW, (rowIndex + 1) * ITEMS_PER_ROW).map((fish) => (
+                <td
+                  key={fish.id}
+                  className={`icon ${checkedFish.has(fish.id) ? 'checked' : ''}`}
+                  title={fish.name_en}
+                  onClick={() => handleClick(fish.id)}
+                >
+                  <img src={`/icons/${fish.id}.png`} alt={fish.name_en} />
+                  
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
       {isModalOpen && (
         <div className="modal">
           <div className="modal-content">
@@ -172,4 +158,4 @@ const FishGrid = () => {
   );
 };
 
-export default FishGrid;
+export default FishGuide;

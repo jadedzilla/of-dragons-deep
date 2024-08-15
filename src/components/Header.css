@@ -1,0 +1,16 @@
+/* src/Header.css */
+.header {
+    color: white;
+    padding: 20px 20px;
+  }
+  
+  .header-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .header-title {
+    margin: 0;
+  }
+  

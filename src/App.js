@@ -1,16 +1,14 @@
+// src/App.js
 import React from 'react';
-import FishGrid from './components/FishGrid';
+import Header from './components/Header';
+import FishGuide from './components/FishGuide';
 import './App.css';
 
 function App() {
   return (
     <div className="App">
-      <img
-        src="/ofdragonsdeep-banner.png"
-        alt="Of Dragons Deep"
-        className="banner-image"
-      />
-      <FishGrid />
+      <Header />
+      <FishGuide />
     </div>
   );
 }
