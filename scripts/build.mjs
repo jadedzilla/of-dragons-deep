@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Bundles the app into one self-contained file: dist/index.html (CSS, JS and fish data inlined).
+// Bundles the app into one self-contained file: dist/index.html (CSS, JS, icons and the fallback fish snapshot inlined;
+// fish data is still fetched live at runtime when the source is reachable).
 // Handy for hosting anywhere static or sharing as a single file. Usage: npm run build
 //   --external-icons  keep the icon sprite sheets as separate files in dist/icons/ instead of inlining them
 //                     (smaller HTML that renders sooner; sheets load only when needed)
@@ -10,7 +11,7 @@ import { readFile, writeFile, mkdir, copyFile } from "node:fs/promises";
 
 const root = new URL("..", import.meta.url);
 const read = p => readFile(new URL(p, root), "utf8");
-const MODULES = ["src/storage.js", "src/icons.js", "src/data.js", "src/main.js"];
+const MODULES = ["src/storage.js", "src/icons.js", "src/fishsource.js", "src/data.js", "src/main.js"];
 
 const js = (await Promise.all(MODULES.map(read)))
   .map((src, i) => `// ---- ${MODULES[i]} ----\n` + src.replace(/^import .*$/gm, "").replace(/^export /gm, ""))

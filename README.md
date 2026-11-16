@@ -8,10 +8,12 @@ Requires [Node.js](https://nodejs.org) 18 or newer. No `npm install` needed — 
 
 ```sh
 npm run dev          # open http://localhost:5173
-npm run fetch-data   # refresh data/fish.json from the FFXIV Fish Tracker
+npm run fetch-data   # refresh the offline fallback data/fish.json
 npm run fetch-icons  # refresh fish icons (data/icons/) from XIVAPI
 npm run build        # single-file build at dist/index.html
 ```
+
+Fish data is loaded live from the FFXIV Fish Tracker each time the app opens; a bundled snapshot is used if it can't be reached.
 
 ## Credits
 

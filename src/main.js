@@ -1,5 +1,5 @@
 import { loadFish, CATEGORIES, OCEAN_FISHING } from "./data.js";
-import { fishIcon, loadIcons } from "./icons.js";
+import { fishIcon, fishPlaceholder, loadIcons } from "./icons.js";
 import { loadCaught, saveCaught } from "./storage.js";
 
 const PER_PAGE = 100; // 10x10 grid
@@ -8,7 +8,7 @@ const $ = s => document.querySelector(s);
 const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const grid = $("#grid"), pagesEl = $("#pages"), tip = $("#tooltip");
 
-const [{ fish: FISH, fetched }] = await Promise.all([loadFish(), loadIcons()]);
+const [{ fish: FISH, live, fetched, error }] = await Promise.all([loadFish(), loadIcons()]);
 const BY_ID = new Map(FISH.map(f => [f.id, f]));
 const caught = loadCaught(new Set(BY_ID.keys()));
 
@@ -18,7 +18,10 @@ let page = 0, query = "";
 
 $("#expFilters").innerHTML = CATEGORIES.map((c, i) =>
   `<label><input type="checkbox" data-cat="${i}" checked> ${c} <span class="n">${FISH.filter(f => f.cat === i).length}</span></label>`).join("");
-$("#dataNote").textContent = `${FISH.length} fish · data from ff14fish.carbuncleplushy.com (snapshot ${fetched}) · icons via XIVAPI`;
+$("#dataNote").textContent = live
+  ? `${FISH.length} fish · live from ff14fish.carbuncleplushy.com${fetched ? ` (updated ${fetched})` : ""} · icons via XIVAPI`
+  : `${FISH.length} fish · offline snapshot from ${fetched} (couldn't reach ff14fish.carbuncleplushy.com: ${error}) · icons via XIVAPI`;
+$("#dataNote").classList.toggle("offline", !live);
 
 function visible() {
   const q = query.trim().toLowerCase();
@@ -112,6 +115,13 @@ grid.addEventListener("click", e => {
   const nt = grid.querySelector(`.tile[data-id="${id}"]`);
   if (nt) showTip(nt); else tip.style.display = "none";
 });
+// Icons not in the bundled sheets load from XIVAPI; if that fails, swap in the placeholder.
+grid.addEventListener("error", e => {
+  const img = e.target;
+  if (!img.matches?.("img.ic")) return;
+  const t = img.closest(".tile[data-id]");
+  img.outerHTML = fishPlaceholder(BY_ID.get(+t.dataset.id));
+}, true);
 grid.addEventListener("mouseover", e => { const t = e.target.closest(".tile[data-id]"); if (t) showTip(t); });
 grid.addEventListener("mouseleave", () => { tip.style.display = "none"; });
 window.addEventListener("scroll", () => { tip.style.display = "none"; }, { passive: true });
