@@ -1,37 +1,29 @@
-// Loads the Fish Guide from XIVAPI (game data) into the compact {tables, rows} dataset the app reads.
+// Loads the Fish Guide and the spearfishing log from XIVAPI (game data) into the compact dataset the app reads:
+// { tables: { rec, reg, zone }, rows: [...Fish Guide], spear: [...spearfishing log] }, one array per fish (FISH_COLUMNS).
 // Shared by the browser (live load in src/data.js) and scripts/fetch-fish-data.mjs (committed snapshot).
 // Replaced the FFXIV Fish Tracker (ff14fish.carbuncleplushy.com) as the source; output was verified identical.
 //
-// Source: the FishParameter sheet. Rows with IsInLog are exactly the Fish Guide entries. For each one we read:
+// Fish Guide = FishParameter rows with IsInLog. Spearfishing log = SpearfishingItem rows with IsInLog. For each:
 //   Item.Name / Item.Icon / Item.IsCollectable / Item.Rarity    name, icon id, collectable, rarity (≥2 = big fish)
 //   GatheringItemLevel.GatheringItemLevel                       level
-//   FishingRecordType.Addon.Text                                water type (Coastlines, Rivers, …)
-//   FishingSpot.TerritoryType.PlaceNameRegion / PlaceName       region / zone
-//   Unknown1                                                    the game's log sort key (see logOrder)
-// Spearfishing comes from the SpearfishingItem sheet (rows with IsInLog; the spearfishing log), in the game's log order, with
-//   FishingRecordType.Addon.Text as the size class (Small/Average/Big) in place of water type,
-//   SpearfishingNotebook.TerritoryType.PlaceNameRegion / PlaceName as region / zone, and
-//   Unknown2 = expansion bucket (4000 Stormblood … 7000 Dawntrail).
+//   FishingRecordType.Addon.Text                                water type (Coastlines, Rivers, …); for
+//                                                               spearfish the size class (Small/Average/Big)
+//   FishingSpot (fish) / SpearfishingNotebook (spearfish)
+//     .TerritoryType.PlaceNameRegion / PlaceName                region / zone
+//   Unknown1 (fish) / Unknown2 (spearfish)                      the game's log sort key (see logOrder)
 // Requests pin the XIVAPI schema revision so field names (notably Unknown1/Unknown2) can't change under us.
 
 export const XIVAPI = "https://v2.xivapi.com/api";
 export const XIVAPI_SCHEMA = "exdschema@2:rev:e773c41a90aed788cf4c1c48469fa85618ef01fb";
 export const FISH_COLUMNS = ["id", "name", "icon", "level", "expansion", "water", "region", "zone", "bigFish", "collectable", "rarity"];
 
-const FIELDS = [
-  "IsInLog", "Unknown1",
-  "Item.Name", "Item.Icon", "Item.IsCollectable", "Item.Rarity",
-  "GatheringItemLevel.GatheringItemLevel",
-  "FishingRecordType.Addon.Text",
-  "FishingSpot.TerritoryType.PlaceName.Name", "FishingSpot.TerritoryType.PlaceNameRegion.Name",
-].join(",");
-const SPEAR_FIELDS = [
-  "IsInLog", "Unknown2",
-  "Item.Name", "Item.Icon", "Item.IsCollectable", "Item.Rarity",
-  "GatheringItemLevel.GatheringItemLevel",
-  "FishingRecordType.Addon.Text",
-  "SpearfishingNotebook.TerritoryType.PlaceName.Name", "SpearfishingNotebook.TerritoryType.PlaceNameRegion.Name",
-].join(",");
+const COMMON_FIELDS = [
+  "IsInLog", "Item.Name", "Item.Icon", "Item.IsCollectable", "Item.Rarity",
+  "GatheringItemLevel.GatheringItemLevel", "FishingRecordType.Addon.Text",
+];
+const placeFields = spot => [`${spot}.TerritoryType.PlaceName.Name`, `${spot}.TerritoryType.PlaceNameRegion.Name`];
+const FIELDS = ["Unknown1", ...COMMON_FIELDS, ...placeFields("FishingSpot")].join(",");
+const SPEAR_FIELDS = ["Unknown2", ...COMMON_FIELDS, ...placeFields("SpearfishingNotebook")].join(",");
 const PAGE = 500;          // XIVAPI's maximum page size
 const WINDOWS = 4;         // FishParameter pages fetched in parallel up front (the Fish Guide is rows 1…~1520)
 
@@ -69,6 +61,9 @@ async function fetchSpearfishingRows(fetchFn, signal) {
   }
 }
 
+/** Game patch name (e.g. "7.58") for an XIVAPI data version key, from the /version list; null if unknown. */
+const patchName = (versions, key) => versions?.find(v => v.key === key)?.names.find(n => n !== "latest") ?? null;
+
 /**
  * The game's log order: sort by the game's sort key, then row. The key is per expansion (2000 A Realm Reborn,
  * 3000 Heavensward … 7000 Dawntrail); ocean-fishing fish are numbered after their expansion's fish (5001…,
@@ -94,9 +89,15 @@ function expansionOf(level, region) {
   const byLevel = level <= 50 ? 0 : level <= 60 ? 1 : level <= 70 ? 2 : level <= 80 ? 3 : level <= 90 ? 4 : 5;
   return Math.max(byLevel, REGION_EXPANSION[region] ?? 0);
 }
+/** Spearfish expansion from the sort key's bucket (4000 = Stormblood → 2); level/region rule if out of range. */
+function spearExpansion(row, level, region) {
+  const bucket = Math.floor((row.fields.Unknown2 ?? 0) / 1000) - 2;
+  return bucket >= 0 && bucket <= 5 ? bucket : expansionOf(level, region);
+}
 
 // Read a nested XIVAPI field: f(row, "Item", "Name") → row.fields.Item.fields.Name
 const f = (node, ...path) => path.reduce((v, k) => v?.fields?.[k], node);
+const inLog = rows => rows.filter(r => r.fields.IsInLog && f(r, "Item")?.value > 0);
 
 /** Build the compact dataset from FishParameter rows (and SpearfishingItem rows, if given). */
 export function buildDataset(fishParameterRows, meta, spearfishingRows = []) {
@@ -106,41 +107,28 @@ export function buildDataset(fishParameterRows, meta, spearfishingRows = []) {
     if (i < 0) { i = tables[t].length; tables[t].push(v); }
     return i;
   };
-  const guide = fishParameterRows.filter(r => r.fields.IsInLog && f(r, "Item")?.value > 0);
-  const rows = logOrder(guide).map(r => {
+  // One FISH_COLUMNS row. `spot` is where the location lives; `expansion(row, level, region)` gives the category.
+  const toRow = (spot, expansion) => r => {
     const level = f(r, "GatheringItemLevel", "GatheringItemLevel");
-    const territory = f(r, "FishingSpot", "TerritoryType");
+    const territory = f(r, spot, "TerritoryType");
     const region = f(territory, "PlaceNameRegion", "Name") ?? "", zone = f(territory, "PlaceName", "Name") ?? "";
     const rarity = f(r, "Item", "Rarity");
     return [
-      f(r, "Item").value, f(r, "Item", "Name"), f(r, "Item", "Icon")?.id ?? 0, level, expansionOf(level, region),
+      f(r, "Item").value, f(r, "Item", "Name"), f(r, "Item", "Icon")?.id ?? 0, level, expansion(r, level, region),
       idx("rec", f(r, "FishingRecordType", "Addon", "Text") ?? ""), idx("reg", region), idx("zone", zone),
       rarity >= 2 ? 1 : 0, f(r, "Item", "IsCollectable") ? 1 : 0, rarity,
     ];
-  });
-  // Spearfishing log: game log order; expansion from Unknown2 (4000 = Stormblood → 2), else level/region.
-  const spear = logOrder(spearfishingRows.filter(r => r.fields.IsInLog && f(r, "Item")?.value > 0), "Unknown2").map(r => {
-      const level = f(r, "GatheringItemLevel", "GatheringItemLevel");
-      const territory = f(r, "SpearfishingNotebook", "TerritoryType");
-      const region = f(territory, "PlaceNameRegion", "Name") ?? "", zone = f(territory, "PlaceName", "Name") ?? "";
-      const bucket = Math.floor((r.fields.Unknown2 ?? 0) / 1000) - 2;
-      const rarity = f(r, "Item", "Rarity");
-      return [
-        f(r, "Item").value, f(r, "Item", "Name"), f(r, "Item", "Icon")?.id ?? 0, level,
-        bucket >= 0 && bucket <= 5 ? bucket : expansionOf(level, region),
-        idx("rec", f(r, "FishingRecordType", "Addon", "Text") ?? ""), idx("reg", region), idx("zone", zone),
-        rarity >= 2 ? 1 : 0, f(r, "Item", "IsCollectable") ? 1 : 0, rarity,
-      ];
-    });
+  };
+  const rows = logOrder(inLog(fishParameterRows)).map(toRow("FishingSpot", (_, level, region) => expansionOf(level, region)));
+  const spear = logOrder(inLog(spearfishingRows), "Unknown2").map(toRow("SpearfishingNotebook", spearExpansion));
   return { source: `${XIVAPI}/sheet/FishParameter`, ...meta, columns: FISH_COLUMNS, tables, rows, spear };
 }
 
-/** Fetch the Fish Guide from XIVAPI and build the dataset. `fetchFn` lets Node and the browser share this. */
+/** Fetch both logs from XIVAPI and build the dataset. `fetchFn` lets Node and the browser share this. */
 export async function loadFishFromXivapi({ fetchFn = fetch, signal } = {}) {
-  const [{ rows, version }, spearRows, patch] = await Promise.all([
+  const [{ rows, version }, spearRows, versions] = await Promise.all([
     fetchFishParameterRows(fetchFn, signal), fetchSpearfishingRows(fetchFn, signal),
-    getJson(`${XIVAPI}/version`, fetchFn, signal).then(({ versions }) => versions, () => null),
+    getJson(`${XIVAPI}/version`, fetchFn, signal).then(d => d.versions, () => null),
   ]);
-  const patchNameFor = key => patch?.find(v => v.key === key)?.names.find(n => n !== "latest") ?? null;
-  return buildDataset(rows, { fetched: new Date().toISOString().slice(0, 10), version, patch: patchNameFor(version) }, spearRows);
+  return buildDataset(rows, { fetched: new Date().toISOString().slice(0, 10), version, patch: patchName(versions, version) }, spearRows);
 }

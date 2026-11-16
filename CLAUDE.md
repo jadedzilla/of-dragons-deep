@@ -24,7 +24,7 @@ There are no tests yet. After changes, run the dev server and check the page in 
 - `src/data.js` — loads fish (live, else snapshot) and decodes rows; defines categories
 - `src/fishsource.js` — loads the Fish Guide from XIVAPI and builds the compact dataset; shared by the browser and `fetch-fish-data.mjs`
 - `src/icons.js` — loads the icon manifest and renders sprite-sheet icons (SVG placeholder if an icon is missing)
-- `src/storage.js` — caught set in localStorage (key `odd-caught-v2`, game fish ids)
+- `src/storage.js` — per-browser localStorage: caught set (key `odd-caught-v2`, game item ids) and the last tab (`odd-tab`)
 - `src/styles.css` — all styles; theme colours are CSS variables in `:root`
 - `scripts/fetch-fish-data.mjs` — refreshes the fallback snapshot using `src/fishsource.js`
 - `scripts/fetch-icons.mjs` — icon downloader (writes PNG sheets); `scripts/webp-sheets.mjs` — converts them to WebP via headless Chromium; `scripts/png.mjs` — tiny PNG decode/encode used to pack sheets

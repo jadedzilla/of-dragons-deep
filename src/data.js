@@ -1,4 +1,4 @@
-// Loads fish data. First choice is live: the Fish Guide straight from XIVAPI's game data
+// Loads fish data. First choice is live: the Fish Guide and spearfishing log straight from XIVAPI's game data
 // (it sends Access-Control-Allow-Origin: *), built into the dataset by src/fishsource.js.
 // If that fails or is too slow, falls back to the committed snapshot data/fish.json
 // (inlined as window.__FISH_DATA__ in the single-file build).
@@ -27,8 +27,8 @@ async function loadSnapshot() {
   });
 }
 
-// Row order is the game's log order (today the same as the FFXIV Fish Tracker's Fish Guide). The grid shows
-// fish in this order (left to right, top to bottom, 100 per page), so never sort these rows.
+// Rows are in the game's log order (today the same as the FFXIV Fish Tracker's Fish Guide). The grid shows
+// fish in this order (left to right, top to bottom, 100 per page), so never sort them.
 // Spearfishing rows use the same columns; their "water" is the size class (Small/Average/Big).
 function decode(T, rows = [], spear = false) {
   const oceanRegion = T.reg.indexOf("The High Seas");
@@ -47,15 +47,17 @@ function decode(T, rows = [], spear = false) {
   }));
 }
 
+const lists = (raw, extra) => ({
+  fish: decode(raw.tables, raw.rows), spear: decode(raw.tables, raw.spear, true), fetched: raw.fetched, patch: raw.patch, ...extra,
+});
+
 /** Returns { fish, spear, live, fetched, patch, error } — `live` false means the snapshot was used (`error` says why). */
 export async function loadFish() {
   try {
-    const raw = await loadLive();
-    return { fish: decode(raw.tables, raw.rows), spear: decode(raw.tables, raw.spear, true), live: true, fetched: raw.fetched, patch: raw.patch };
+    return lists(await loadLive(), { live: true });
   } catch (e) {
     const error = e.name === "AbortError" ? "timed out" : e.message;
     console.warn(`Live fish data unavailable (${error}); using snapshot.`);
-    const raw = await loadSnapshot();
-    return { fish: decode(raw.tables, raw.rows), spear: decode(raw.tables, raw.spear, true), live: false, fetched: raw.fetched, patch: raw.patch, error };
+    return lists(await loadSnapshot(), { live: false, error });
   }
 }

@@ -1,10 +1,9 @@
 :root{
-  --bg1:#0d1220; --bg2:#1a2238;
+  --bg1:#0d1220;
   --panel:rgba(22,26,38,.92);
   --gold:#c9a95c; --gold-dim:#7d6a3e; --gold-hi:#f1dca0;
   --text:#e8e2d0; --muted:#9a937f;
   --tile:#2a3044; --tile-hi:#3a4360;
-  --caught:#66d36e;
   --caught-check:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12.5l5 5L20 6.5' stroke='%23000' stroke-width='7' stroke-opacity='.75'/%3E%3Cpath d='M4 12.5l5 5L20 6.5' stroke='%2366d36e' stroke-width='3.6'/%3E%3C/svg%3E");
 }
 *{box-sizing:border-box}
@@ -23,7 +22,6 @@ body{
 /* Fishing / Spearfishing tabs hanging from the bottom-left of the window, like in-game window tabs.
    The active tab overlaps the window's bottom border so it reads as part of the window. */
 .tabs{position:absolute;top:100%;left:18px;display:flex;gap:4px;align-items:flex-start}
-.tabs[hidden]{display:none}
 .tab{
   margin-top:3px;height:30px;padding:0 16px;cursor:pointer;
   font:700 12px Cinzel,serif;letter-spacing:.08em;color:var(--muted);
@@ -91,11 +89,10 @@ body{
 .toolbar .filter-btn{padding:0 9px;gap:0}
 .toolbar .filter-btn .label{max-width:0;opacity:0;margin-left:0;overflow:hidden;white-space:nowrap;
   transition:max-width .22s ease,opacity .18s ease,margin-left .22s ease}
-@media (hover:hover){.toolbar .filter-btn:hover:not(:disabled) .label{max-width:80px;opacity:1;margin-left:6px}}
+@media (hover:hover){.toolbar .filter-btn:hover .label{max-width:80px;opacity:1;margin-left:6px}}
 .toolbar .filter-btn:focus-visible .label{max-width:80px;opacity:1;margin-left:6px}
-.filter-btn .count.on{margin-left:5px}
 .filter-btn .count{background:var(--gold);color:#1b1608;border-radius:8px;padding:0 6px;font-size:11px;display:none}
-.filter-btn .count.on{display:inline}
+.filter-btn .count.on{display:inline;margin-left:5px}
 
 .filter-panel{
   position:absolute;top:calc(100% + 8px);right:0;z-index:5;width:250px;padding:12px 14px;display:none;
@@ -115,9 +112,10 @@ body{
 .grid{
   display:grid;grid-template-columns:repeat(10,1fr);gap:6px;
   padding:10px;border-radius:8px;background:rgba(0,0,0,.35);border:1px solid #2c2a22;
+  transition:border-color .15s,box-shadow .15s;
 }
 .tile{
-  position:relative;aspect-ratio:1;border-radius:6px;cursor:pointer;
+  position:relative;aspect-ratio:1;border-radius:6px;cursor:default;
   background:linear-gradient(160deg,var(--tile-hi),var(--tile));
   border:1px solid #4a4434;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -2px 4px rgba(0,0,0,.4);
   display:flex;align-items:center;justify-content:center;transition:transform .08s,border-color .08s;
@@ -127,16 +125,13 @@ body{
   opacity:0;transition:filter .12s,opacity .4s ease} /* fade in once the sheet/image has loaded (.ready) */
 .tile .ic.ready{opacity:1}
 .tile .ic.instant{transition:filter .12s} /* sheet was already loaded or arrived quickly: no fade */
-.tile:has(.ic){overflow:hidden;padding:0}
-.tile:not(.empty){cursor:default}
+.tile:has(.ic){overflow:hidden}
 .grid.editing .tile:not(.empty){cursor:pointer}
 .grid.editing .tile:hover{transform:translateY(-1px);border-color:var(--gold-hi)}
-.grid{transition:border-color .15s,box-shadow .15s}
 .grid.editing{border-color:var(--gold-dim);box-shadow:0 0 0 1px rgba(201,169,92,.35),0 0 12px rgba(201,169,92,.15)}
-/* edit toggle + disabled buttons */
+/* edit toggle */
 .edit-btn.on{color:#1b1608;background:linear-gradient(180deg,var(--gold-hi),var(--gold));border-color:var(--gold-hi)}
 .edit-btn.on:hover{color:#1b1608;filter:brightness(1.08)}
-.filter-btn:disabled{opacity:.4;cursor:default;border-color:#4a4434;color:var(--muted)}
 #hint b{color:var(--gold-hi);font-weight:600}
 .tile:not(.caught):hover .ic,.tile:not(.caught):hover svg{filter:grayscale(.4) brightness(.8)}
 .tile.caught{border-color:var(--gold)}
@@ -149,8 +144,7 @@ body{
   content:"";position:absolute;left:3px;top:3px;width:7px;height:7px;transform:rotate(45deg);
   background:var(--gold-hi);box-shadow:0 0 0 1px #000;
 }
-.tile.empty{cursor:default;background:rgba(255,255,255,.025);border-color:#2a2820;box-shadow:none}
-.tile.empty:hover{transform:none}
+.tile.empty{background:rgba(255,255,255,.025);border-color:#2a2820;box-shadow:none}
 
 .tooltip{
   position:fixed;pointer-events:none;z-index:10;display:none;max-width:220px;
@@ -193,13 +187,21 @@ body{
 .import-dialog .file-pick input::file-selector-button:hover{border-color:var(--gold-hi);color:var(--gold-hi)}
 .import-dialog .modes label{display:flex;align-items:center;gap:8px;font-size:13px;padding:2px 0;cursor:pointer}
 .import-dialog input[type=radio]{accent-color:var(--gold)}
-.import-result{font-size:12px;line-height:1.5;margin-top:10px;overflow-wrap:anywhere}
+.import-result{font-size:12px;line-height:1.5;margin-top:10px;overflow-wrap:anywhere;padding:8px 10px;border-radius:6px;background:rgba(0,0,0,.3);border:1px solid #2c2a22}
 .import-result:empty{display:none}
-.import-result{padding:8px 10px;border-radius:6px;background:rgba(0,0,0,.3);border:1px solid #2c2a22}
 .import-result.ok{border-color:rgba(95,180,232,.5)}
 .import-result.warn{border-color:#a8763a;color:#e6c08a}
 .import-result b{color:var(--gold-hi)}
 .import-result .sub{margin-top:4px;color:var(--muted)}
+/* import summary notice (also .import-result), shown after the dialog closes */
+.toast{
+  position:fixed;left:50%;bottom:20px;z-index:20;width:min(440px,calc(100vw - 32px));margin:0;padding:10px 34px 10px 12px;
+  background:rgba(16,19,28,.97);box-shadow:0 8px 24px rgba(0,0,0,.6);
+  opacity:0;transform:translate(-50%,12px);pointer-events:none;transition:opacity .2s,transform .2s;
+}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast-x{position:absolute;top:4px;right:6px;width:24px;height:24px;border:0;background:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer}
+.toast-x:hover{color:var(--gold-hi)}
 .import-dialog .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
 .btn{
   height:30px;padding:0 14px;border-radius:5px;cursor:pointer;font:600 13px "Noto Sans",sans-serif;
@@ -212,10 +214,9 @@ body{
 
 @media (max-width:520px){
   .grid{gap:3px;padding:6px}
-  .toolbar{flex-wrap:wrap}
+  .toolbar{flex-wrap:wrap;gap:8px}
   .pages{flex-basis:100%} /* page numbers get their own row; search, Edit, Import, Filter always share the next */
   .search{flex:1 1 90px;min-width:0}
-  .toolbar{gap:8px}
   .tile.caught::after{width:11px;height:11px;right:0;bottom:0}
 }
 
@@ -228,13 +229,3 @@ body{
   .titlebar h1{font-size:17px;letter-spacing:.03em}
   .progress{font-size:12px}
 }
-
-/* import summary notice, shown after the dialog closes */
-.toast{
-  position:fixed;left:50%;bottom:20px;z-index:20;width:min(440px,calc(100vw - 32px));margin:0;padding:10px 34px 10px 12px;
-  background:rgba(16,19,28,.97);box-shadow:0 8px 24px rgba(0,0,0,.6);
-  opacity:0;transform:translate(-50%,12px);pointer-events:none;transition:opacity .2s,transform .2s;
-}
-.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
-.toast-x{position:absolute;top:4px;right:6px;width:24px;height:24px;border:0;background:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer}
-.toast-x:hover{color:var(--gold-hi)}

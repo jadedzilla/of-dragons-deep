@@ -1,6 +1,6 @@
 import { loadFish, CATEGORIES, OCEAN_FISHING } from "./data.js";
 import { fishIcon, fishPlaceholder, loadIcons, prefetchSheets, sheetsFor, sheetsReady, sheetCount } from "./icons.js";
-import { loadCaught, saveCaught } from "./storage.js";
+import { loadCaught, saveCaught, loadTab, saveTab } from "./storage.js";
 
 const PER_PAGE = 100; // 10x10 grid
 
@@ -8,24 +8,25 @@ const $ = s => document.querySelector(s);
 const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const grid = $("#grid"), pagesEl = $("#pages"), tip = $("#tooltip");
 
+/* ---------- Data and state ---------- */
 const [{ fish: FISH_LIST, spear: SPEAR_LIST, live, fetched, patch, error }] = await Promise.all([loadFish(), loadIcons()]);
 // Two lists, switched with the tabs under the window: the Fish Guide and the spearfishing log.
 // Caught state, lookups and Import cover both (their item ids never overlap).
 const LISTS = { fish: FISH_LIST, spear: SPEAR_LIST };
-const TAB_KEY = "odd-tab";
-let mode = "fish";
-try { if (localStorage.getItem(TAB_KEY) === "spear" && SPEAR_LIST.length) mode = "spear"; } catch { /* storage unavailable */ }
+let mode = loadTab() === "spear" && SPEAR_LIST.length ? "spear" : "fish";
 let FISH = LISTS[mode]; // the list currently shown
 const BY_ID = new Map([...FISH_LIST, ...SPEAR_LIST].map(f => [f.id, f]));
 const caught = loadCaught(new Set(BY_ID.keys()));
+const countCaught = list => list.reduce((n, f) => n + caught.has(f.id), 0);
 
 const allCats = () => new Set(CATEGORIES.map((_, i) => i));
 const filters = { status: "all", cats: allCats(), bigOnly: false, collOnly: false };
 let page = 0, query = "";
+let hasBig = true; // whether the current list has big fish (spearfishing doesn't)
 
+/* ---------- Tabs ---------- */
 // Category checkboxes for the current list (categories it doesn't use are hidden; their state is kept).
 // Lists without big fish (spearfishing) also hide "Big fish only" and the legend; the setting is kept for later.
-let hasBig = true;
 function buildCatFilters() {
   hasBig = FISH.some(f => f.big);
   $("#bigOnly").closest("label").hidden = !hasBig;
@@ -46,13 +47,14 @@ const tabs = document.querySelectorAll("#tabs .tab");
 function setMode(m) {
   mode = m; FISH = LISTS[m]; page = 0;
   tabs.forEach(t => { const on = t.dataset.mode === m; t.classList.toggle("active", on); t.setAttribute("aria-selected", on); });
-  try { localStorage.setItem(TAB_KEY, m); } catch { /* storage unavailable */ }
+  saveTab(m);
   buildCatFilters(); updateNote();
 }
 tabs.forEach(t => t.addEventListener("click", () => { if (t.dataset.mode !== mode) { setMode(t.dataset.mode); render(); } }));
 $("#tabs").hidden = !SPEAR_LIST.length;
 
-// Filtering keeps source order (the tracker's Fish Guide order); don't sort.
+/* ---------- Filtering and paging ---------- */
+// Filtering keeps the list's order (the game's log order); don't sort.
 function visible() {
   const q = query.trim().toLowerCase();
   return FISH.filter(f =>
@@ -63,6 +65,7 @@ function visible() {
     (filters.status === "all" || (filters.status === "caught") === caught.has(f.id))
   );
 }
+const pageOf = (list, n) => list.slice(n * PER_PAGE, (n + 1) * PER_PAGE);
 
 // ‹ first … current±2 … last ›
 // Always the same number of slots between the arrows (7 once there are more than 7 pages), and gaps are as
@@ -84,11 +87,8 @@ function pageButtons(count) {
   ];
 }
 
-function render() {
-  const list = visible();
-  const pageCount = Math.max(1, Math.ceil(list.length / PER_PAGE));
-  if (page >= pageCount) page = pageCount - 1;
-
+/* ---------- Rendering ---------- */
+function renderPager(pageCount) {
   pagesEl.innerHTML = "";
   for (const b of pageButtons(pageCount)) {
     if (b.gap) {
@@ -105,8 +105,15 @@ function render() {
     el.onclick = () => { page = b.to; render(); };
     pagesEl.appendChild(el);
   }
+}
 
-  const slice = list.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
+function render() {
+  const list = visible();
+  const pageCount = Math.max(1, Math.ceil(list.length / PER_PAGE));
+  if (page >= pageCount) page = pageCount - 1;
+  renderPager(pageCount);
+
+  const slice = pageOf(list, page);
   if (!list.length) {
     grid.innerHTML = `<div class="empty-msg">No fish match your search.</div>`;
   } else {
@@ -116,7 +123,7 @@ function render() {
     grid.innerHTML = html;
   }
 
-  $("#caughtCount").textContent = FISH.reduce((n, f) => n + caught.has(f.id), 0);
+  $("#caughtCount").textContent = countCaught(FISH);
   $("#totalCount").textContent = FISH.length;
   $("#showing").textContent = list.length === FISH.length ? "" : `${list.length} match`;
   const active = (filters.status !== "all") + (filters.cats.size !== CATEGORIES.length) + (filters.bigOnly && hasBig) + filters.collOnly;
@@ -125,7 +132,7 @@ function render() {
   fc.classList.toggle("on", active > 0);
 
   // Once this page's icons are in, get the next and previous pages' sheets ready before they're needed.
-  const near = [...list.slice((page + 1) * PER_PAGE, (page + 2) * PER_PAGE), ...(page ? list.slice((page - 1) * PER_PAGE, page * PER_PAGE) : [])];
+  const near = [...pageOf(list, page + 1), ...(page ? pageOf(list, page - 1) : [])];
   sheetsReady(sheetsFor(slice)).then(() => prefetchSheets(sheetsFor(near), { urgent: true }));
 }
 
@@ -143,8 +150,9 @@ function showTip(t) {
   tip.style.left = Math.min(window.innerWidth - w - 8, Math.max(8, r.left + r.width / 2 - w / 2)) + "px";
   tip.style.top = (r.top - tip.offsetHeight - 6 < 0 ? r.bottom + 6 : r.top - tip.offsetHeight - 6) + "px";
 }
+const hideTip = () => { tip.style.display = "none"; };
 
-/* ---------- Events ---------- */
+/* ---------- Edit mode and the grid ---------- */
 // Edit mode: clicking a fish only toggles caught while it's on (Import works either way). Always off on page load.
 let editing = false;
 const editBtn = $("#editBtn");
@@ -167,7 +175,7 @@ grid.addEventListener("click", e => {
   saveCaught(caught);
   render();
   const nt = grid.querySelector(`.tile[data-id="${id}"]`);
-  if (nt) showTip(nt); else tip.style.display = "none";
+  if (nt) showTip(nt); else hideTip();
 });
 // Icons not in the bundled sheets load from XIVAPI; if that fails, swap in the placeholder.
 grid.addEventListener("load", e => { if (e.target.matches?.("img.ic")) e.target.classList.add("ready"); }, true);
@@ -178,16 +186,16 @@ grid.addEventListener("error", e => {
   img.outerHTML = fishPlaceholder(BY_ID.get(+t.dataset.id));
 }, true);
 grid.addEventListener("mouseover", e => { const t = e.target.closest(".tile[data-id]"); if (t) showTip(t); });
-grid.addEventListener("mouseleave", () => { tip.style.display = "none"; });
-window.addEventListener("scroll", () => { tip.style.display = "none"; }, { passive: true });
+grid.addEventListener("mouseleave", hideTip);
+window.addEventListener("scroll", hideTip, { passive: true });
 
+/* ---------- Search and filters ---------- */
 $("#search").addEventListener("input", e => { query = e.target.value; page = 0; render(); });
 
 const panel = $("#filterPanel"), fbtn = $("#filterBtn");
+const closePanel = () => { panel.classList.remove("open"); fbtn.classList.remove("open"); };
 fbtn.addEventListener("click", e => { e.stopPropagation(); panel.classList.toggle("open"); fbtn.classList.toggle("open"); });
-document.addEventListener("click", e => {
-  if (!panel.contains(e.target) && !fbtn.contains(e.target)) { panel.classList.remove("open"); fbtn.classList.remove("open"); }
-});
+document.addEventListener("click", e => { if (!panel.contains(e.target) && !fbtn.contains(e.target)) closePanel(); });
 panel.addEventListener("change", e => {
   const el = e.target;
   if (el.name === "status") filters.status = el.value;
@@ -197,6 +205,13 @@ panel.addEventListener("change", e => {
   page = 0;
   render();
 });
+$("#resetFilters").addEventListener("click", () => {
+  Object.assign(filters, { status: "all", bigOnly: false, collOnly: false, cats: allCats() });
+  panel.querySelectorAll("input").forEach(i => { i.checked = i.type === "radio" ? i.value === "all" : !!i.dataset.cat; });
+  page = 0;
+  render();
+});
+
 /* ---------- Import ---------- */
 // Accepts game item ids separated by commas (also spaces, semicolons or new lines).
 function parseIds(text) {
@@ -223,7 +238,7 @@ function showResult(html, kind) {
 const listSample = (arr, n = 12) => esc(arr.slice(0, n).join(", ")) + (arr.length > n ? `, … (+${arr.length - n} more)` : "");
 
 function openImportDialog() {
-  panel.classList.remove("open"); fbtn.classList.remove("open");
+  closePanel();
   resetImportState();
   showResult("");
   if (!dlg.open) dlg.showModal();
@@ -275,10 +290,9 @@ $("#importForm").addEventListener("submit", e => {
 
   const parts = [`Marked <b>${added}</b> new fish as caught` + (known.length - added ? ` (${known.length - added} already caught)` : "") + "."];
   if (removed.length) parts.push(`Unmarked <b>${removed.length}</b> fish not in the list.`);
-  const have = list => list.reduce((n, f) => n + caught.has(f.id), 0);
   parts.push(SPEAR_LIST.length
-    ? `You now have <b>${have(FISH_LIST)}</b> / ${FISH_LIST.length} fish and <b>${have(SPEAR_LIST)}</b> / ${SPEAR_LIST.length} spearfish caught.`
-    : `You now have <b>${have(FISH_LIST)}</b> / ${FISH_LIST.length} caught.`);
+    ? `You now have <b>${countCaught(FISH_LIST)}</b> / ${FISH_LIST.length} fish and <b>${countCaught(SPEAR_LIST)}</b> / ${SPEAR_LIST.length} spearfish caught.`
+    : `You now have <b>${countCaught(FISH_LIST)}</b> / ${FISH_LIST.length} caught.`);
   if (unknown.length) parts.push(`<div class="sub">Skipped ${unknown.length} ID${unknown.length > 1 ? "s that aren't fish" : " that isn't a fish"}: ${listSample(unknown)}</div>`);
   if (invalid.length) parts.push(`<div class="sub">Skipped ${invalid.length} entr${invalid.length > 1 ? "ies that aren't numbers" : "y that isn't a number"}: ${listSample(invalid)}</div>`);
   // Success: close the dialog and show the summary as a short-lived notice instead.
@@ -287,6 +301,7 @@ $("#importForm").addEventListener("submit", e => {
   showToast(parts.join(" "), unknown.length || invalid.length ? 9000 : 5000);
 });
 
+// Import summary notice, shown after the dialog closes.
 const toast = $("#toast");
 let toastTimer;
 function showToast(html, ms) {
@@ -339,20 +354,14 @@ if (linkParams.has("import")) {
   }
 }
 
-$("#resetFilters").addEventListener("click", () => {
-  Object.assign(filters, { status: "all", bigOnly: false, collOnly: false, cats: allCats() });
-  panel.querySelectorAll("input").forEach(i => { i.checked = i.type === "radio" ? i.value === "all" : !!i.dataset.cat; });
-  page = 0;
-  render();
-});
-
+/* ---------- Start ---------- */
 setMode(mode);
 render();
 
-// Then, once the first page is showing, quietly load the remaining sheets (≈1.5 MB in all) so every page
+// Then, once the first page is showing, quietly load the remaining sheets (≈1.7 MB in all) so every page
 // switch is instant. Skipped when the browser asks to save data; neighbours are still prefetched.
 if (!navigator.connection?.saveData) {
   const all = () => prefetchSheets(Array.from({ length: sheetCount() }, (_, i) => i));
-  sheetsReady(sheetsFor(visible().slice(page * PER_PAGE, (page + 1) * PER_PAGE))).then(() =>
+  sheetsReady(sheetsFor(pageOf(visible(), page))).then(() =>
     "requestIdleCallback" in window ? requestIdleCallback(all, { timeout: 2000 }) : setTimeout(all, 500));
 }

@@ -1,57 +1,17 @@
 // Fish icons: real game icons from sprite sheets (data/icons/, built by scripts/fetch-icons.mjs from XIVAPI).
 // Fish added since the sheets were built load their icon straight from XIVAPI; if that fails too
 // (offline, or remote images blocked), main.js swaps in an SVG placeholder.
+//
+// Loading: icons start transparent and appear (CSS .ic.ready) once their sheet has loaded — at once (.instant) if
+// it was already loaded or took under FADE_AFTER_MS, otherwise with a short fade. A sheet is requested the first
+// time a tile needs it, or earlier by prefetchSheets; the browser reuses that download for the CSS background.
 
-let ICONS = null; // { cols, icons: { iconId: index } }
+let ICONS = null;           // manifest: { cols, sheets, icons: { iconId: index } }
 let SHEET_URLS = [];
-const sheetState = []; // per sheet: undefined → "loading" → "ready"
-const sheetLoads = []; // per sheet: promise that settles when it has loaded (or failed)
-const FADE_AFTER_MS = 100; // sheets that arrive faster than this show at once; slower ones fade in
+const sheets = [];          // per sheet: { ready: boolean, loaded: Promise } once requested
+const FADE_AFTER_MS = 100;  // sheets that arrive faster than this show at once; slower ones fade in
 
-// Icons start transparent and appear (CSS .ic.ready) once their sheet has loaded: instantly if it came quickly
-// (.instant), otherwise with a short fade. Each sheet is requested the first time a tile needs it, or earlier by
-// prefetchSheets; the browser reuses that download for the CSS background.
-function requestSheet(i) {
-  if (sheetLoads[i]) return sheetLoads[i];
-  sheetState[i] = "loading";
-  const t0 = performance.now();
-  return sheetLoads[i] = new Promise(resolve => {
-    const img = new Image();
-    img.onload = img.onerror = () => { // on error too, so a failed sheet never leaves tiles invisible
-      sheetState[i] = "ready";
-      const fade = performance.now() - t0 > FADE_AFTER_MS;
-      document.querySelectorAll(`.ic.s${i}`).forEach(e => e.classList.add(...(fade ? ["ready"] : ["ready", "instant"])));
-      resolve();
-    };
-    img.src = SHEET_URLS[i];
-  });
-}
-
-// Background loading: sheets are fetched one at a time so they never compete much with what's on screen.
-// "Urgent" ones (the pages next to the current one) jump the queue.
-let queue = [], pumping = false;
-export function prefetchSheets(indices, { urgent = false } = {}) {
-  if (!ICONS) return;
-  const fresh = [...new Set(indices)].filter(i => i >= 0 && i < SHEET_URLS.length && !sheetLoads[i]);
-  queue = urgent ? [...fresh, ...queue.filter(i => !fresh.includes(i))] : [...queue, ...fresh.filter(i => !queue.includes(i))];
-  pump();
-}
-async function pump() {
-  if (pumping) return;
-  pumping = true;
-  while (queue.length) { const i = queue.shift(); if (!sheetLoads[i]) await requestSheet(i); }
-  pumping = false;
-}
-/** Resolves once these sheets have loaded (requesting any that haven't started). */
-export const sheetsReady = indices => Promise.all(indices.map(requestSheet));
-
-/** Sheet numbers needed to show these fish. */
-export function sheetsFor(fish) {
-  if (!ICONS) return [];
-  const per = ICONS.cols * ICONS.cols;
-  return [...new Set(fish.map(f => ICONS.icons[f.icon]).filter(i => i !== undefined).map(i => Math.floor(i / per)))];
-}
-export const sheetCount = () => SHEET_URLS.length;
+const perSheet = () => ICONS.cols * ICONS.cols;
 
 /** Load the icon manifest and register one CSS class per sprite sheet. Resolves even if icons are unavailable. */
 export async function loadIcons() {
@@ -72,6 +32,57 @@ export async function loadIcons() {
   }
 }
 
+function requestSheet(i) {
+  if (sheets[i]) return sheets[i].loaded;
+  const sheet = sheets[i] = { ready: false };
+  const t0 = performance.now();
+  return sheet.loaded = new Promise(resolve => {
+    const img = new Image();
+    img.onload = img.onerror = () => { // on error too, so a failed sheet never leaves tiles invisible
+      sheet.ready = true;
+      const fade = performance.now() - t0 > FADE_AFTER_MS;
+      document.querySelectorAll(`.ic.s${i}`).forEach(e => e.classList.add(...(fade ? ["ready"] : ["ready", "instant"])));
+      resolve();
+    };
+    img.src = SHEET_URLS[i];
+  });
+}
+
+/** Resolves once these sheets have loaded (requesting any that haven't started). */
+export const sheetsReady = indices => Promise.all(indices.map(requestSheet));
+
+/** Sheet numbers needed to show these fish. */
+export function sheetsFor(fish) {
+  if (!ICONS) return [];
+  return [...new Set(fish.map(f => ICONS.icons[f.icon]).filter(i => i !== undefined).map(i => Math.floor(i / perSheet())))];
+}
+export const sheetCount = () => SHEET_URLS.length;
+
+// Background loading: sheets are fetched one at a time so they never compete much with what's on screen.
+// "Urgent" ones (the pages next to the current one) jump the queue.
+let queue = [], pumping = false;
+export function prefetchSheets(indices, { urgent = false } = {}) {
+  if (!ICONS) return;
+  const fresh = [...new Set(indices)].filter(i => i >= 0 && i < SHEET_URLS.length && !sheets[i]);
+  queue = urgent ? [...fresh, ...queue.filter(i => !fresh.includes(i))] : [...queue, ...fresh.filter(i => !queue.includes(i))];
+  pump();
+}
+async function pump() {
+  if (pumping) return;
+  pumping = true;
+  while (queue.length) { const i = queue.shift(); if (!sheets[i]) await requestSheet(i); }
+  pumping = false;
+}
+
+/** Tile content for a fish: its sprite-sheet icon, else its icon straight from XIVAPI, else the placeholder. */
+export function fishIcon(f) {
+  const i = ICONS?.icons[f.icon];
+  if (i === undefined) return f.icon ? `<img class="ic" alt="" loading="lazy" src="${remoteIconUrl(f.icon)}">` : fishPlaceholder(f);
+  const per = perSheet(), k = i % per, step = 100 / (ICONS.cols - 1), sheet = Math.floor(i / per);
+  requestSheet(sheet);
+  return `<span class="ic s${sheet}${sheets[sheet].ready ? " ready instant" : ""}" style="background-position:${(k % ICONS.cols) * step}% ${Math.floor(k / ICONS.cols) * step}%"></span>`;
+}
+
 const remoteIconUrl = id => {
   const s = String(id).padStart(6, "0");
   return `https://v2.xivapi.com/api/asset?path=${encodeURIComponent(`ui/icon/${s.slice(0, 3)}000/${s}_hr1.tex`)}&format=png`;
@@ -83,6 +94,7 @@ function hash(s) {
   return h;
 }
 
+/** SVG fish silhouette, tinted from a hash of the name; used when no game icon is available. */
 export function fishPlaceholder(f) {
   const hue = hash(f.name) % 360, hue2 = (hue + 40) % 360;
   const body = f.big
@@ -92,12 +104,4 @@ export function fishPlaceholder(f) {
     <stop offset="0" stop-color="hsl(${hue},65%,68%)"/><stop offset="1" stop-color="hsl(${hue2},55%,36%)"/></linearGradient></defs>
     <path d="${body}" fill="url(#g${f.id})" stroke="#000" stroke-opacity=".55" stroke-width="1.5"/>
     <circle cx="${f.big ? 17 : 18}" cy="29" r="2.4" fill="#111"/><circle cx="${f.big ? 16.4 : 17.4}" cy="28.4" r=".8" fill="#fff"/></svg>`;
-}
-
-export function fishIcon(f) {
-  const i = ICONS?.icons[f.icon];
-  if (i === undefined) return f.icon ? `<img class="ic" alt="" loading="lazy" src="${remoteIconUrl(f.icon)}">` : fishPlaceholder(f);
-  const per = ICONS.cols * ICONS.cols, k = i % per, step = 100 / (ICONS.cols - 1), sheet = Math.floor(i / per);
-  requestSheet(sheet);
-  return `<span class="ic s${sheet}${sheetState[sheet] === "ready" ? " ready instant" : ""}" style="background-position:${(k % ICONS.cols) * step}% ${Math.floor(k / ICONS.cols) * step}%"></span>`;
 }
