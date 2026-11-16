@@ -7,8 +7,8 @@
 //   GatheringItemLevel.GatheringItemLevel                       level
 //   FishingRecordType.Addon.Text                                water type (Coastlines, Rivers, …)
 //   FishingSpot.TerritoryType.PlaceNameRegion / PlaceName       region / zone
-//   Unknown1                                                    ocean-fishing guide number (see fishGuideOrder)
-// Spearfishing comes from the SpearfishingItem sheet (rows with IsInLog; the spearfishing log), in row order, with
+//   Unknown1                                                    the game's log sort key (see logOrder)
+// Spearfishing comes from the SpearfishingItem sheet (rows with IsInLog; the spearfishing log), in the game's log order, with
 //   FishingRecordType.Addon.Text as the size class (Small/Average/Big) in place of water type,
 //   SpearfishingNotebook.TerritoryType.PlaceNameRegion / PlaceName as region / zone, and
 //   Unknown2 = expansion bucket (4000 Stormblood … 7000 Dawntrail).
@@ -70,17 +70,14 @@ async function fetchSpearfishingRows(fetchFn, signal) {
 }
 
 /**
- * Fish Guide order: FishParameter row order, except that ocean-fishing fish carry their own guide numbers in
- * Unknown1 (e.g. 7001, 7002, …; ordinary fish have round values like 2000, 3000 per expansion). Those fish are
- * reordered by that number within the positions they occupy. This reproduces the FFXIV Fish Tracker's Fish Guide
- * order exactly (checked for all 1,517 fish when switching sources).
+ * The game's log order: sort by the game's sort key, then row. The key is per expansion (2000 A Realm Reborn,
+ * 3000 Heavensward … 7000 Dawntrail); ocean-fishing fish are numbered after their expansion's fish (5001…,
+ * 6001…, 7001…). FishParameter uses Unknown1, SpearfishingItem uses Unknown2. A fish added to an older
+ * expansion in a later patch therefore lands with that expansion, as in game. For the Fish Guide this is
+ * identical to the FFXIV Fish Tracker's order (all 1,517 fish checked, patch 7.58).
  */
-export function fishGuideOrder(rows) {
-  const sorted = [...rows].sort((a, b) => a.row_id - b.row_id);
-  const numbered = r => r.fields.Unknown1 % 1000 !== 0;
-  const queue = sorted.filter(numbered).sort((a, b) => a.fields.Unknown1 - b.fields.Unknown1 || a.row_id - b.row_id);
-  let q = 0;
-  return sorted.map(r => numbered(r) ? queue[q++] : r);
+export function logOrder(rows, key = "Unknown1") {
+  return [...rows].sort((a, b) => (a.fields[key] ?? 0) - (b.fields[key] ?? 0) || a.row_id - b.row_id);
 }
 
 // Earliest expansion each region belongs to (0 = A Realm Reborn … 5 = Dawntrail). Expansion comes from the fish's
@@ -110,7 +107,7 @@ export function buildDataset(fishParameterRows, meta, spearfishingRows = []) {
     return i;
   };
   const guide = fishParameterRows.filter(r => r.fields.IsInLog && f(r, "Item")?.value > 0);
-  const rows = fishGuideOrder(guide).map(r => {
+  const rows = logOrder(guide).map(r => {
     const level = f(r, "GatheringItemLevel", "GatheringItemLevel");
     const territory = f(r, "FishingSpot", "TerritoryType");
     const region = f(territory, "PlaceNameRegion", "Name") ?? "", zone = f(territory, "PlaceName", "Name") ?? "";
@@ -121,9 +118,8 @@ export function buildDataset(fishParameterRows, meta, spearfishingRows = []) {
       rarity >= 2 ? 1 : 0, f(r, "Item", "IsCollectable") ? 1 : 0, rarity,
     ];
   });
-  // Spearfishing log: row order; expansion from Unknown2 (4000 = Stormblood → 2), else level/region.
-  const spear = spearfishingRows.filter(r => r.fields.IsInLog && f(r, "Item")?.value > 0)
-    .sort((a, b) => a.row_id - b.row_id).map(r => {
+  // Spearfishing log: game log order; expansion from Unknown2 (4000 = Stormblood → 2), else level/region.
+  const spear = logOrder(spearfishingRows.filter(r => r.fields.IsInLog && f(r, "Item")?.value > 0), "Unknown2").map(r => {
       const level = f(r, "GatheringItemLevel", "GatheringItemLevel");
       const territory = f(r, "SpearfishingNotebook", "TerritoryType");
       const region = f(territory, "PlaceNameRegion", "Name") ?? "", zone = f(territory, "PlaceName", "Name") ?? "";

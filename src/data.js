@@ -27,7 +27,7 @@ async function loadSnapshot() {
   });
 }
 
-// Row order is the in-game Fish Guide order (the same order as the FFXIV Fish Tracker's Fish Guide). The grid shows
+// Row order is the game's log order (today the same as the FFXIV Fish Tracker's Fish Guide). The grid shows
 // fish in this order (left to right, top to bottom, 100 per page), so never sort these rows.
 // Spearfishing rows use the same columns; their "water" is the size class (Small/Average/Big).
 function decode(T, rows = [], spear = false) {
