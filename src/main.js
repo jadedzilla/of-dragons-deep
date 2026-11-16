@@ -3,7 +3,7 @@ import { fishIcon, fishPlaceholder, loadIcons, prefetchSheets, sheetsFor, sheets
 import { loadCaught, saveCaught, loadTab, saveTab, loadMarks, saveMarks, loadAchievementProgress, saveAchievementProgress } from "./storage.js";
 import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
 import { createTimers } from "./timers.js";
-import { createAchievements, looksLikeAchievementExport } from "./achievements.js";
+import { createAchievements } from "./achievements.js";
 import { createLogRoute } from "./logroute.js";
 import { baitChains, hooksetAndTug, loadTeamcraft, xivAsset, xivRows } from "./teamcraft.js";
 
@@ -383,35 +383,23 @@ $("#resetFilters").addEventListener("click", () => {
   render();
 });
 
-/* ---------- Import ---------- */
-// Accepts game item ids separated by commas (also spaces, semicolons or new lines).
-function parseIds(text) {
-  const ids = [], invalid = [];
-  for (const tok of text.split(/[\s,;]+/)) {
-    if (!tok) continue;
-    if (/^\d+$/.test(tok)) ids.push(+tok); else invalid.push(tok);
-  }
-  return { ids: [...new Set(ids)], invalid };
-}
-
-// Text from the Import box or a link: plain item ids, or plugin JSON. Version 2 is {"fish":[item ids],
-// "achievements":[{"id","complete","current","max"}…]} (achievements may be missing); version 1 was
-// {"fish":[{"id",…,"caught"}…]}. Returns { ids, invalid, achievements (null if none) } or { error } / { achievementsOnly }.
+/* ---------- Import (fish and achievements) ---------- */
+// One dialog for the Fish Guide and Achievements pages. It only takes the Of Dragons Deep plugin's export
+// (Copy JSON, or a ?import=2. link decoded into the same JSON):
+//   {"source":"OfDragonsDeep","version":2,"fish":[item ids],"achievements":[{"id","complete","current","max"}…]}
+// ("achievements" is missing if the plugin couldn't load them). Returns { ids, invalid, achievements } or { error }.
+const NOT_EXPORT = "This isn't an export from the Of Dragons Deep plugin. In game, type <code>/dragonsdeep</code>, click <b>Copy JSON</b> and paste it here.";
+const OLD_EXPORT = "This is from an older version of the Of Dragons Deep plugin. Update the plugin in game, then copy it again.";
 function parseImport(text) {
   const t = text.trim();
-  if (!t.startsWith("{")) {
-    if (looksLikeAchievementExport(t)) return { achievementsOnly: true };
-    return { ...parseIds(t), achievements: null };
-  }
+  if (!t) return { error: "Paste the plugin's <b>Copy JSON</b> export first." };
+  if (!t.startsWith("{")) return { error: NOT_EXPORT };
   let data;
   try { data = JSON.parse(t); } catch { return { error: "This JSON couldn't be read. It may have been cut off when it was copied." }; }
-  if (!Array.isArray(data.fish)) return Array.isArray(data.achievements) ? { achievementsOnly: true } : { error: "This JSON has no fish in it." };
+  if (data?.source !== "OfDragonsDeep") return { error: NOT_EXPORT };
+  if (data.version !== 2 || !Array.isArray(data.fish)) return { error: OLD_EXPORT };
   const ids = [], invalid = [];
-  for (const f of data.fish) {
-    if (f && typeof f === "object" && f.caught === false) continue;
-    const id = Number(f && typeof f === "object" ? f.id : f);
-    Number.isInteger(id) && id > 0 ? ids.push(id) : invalid.push(String(f && typeof f === "object" ? f.id : f));
-  }
+  for (const f of data.fish) (Number.isInteger(f) && f > 0 ? ids.push(f) : invalid.push(String(f)));
   const num = v => (v === null || v === undefined || v === "" ? undefined : Number(v));
   const achievements = Array.isArray(data.achievements)
     ? data.achievements.filter(a => a && Number.isInteger(Number(a.id)))
@@ -421,7 +409,7 @@ function parseImport(text) {
 }
 
 const dlg = $("#importDialog"), importText = $("#importText"), importResult = $("#importResult"), importGo = $("#importGo");
-let confirmReplace = false; // "replace" needs a second click when it would unmark fish
+let confirmReplace = false; // "replace" needs a second click when it would unmark fish or achievements
 
 function resetImportState() {
   confirmReplace = false;
@@ -436,6 +424,7 @@ const listSample = (arr, n = 12) => esc(arr.slice(0, n).join(", ")) + (arr.lengt
 
 function openImportDialog() {
   closePanel();
+  if (!dlg.open) dlg.querySelector("input[name=importMode][value=replace]").checked = true; // default: replace
   resetImportState();
   showResult("");
   if (!dlg.open) dlg.showModal();
@@ -446,32 +435,16 @@ $("#importCancel").addEventListener("click", () => dlg.close());
 dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); }); // click on backdrop
 importText.addEventListener("input", resetImportState);
 dlg.querySelectorAll("input[name=importMode]").forEach(r => r.addEventListener("change", resetImportState));
-$("#importFile").addEventListener("change", async e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  importText.value = await file.text();
-  e.target.value = "";
-  resetImportState();
-  showResult(`Loaded <b>${esc(file.name)}</b>. Click Import to apply.`);
-});
-
 $("#importForm").addEventListener("submit", e => {
   e.preventDefault();
   const parsed = parseImport(importText.value);
-  if (parsed.achievementsOnly) {
-    showResult(`This is an <b>achievements</b> export. Import it on the <a href="#achievements" id="toAchImport">Achievements</a> page instead.`, "warn");
-    $("#toAchImport").addEventListener("click", () => dlg.close());
-    return;
-  }
   if (parsed.error) { showResult(parsed.error, "warn"); return; }
   const { ids, invalid, achievements: achIn } = parsed;
   const known = ids.filter(id => BY_ID.has(id)), unknown = ids.filter(id => !BY_ID.has(id));
   const replace = dlg.querySelector("input[name=importMode]:checked").value === "replace";
 
   if (!known.length && !achIn?.length) {
-    showResult(ids.length || invalid.length
-      ? `None of these are fish item IDs, so nothing was changed.${unknown.length ? `<div class="sub">Not fish: ${listSample(unknown)}</div>` : ""}${invalid.length ? `<div class="sub">Not numbers: ${listSample(invalid)}</div>` : ""}`
-      : "Paste some item IDs first.", "warn");
+    showResult(`This export has no caught fish or achievements in it, so nothing was changed.${unknown.length ? `<div class="sub">Not fish: ${listSample(unknown)}</div>` : ""}`, "warn");
     return;
   }
 
@@ -517,12 +490,12 @@ $("#importForm").addEventListener("submit", e => {
   if (achIn) parts.push(`<b>${achDone}</b> achievement${achDone === 1 ? "" : "s"} complete` + (achNew ? ` (${achNew} new)` : "")
     + (achProgress ? `, progress for <b>${achProgress}</b> more` : "") + ` (see <a href="#achievements">Achievements</a>).`);
   if (unmarkAch.length) parts.push(`Unmarked <b>${unmarkAch.length}</b> achievement${unmarkAch.length > 1 ? "s" : ""} the game says ${unmarkAch.length > 1 ? "aren't" : "isn't"} complete.`);
-  if (removed.length) parts.push(`Unmarked <b>${removed.length}</b> fish not in the list.`);
+  if (removed.length) parts.push(`Unmarked <b>${removed.length}</b> fish not in the export.`);
   parts.push(SPEAR_LIST.length
     ? `You now have <b>${countCaught(FISH_LIST)}</b> / ${FISH_LIST.length} fish and <b>${countCaught(SPEAR_LIST)}</b> / ${SPEAR_LIST.length} spearfish caught.`
     : `You now have <b>${countCaught(FISH_LIST)}</b> / ${FISH_LIST.length} caught.`);
   if (unknown.length) parts.push(`<div class="sub">Skipped ${unknown.length} ID${unknown.length > 1 ? "s that aren't fish" : " that isn't a fish"}: ${listSample(unknown)}</div>`);
-  if (invalid.length) parts.push(`<div class="sub">Skipped ${invalid.length} entr${invalid.length > 1 ? "ies that aren't numbers" : "y that isn't a number"}: ${listSample(invalid)}</div>`);
+  if (invalid.length) parts.push(`<div class="sub">Skipped ${invalid.length} entr${invalid.length > 1 ? "ies that aren't item IDs" : "y that isn't an item ID"}: ${listSample(invalid)}</div>`);
   // Success: close the dialog and show the summary as a short-lived notice instead.
   dlg.close();
   importText.value = "";
@@ -541,17 +514,15 @@ function showToast(html, ms) {
 toast.addEventListener("click", e => { if (e.target.closest(".toast-x")) { clearTimeout(toastTimer); toast.classList.remove("show"); } });
 
 /* ---------- Import from a link (?import=) ---------- */
-// Links from the Of Dragons Deep Dalamud plugin, ?import=<version>.<data>: <data> is base64url (no padding) of
-// raw-DEFLATE'd LEB128 varints.
-//   1.  the sorted caught item ids as deltas (older plugin versions; fish only)
-//   2.  fish count + sorted item id deltas; then, if present, achievement count + per achievement (sorted by id)
-//       the id delta and a status: 0 not complete, 1 complete, 2 not complete followed by current and max
-// A plain id list (?import=4776,4869) works too. Returns the text to put in the Import box.
+// Links from the Of Dragons Deep plugin's Copy tracker link: ?import=2.<data>, where <data> is base64url (no padding) of
+// raw-DEFLATE'd LEB128 varints: fish count + sorted item id deltas; then, if present, achievement count + per
+// achievement (sorted by id) the id delta and a status: 0 not complete, 1 complete, 2 not complete + current + max.
+// Decoded into the plugin's JSON so it goes through the same Import as a pasted export.
 async function decodeImportParam(value) {
-  if (/^[\d\s,;]+$/.test(value)) return value;
-  const m = /^([12])\.([A-Za-z0-9_-]*)$/.exec(value);
+  if (/^1\.|^[\d\s,;]+$/.test(value)) throw Object.assign(new Error("old"), { old: true });
+  const m = /^2\.([A-Za-z0-9_-]*)$/.exec(value);
   if (!m) throw new Error("Unrecognised import link");
-  const bytes = Uint8Array.from(atob(m[2].replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+  const bytes = Uint8Array.from(atob(m[1].replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
   const raw = new Uint8Array(await new Response(stream).arrayBuffer());
   const nums = [];
@@ -561,10 +532,6 @@ async function decodeImportParam(value) {
     if (b & 0x80) { shift += 7; continue; }
     nums.push(cur);
     cur = 0; shift = 0;
-  }
-  if (m[1] === "1") {
-    let prev = 0;
-    return nums.map(d => (prev += d)).join(", ");
   }
   let i = 0;
   const next = () => { if (i >= nums.length) throw new Error("Import link is cut off"); return nums[i++]; };
@@ -593,14 +560,13 @@ if (linkParams.has("import")) {
   openImportDialog();
   try {
     importText.value = await decodeImportParam(value);
-    dlg.querySelector("input[name=importMode][value=add]").checked = true;
     const p = parseImport(importText.value);
     const n = p.ids.filter(id => BY_ID.has(id)).length;
     const ach = p.achievements ? ` and <b>${p.achievements.filter(a => a.complete).length}</b> completed achievements` : "";
     // Nothing is changed until the Import button is pressed.
-    showResult(`Loaded <b>${n}</b> fish${ach} from your link. Choose Add or Replace, then click <b>Import</b>.`);
-  } catch {
-    showResult("This import link couldn't be read. It may have been cut off when it was copied.", "warn");
+    showResult(`Loaded <b>${n}</b> fish${ach} from your link. Click <b>Import</b> to replace your current data with it, or choose Add.`);
+  } catch (err) {
+    showResult(err.old ? OLD_EXPORT : "This import link couldn't be read. It may have been cut off when it was copied.", "warn");
   }
 }
 
@@ -625,7 +591,7 @@ function route() {
   if (view === "achievements") {
     achievements ??= createAchievements($("#achievementsView"), { allFish: [...FISH_LIST, ...SPEAR_LIST], byId: BY_ID,
       isCaught: id => caught.has(id), fishIcon, onOpen: openFishView, esc, marks: loadMarks(), saveMarks,
-      progress: loadAchievementProgress(), saveProgress: saveAchievementProgress });
+      progress: loadAchievementProgress(), openImport: openImportDialog });
     achievements.show();
   }
   if (view === "route") {

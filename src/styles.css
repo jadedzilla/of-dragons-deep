@@ -195,13 +195,6 @@ body{
   background:#10131c;border:1px solid #4a4434;color:var(--text);font:13px/1.4 ui-monospace,Consolas,monospace;
 }
 .import-dialog textarea:focus{border-color:var(--gold)}
-.import-dialog .file-pick{display:block;margin:6px 0 10px;font-size:12px;color:var(--muted)}
-.import-dialog .file-pick input{display:block;margin-top:4px;font-size:12px;color:var(--muted);max-width:100%}
-.import-dialog .file-pick input::file-selector-button{
-  margin-right:8px;height:26px;padding:0 10px;border-radius:5px;cursor:pointer;font:600 12px "Noto Sans",sans-serif;
-  color:var(--text);background:linear-gradient(180deg,#3a4058,#232839);border:1px solid #4a4434;
-}
-.import-dialog .file-pick input::file-selector-button:hover{border-color:var(--gold-hi);color:var(--gold-hi)}
 .import-dialog .modes label{display:flex;align-items:center;gap:8px;font-size:13px;padding:2px 0;cursor:pointer}
 .import-dialog input[type=radio]{accent-color:var(--gold)}
 .import-result{font-size:12px;line-height:1.5;margin-top:10px;overflow-wrap:anywhere;padding:8px 10px;border-radius:6px;background:rgba(0,0,0,.3);border:1px solid #2c2a22}

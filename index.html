@@ -39,7 +39,7 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.2V21h3.8l11-11-3.8-3.8zM20.7 7a1 1 0 0 0 0-1.4l-2.3-2.3a1 1 0 0 0-1.4 0l-1.8 1.8 3.8 3.8z"/></svg>
         <span class="label">Edit</span>
       </button>
-      <button class="filter-btn" id="importBtn" type="button" aria-label="Import caught fish">
+      <button class="filter-btn" id="importBtn" type="button" aria-label="Import fish and achievements">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11 16h2V6.8l3.3 3.3 1.4-1.4L12 3 6.3 8.7l1.4 1.4L11 6.8zM4 18h16v2H4z"/></svg>
         <span class="label">Import</span>
       </button>
@@ -87,14 +87,14 @@
 </div>
 <dialog class="import-dialog" id="importDialog">
   <form method="dialog" id="importForm">
-    <h2>Import caught fish</h2>
-    <p class="hint">Paste item IDs separated by commas, e.g. <code>4776, 4925, 4926</code> (spaces and new lines are fine too),
-      or the <b>Copy JSON</b> export from the Of Dragons Deep plugin, which also brings in your achievements.</p>
-    <textarea id="importText" rows="6" placeholder="4776, 4925, 4926" spellcheck="false"></textarea>
-    <label class="file-pick">or load a .txt / .csv file <input type="file" id="importFile" accept=".txt,.csv,text/plain,text/csv"></label>
+    <h2>Import</h2>
+    <p class="hint">Imports your <b>caught fish</b> and <b>fishing achievements</b> (with in-game progress) from the
+      Of Dragons Deep plugin. In game, type <code>/dragonsdeep</code>, click <b>Copy JSON</b> and paste it here.
+      <b>Copy tracker link</b> opens this with everything filled in.</p>
+    <textarea id="importText" rows="6" placeholder='{"source":"OfDragonsDeep","version":2,"fish":[…],"achievements":[…]}' spellcheck="false"></textarea>
     <div class="modes">
-      <label><input type="radio" name="importMode" value="add" checked> Add to my caught fish</label>
-      <label><input type="radio" name="importMode" value="replace"> Replace my caught fish with this list</label>
+      <label><input type="radio" name="importMode" value="replace" checked> Replace my fish and achievements with this export</label>
+      <label><input type="radio" name="importMode" value="add"> Add to my fish and achievements</label>
     </div>
     <div class="import-result" id="importResult" role="status"></div>
     <div class="actions">

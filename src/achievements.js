@@ -59,77 +59,6 @@ function oceanSpotFor(desc, oceanSpots) {
   return best;
 }
 
-/* ---------- Import from the Of Dragons Deep plugin (achievements) ---------- */
-// The plugin's current export (version 2: {"fish":[…],"achievements":[{"id","complete","current","max"}…]}) is
-// imported on the Fish Guide (fish and achievements together); its JSON also works here (only the achievements are used).
-// Older plugin versions had a separate achievements export:
-//   JSON  {"source":"OfDragonsDeep","category":"Fisher","achievements":[{"id","name","points","complete","current","max"}…]}
-//   CSV   id,name,points,complete,current,max          (one row per achievement; names quoted when needed)
-//   IDs   completed achievement ids, comma separated    (only says what's complete)
-//   List  "[x] Name" / "[ ] Name (312/500)" per line    (matched by name, so the client language must be English)
-// JSON, CSV and the list cover the whole category, so they also say what's NOT complete; IDs only add.
-
-/** True for text that is an achievements export (so the fish Import can point people to the right place). */
-export function looksLikeAchievementExport(text) {
-  const t = text.trim();
-  return /^\{[\s\S]*"achievements"\s*:/.test(t) || /^id,name,points,complete/i.test(t) || /^\[[x ]\] /im.test(t);
-}
-
-/**
- * Parse a plugin achievements export. Returns { entries: [{ id, complete, current?, max? }], full, unknown: [...],
- * error? } — full = the export lists every achievement (so ones marked incomplete should be unmarked).
- */
-export function parseAchievementExport(text, achievements) {
-  const t = text.trim(), byId = new Map(achievements.map(a => [a.id, a]));
-  const num = v => (v === null || v === undefined || v === "" ? undefined : Number(v));
-  const result = (rows, full) => {
-    const entries = [], unknown = [];
-    for (const r of rows) (byId.has(r.id) ? entries.push(r) : unknown.push(r.label ?? r.id));
-    return { entries, unknown, full };
-  };
-  if (!t) return { entries: [], unknown: [], full: false, error: "Paste an export first." };
-  if (t.startsWith("{")) {
-    let data;
-    try { data = JSON.parse(t); } catch { return { entries: [], unknown: [], full: false, error: "This JSON couldn't be read. It may have been cut off when it was copied." }; }
-    if (!Array.isArray(data.achievements)) {
-      return { entries: [], unknown: [], full: false, error: Array.isArray(data.fish)
-        ? "This is a <b>fish</b> export. Import it with Import on the Fish Guide page." : "This JSON has no achievements in it." };
-    }
-    return result(data.achievements.map(a => ({ id: Number(a.id), label: a.name ?? a.id, complete: !!a.complete,
-      current: num(a.current), max: num(a.max) })), true);
-  }
-  if (/^id,name,points,complete/i.test(t)) {
-    const rows = [];
-    for (const line of t.split(/\r?\n/).slice(1)) {
-      if (!line.trim()) continue;
-      const cells = []; // CSV with "quoted, fields"
-      for (let i = 0, cell = "", q = false; i <= line.length; i++) {
-        const c = line[i];
-        if (q) { if (c === '"' && line[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
-        else if (c === '"') q = true;
-        else if (c === "," || c === undefined) { cells.push(cell); cell = ""; }
-        else cell += c;
-      }
-      const [id, name, , complete, current, max] = cells;
-      rows.push({ id: Number(id), label: name || id, complete: complete === "true", current: num(current), max: num(max) });
-    }
-    return result(rows, true);
-  }
-  if (/^\[[x ]\] /im.test(t)) {
-    const byName = new Map(achievements.map(a => [a.name.toLowerCase(), a.id]));
-    const rows = [];
-    for (const line of t.split(/\r?\n/)) {
-      const m = /^\[([x ])\]\s+(.*?)(?:\s+\((\d+)\/(\d+)\))?\s*$/i.exec(line.trim());
-      if (!m) continue;
-      rows.push({ id: byName.get(m[2].toLowerCase()) ?? -1, label: m[2], complete: m[1].toLowerCase() === "x", current: num(m[3]), max: num(m[4]) });
-    }
-    return result(rows, true);
-  }
-  const tokens = t.split(/[\s,;]+/).filter(Boolean);
-  if (tokens.some(x => !/^\d+$/.test(x))) return { entries: [], unknown: [], full: false, error: "This doesn't look like an achievements export from the plugin." };
-  return result(tokens.map(x => ({ id: +x, complete: true })), false);
-}
-
 let achievementsPromise = null; // loaded once (dropped on failure so it can be retried)
 export function getAchievements() {
   achievementsPromise ??= loadAchievements().catch(e => { achievementsPromise = null; throw e; });
@@ -182,16 +111,17 @@ const SECTIONS = [
 
 /**
  * Render the Achievements page into `root`.
- * deps: { allFish: [fish…], byId: Map, isCaught(id), fishIcon(f), onOpen(f), esc(s), marks: Set, saveMarks(set) }.
+ * deps: { allFish: [fish…], byId: Map, isCaught(id), fishIcon(f), onOpen(f), esc(s), marks: Set, saveMarks(set),
+ *         progress: { at, items }, openImport() }.
  * Returns { show(), hide() }.
  */
-export function createAchievements(root, { allFish, byId, isCaught, fishIcon, onOpen, esc, marks, saveMarks, progress: imported, saveProgress }) {
+export function createAchievements(root, { allFish, byId, isCaught, fishIcon, onOpen, esc, marks, saveMarks, progress: imported, openImport }) {
   root.innerHTML = `
     <div class="ac-head">
       <div class="ac-summary" id="acSummary"></div>
       <div class="ac-tools">
         <label class="tm-opt"><input type="checkbox" id="acHideDone"> Hide obtained</label>
-        <button type="button" class="btn small" id="acImportBtn" title="Import your achievements from the Of Dragons Deep plugin">
+        <button type="button" class="btn small" id="acImportBtn" title="Import your fish and achievements from the Of Dragons Deep plugin">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11 16h2V6.8l3.3 3.3 1.4-1.4L12 3 6.3 8.7l1.4 1.4L11 6.8zM4 18h16v2H4z"/></svg> Import</button>
       </div>
     </div>
@@ -301,79 +231,8 @@ export function createAchievements(root, { allFish, byId, isCaught, fishIcon, on
     return loading;
   }
 
-  // ---------- Import from the plugin ----------
-  const dialog = document.createElement("dialog");
-  dialog.className = "import-dialog";
-  dialog.id = "acImportDialog";
-  dialog.innerHTML = `
-    <form method="dialog" id="acImportForm">
-      <h2>Import achievements</h2>
-      <p class="hint">In game, open the <b>Of Dragons Deep</b> plugin (<code>/dragonsdeep</code>) → <b>Copy JSON</b>, then paste here.
-        (<b>Copy tracker link</b> imports fish and achievements together on the Fish Guide.) Exports from older plugin versions work too.</p>
-      <textarea id="acImportText" rows="6" placeholder='{"source":"OfDragonsDeep","category":"Fisher","achievements":[…]}' spellcheck="false"></textarea>
-      <label class="file-pick">or load a .json / .csv / .txt file <input type="file" id="acImportFile" accept=".json,.csv,.txt,application/json,text/csv,text/plain"></label>
-      <div class="import-result" id="acImportResult" role="status"></div>
-      <div class="actions">
-        <button type="button" class="btn" id="acImportClose">Close</button>
-        <button type="submit" class="btn primary" id="acImportGo">Import</button>
-      </div>
-    </form>`;
-  document.body.appendChild(dialog);
-  const $d = s => dialog.querySelector(s), go = $d("#acImportGo"), text = $d("#acImportText");
-  let confirmUnmark = false;
-  const resetGo = () => { confirmUnmark = false; go.textContent = "Import"; go.classList.remove("danger"); };
-  const showImport = (html, kind) => { const r = $d("#acImportResult"); r.innerHTML = html; r.className = "import-result" + (kind ? " " + kind : ""); };
-  const sample = (arr, n = 8) => esc(arr.slice(0, n).join(", ")) + (arr.length > n ? `, … (+${arr.length - n} more)` : "");
-  root.querySelector("#acImportBtn").addEventListener("click", () => { resetGo(); showImport(""); dialog.showModal(); text.focus(); });
-  $d("#acImportClose").addEventListener("click", () => dialog.close());
-  dialog.addEventListener("click", e => { if (e.target === dialog) dialog.close(); });
-  text.addEventListener("input", resetGo);
-  $d("#acImportFile").addEventListener("change", async e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    text.value = await file.text();
-    e.target.value = "";
-    resetGo();
-    showImport(`Loaded <b>${esc(file.name)}</b>. Click Import to apply.`);
-  });
-  $d("#acImportForm").addEventListener("submit", async e => {
-    e.preventDefault();
-    if (!data) { try { await load(); } catch { /* handled by load */ } }
-    if (!data) { showImport("The achievement list hasn't loaded yet. Try again in a moment.", "warn"); return; }
-    const res = parseAchievementExport(text.value, data.achievements);
-    if (res.error) { showImport(res.error, "warn"); return; }
-    if (!res.entries.length) { showImport(`None of these are Fisher achievements, so nothing was changed.${res.unknown.length ? `<div class="sub">Not recognised: ${sample(res.unknown)}</div>` : ""}`, "warn"); return; }
-    // a full export says what's not complete too: those lose their "Obtained" mark (needs a second click)
-    const unmark = res.full ? res.entries.filter(x => !x.complete && marks.has(x.id)) : [];
-    if (unmark.length && !confirmUnmark) {
-      confirmUnmark = true;
-      go.textContent = `Unmark ${unmark.length} & import`;
-      go.classList.add("danger");
-      showImport(`The game says <b>${unmark.length}</b> achievement${unmark.length > 1 ? "s" : ""} you've marked obtained ${unmark.length > 1 ? "aren't" : "isn't"} complete:
-        ${sample(unmark.map(x => data.achievements.find(a => a.id === x.id)?.name ?? x.id))}. Click the button again to unmark ${unmark.length > 1 ? "them" : "it"} and import.`, "warn");
-      return;
-    }
-    let added = 0, withProgress = 0;
-    for (const x of res.entries) {
-      if (x.complete) { if (!marks.has(x.id)) added++; marks.add(x.id); delete imported.items[x.id]; continue; }
-      if (res.full) marks.delete(x.id);
-      if (x.current !== undefined && x.max) { imported.items[x.id] = [x.current, x.max]; withProgress++; }
-      else delete imported.items[x.id];
-    }
-    imported.at = new Date().toISOString();
-    saveMarks(marks); saveProgress(imported);
-    resetGo();
-    render();
-    const complete = res.entries.filter(x => x.complete).length;
-    const said = [
-      complete ? `Imported <b>${complete}</b> completed achievement${complete === 1 ? "" : "s"}` + (added !== complete ? ` (${added} new)` : "") + "." : "",
-      unmark.length ? `Unmarked <b>${unmark.length}</b>.` : "",
-      withProgress ? `Imported progress for <b>${withProgress}</b> unfinished achievement${withProgress === 1 ? "" : "s"}.` : "",
-    ].filter(Boolean);
-    showImport((said.join(" ") || "Nothing to change.")
-      + (res.full ? "" : `<div class="sub">This was a list of IDs, so only completions were added. Use the JSON export to also get progress.</div>`)
-      + (res.unknown.length ? `<div class="sub">Skipped ${res.unknown.length} not in this list: ${sample(res.unknown)}</div>` : ""), "ok");
-  });
+  // Import (fish and achievements together) is the shared dialog from the Fish Guide.
+  root.querySelector("#acImportBtn").addEventListener("click", openImport);
 
   root.addEventListener("change", e => {
     if (e.target.matches("#acHideDone")) return render();
