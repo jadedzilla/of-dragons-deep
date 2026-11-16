@@ -2,7 +2,7 @@ import { loadFish, CATEGORIES, OCEAN_FISHING } from "./data.js";
 import { fishIcon, fishPlaceholder, loadIcons, prefetchSheets, sheetsFor, sheetsReady, sheetCount } from "./icons.js";
 import { loadCaught, saveCaught, loadTab, saveTab } from "./storage.js";
 import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
-import { createTimers } from "./timers.js";
+import { createTimers, loadCatchPaths } from "./timers.js";
 
 const PER_PAGE = 100; // 10x10 grid
 
@@ -191,6 +191,16 @@ function canvasFrom(text) {
   if (m) return m[1][0].toUpperCase() + m[1].slice(1);
   return /Use item to acquire/i.test(text) ? "Can't be printed (minion item)" : "Can't be printed";
 }
+// Best bait: the tracker's best catch path — the bait, then any fish to mooch with ("or" between alternatives).
+function baitHtml(steps, items) {
+  const item = id => {
+    const it = items[id] ?? { name: BY_ID.get(id)?.name ?? `Item ${id}` };
+    const img = it.icon ? `<img src="${esc(it.icon)}" alt="" loading="lazy" onerror="this.remove()">` : "";
+    return `<span class="fv-bait-item">${img}${esc(it.name)}</span>`;
+  };
+  return steps.map((alts, i) => (i ? `<span class="fv-arrow">→</span> ` : "")
+    + alts.map(item).join(` <span class="fv-or">or</span> `) + (i ? ` <span class="fv-or">(mooch)</span>` : "")).join(" ");
+}
 // Aquariums: AquariumFish size 1–4 (S/M/L/XL) is also the smallest tank tier that holds the fish.
 const aquariumText = a => a ? `${a.water}, tier ${a.size} tanks and up (size ${["", "S", "M", "L", "XL"][a.size]})` : "Not suitable";
 function openFishView(f) {
@@ -208,12 +218,13 @@ function openFishView(f) {
     [f.spear ? "Size" : "Water", f.water],
     f.cat !== OCEAN_FISHING ? ["Level", String(f.lvl)] : null,
     [f.cat === OCEAN_FISHING ? "Category" : "Expansion", CATEGORIES[f.cat]],
+    f.spear ? null : ["Best bait", "…"], // filled in from the tracker's data below
     ["Aquarium", aquariumText(f.aquarium)],
     ["Canvas", "…"], // filled in from the description below
     ["Status", caught.has(f.id) ? "Caught" : "Not yet caught"],
     ["Item ID", String(f.id)],
   ].filter(Boolean);
-  $("#fvFacts").innerHTML = facts.map(([k, v]) => `<dt>${k}</dt><dd${k === "Canvas" ? ` id="fvCanvas" class="pending"` : ""}>${esc(v)}</dd>`).join("");
+  $("#fvFacts").innerHTML = facts.map(([k, v]) => `<dt>${k}</dt><dd${k === "Canvas" ? ` id="fvCanvas" class="pending"` : k === "Best bait" ? ` id="fvBait" class="pending fv-bait"` : ""}>${esc(v)}</dd>`).join("");
   const desc = $("#fvDesc");
   desc.innerHTML = `<span class="loading">Loading description…</span>`;
   loadDescription(f.id).then(text => {
@@ -222,6 +233,14 @@ function openFishView(f) {
     const canvas = $("#fvCanvas");
     canvas.textContent = text ? canvasFrom(text) : "Unavailable right now";
     canvas.classList.toggle("pending", !text);
+  });
+  if (!f.spear) loadCatchPaths().then(({ paths, items }) => {
+    if (viewing !== f.id) return;
+    const bait = $("#fvBait"), steps = paths.get(f.id);
+    if (steps) bait.innerHTML = baitHtml(steps, items); else bait.textContent = "Not in the tracker's data";
+    bait.classList.toggle("pending", !steps);
+  }, () => {
+    if (viewing === f.id) $("#fvBait").textContent = "Unavailable right now";
   });
   hideTip();
   if (!fishDialog.open) fishDialog.showModal();

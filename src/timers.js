@@ -54,14 +54,42 @@ function extractObject(text, marker) {
 
 const assetUrl = path => `${XIVAPI}/asset?path=${encodeURIComponent(path)}&format=png`;
 
+// The tracker's data.js is fetched once and shared by the timers and the fish view's best bait (retried if it failed).
+let trackerText = null;
+function loadTrackerText(fetchFn) {
+  trackerText ??= fetchFn(TRACKER_DATA_URL).then(res => {
+    if (!res.ok) throw new Error(`FFXIV Fish Tracker HTTP ${res.status}`);
+    return res.text();
+  }).catch(e => { trackerText = null; throw e; });
+  return trackerText;
+}
+
+/**
+ * Best catch paths: resolves to { paths: Map(fish id → steps), items: { id: { name, icon } } }. Each step is a list
+ * of alternative item ids; the first step is the bait, later ones are fish to mooch with.
+ */
+let catchPaths = null;
+export function loadCatchPaths({ fetchFn = fetch } = {}) {
+  catchPaths ??= loadTrackerText(fetchFn).then(text => {
+    const FISH = extractObject(text, "FISH: {"), ITEMS = extractObject(text, "ITEMS: {");
+    const paths = new Map(), items = {};
+    for (const f of Object.values(FISH)) {
+      if (f.bestCatchPath?.length) paths.set(f._id, f.bestCatchPath.map(step => [].concat(step)));
+    }
+    for (const it of Object.values(ITEMS)) {
+      items[it._id] = { name: it.name_en, icon: it.icon ? assetUrl(`ui/icon/${it.icon.slice(0, 3)}000/${it.icon}.tex`) : null };
+    }
+    return { paths, items };
+  }).catch(e => { catchPaths = null; throw e; });
+  return catchPaths;
+}
+
 /**
  * Load everything the timers need. Resolves to { fish: [window…], weather: { id: { name, icon } } } where each
  * window is { id, start, end, weather: Set|null, prev: Set|null, territory, rates: [[weatherId, cumulative%]…] }.
  */
 export async function loadTimerData({ fetchFn = fetch, signal } = {}) {
-  const res = await fetchFn(TRACKER_DATA_URL, { signal });
-  if (!res.ok) throw new Error(`FFXIV Fish Tracker HTTP ${res.status}`);
-  const text = await res.text();
+  const text = await loadTrackerText(fetchFn);
   const FISH = extractObject(text, "FISH: {"), SPOTS = extractObject(text, "FISHING_SPOTS: {"), SPEAR = extractObject(text, "SPEARFISHING_SPOTS: {");
   const restricted = Object.values(FISH).filter(f =>
     f.location != null && (f.weatherSet.length || f.previousWeatherSet.length || !(f.startHour === 0 && f.endHour === 24)));
