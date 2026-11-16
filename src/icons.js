@@ -14,7 +14,8 @@ export async function loadIcons() {
     const base = window.__ICON_DATA__ ? "" : "data/icons/";
     const style = document.createElement("style");
     style.textContent = m.sheets.map((s, i) => `.ic.s${i}{background-image:url("${base}${s}")}`).join("\n")
-      + `\n.ic{background-size:${m.cols * 100}% ${m.cols * 100}%}`;
+      + `\n.ic{background-size:${m.cols * 100}% ${m.cols * 100}%}`
+      + (m.frame ? `\n.tile .shine,.grid:has(.shine) .tile.empty::after{background-image:url("${base}${m.frame}")}` : "");
     document.head.appendChild(style);
     ICONS = m;
   } catch (e) {
@@ -43,6 +44,9 @@ export function fishPlaceholder(f) {
     <path d="${body}" fill="url(#g${f.id})" stroke="#000" stroke-opacity=".55" stroke-width="1.5"/>
     <circle cx="${f.big ? 17 : 18}" cy="29" r="2.4" fill="#111"/><circle cx="${f.big ? 16.4 : 17.4}" cy="28.4" r=".8" fill="#fff"/></svg>`;
 }
+
+/** The game's icon frame + reflective shine, drawn over the icon (empty if the frame isn't available). */
+export const shine = () => ICONS?.frame ? `<i class="shine"></i>` : "";
 
 export function fishIcon(f) {
   const i = ICONS?.icons[f.icon];
