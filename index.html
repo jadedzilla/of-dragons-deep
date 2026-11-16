@@ -19,6 +19,10 @@
       <div class="pages" id="pages"></div>
       <input class="search" id="search" type="search" placeholder="Search fish or zone…" autocomplete="off">
       <div class="spacer"></div>
+      <button class="filter-btn" id="importBtn" type="button" title="Import caught fish" aria-label="Import caught fish">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11 3h2v9.2l3.3-3.3 1.4 1.4L12 16l-5.7-5.7 1.4-1.4 3.3 3.3zM4 18h16v2H4z"/></svg>
+        <span class="label">Import</span>
+      </button>
       <button class="filter-btn" id="filterBtn" type="button">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>
         Filter <span class="count" id="filterCount">0</span>
@@ -48,6 +52,23 @@
     </div>
   </div>
 </div>
+<dialog class="import-dialog" id="importDialog">
+  <form method="dialog" id="importForm">
+    <h2>Import caught fish</h2>
+    <p class="hint">Paste item IDs separated by commas, e.g. <code>4776, 4925, 4926</code>. Spaces and new lines are fine too.</p>
+    <textarea id="importText" rows="6" placeholder="4776, 4925, 4926" spellcheck="false"></textarea>
+    <label class="file-pick">or load a .txt / .csv file <input type="file" id="importFile" accept=".txt,.csv,text/plain,text/csv"></label>
+    <div class="modes">
+      <label><input type="radio" name="importMode" value="add" checked> Add to my caught fish</label>
+      <label><input type="radio" name="importMode" value="replace"> Replace my caught fish with this list</label>
+    </div>
+    <div class="import-result" id="importResult" role="status"></div>
+    <div class="actions">
+      <button type="button" class="btn" id="importCancel">Close</button>
+      <button type="submit" class="btn primary" id="importGo" value="import">Import</button>
+    </div>
+  </form>
+</dialog>
 <div class="tooltip" id="tooltip"></div>
 <script type="module" src="src/main.js"></script>
 </body>
