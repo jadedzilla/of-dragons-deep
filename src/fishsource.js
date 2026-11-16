@@ -11,6 +11,8 @@
 //   FishingSpot (fish) / SpearfishingNotebook (spearfish)
 //     .TerritoryType.PlaceNameRegion / PlaceName                region / zone
 //   Unknown1 (fish) / Unknown2 (spearfish)                      the game's log sort key (see logOrder)
+// Aquarium suitability comes from the AquariumFish sheet (Item, Size 1–4 = S/M/L/XL = minimum tank tier,
+// AquariumWater.Name = Freshwater/Saltwater) as dataset.aquarium: { itemId: [size, water] } (only aquarium fish).
 // Requests pin the XIVAPI schema revision so field names (notably Unknown1/Unknown2) can't change under us.
 
 export const XIVAPI = "https://v2.xivapi.com/api";
@@ -61,6 +63,17 @@ async function fetchSpearfishingRows(fetchFn, signal) {
   }
 }
 
+/** AquariumFish rows (≈265 today: one page; keeps paging if it ever grows). */
+async function fetchAquariumRows(fetchFn, signal) {
+  const rows = [];
+  for (let after = -1; ;) {
+    const p = await getJson(pageUrl(after, "AquariumFish", "Item,Size,AquariumWater.Name"), fetchFn, signal);
+    rows.push(...p.rows);
+    if (p.rows.length < PAGE) return rows;
+    after = p.rows.at(-1).row_id;
+  }
+}
+
 /** Game patch name (e.g. "7.58") for an XIVAPI data version key, from the /version list; null if unknown. */
 const patchName = (versions, key) => versions?.find(v => v.key === key)?.names.find(n => n !== "latest") ?? null;
 
@@ -99,8 +112,8 @@ function spearExpansion(row, level, region) {
 const f = (node, ...path) => path.reduce((v, k) => v?.fields?.[k], node);
 const inLog = rows => rows.filter(r => r.fields.IsInLog && f(r, "Item")?.value > 0);
 
-/** Build the compact dataset from FishParameter rows (and SpearfishingItem rows, if given). */
-export function buildDataset(fishParameterRows, meta, spearfishingRows = []) {
+/** Build the compact dataset from FishParameter rows (and SpearfishingItem / AquariumFish rows, if given). */
+export function buildDataset(fishParameterRows, meta, spearfishingRows = [], aquariumRows = []) {
   const tables = { rec: [], reg: [], zone: [] };
   const idx = (t, v) => {
     let i = tables[t].indexOf(v);
@@ -121,14 +134,19 @@ export function buildDataset(fishParameterRows, meta, spearfishingRows = []) {
   };
   const rows = logOrder(inLog(fishParameterRows)).map(toRow("FishingSpot", (_, level, region) => expansionOf(level, region)));
   const spear = logOrder(inLog(spearfishingRows), "Unknown2").map(toRow("SpearfishingNotebook", spearExpansion));
-  return { source: `${XIVAPI}/sheet/FishParameter`, ...meta, columns: FISH_COLUMNS, tables, rows, spear };
+  const ours = new Set([...rows, ...spear].map(r => r[0]));
+  const aquarium = Object.fromEntries(aquariumRows
+    .filter(r => ours.has(f(r, "Item")?.value) && r.fields.Size > 0)
+    .map(r => [f(r, "Item").value, [r.fields.Size, f(r, "AquariumWater", "Name") ?? ""]]));
+  return { source: `${XIVAPI}/sheet/FishParameter`, ...meta, columns: FISH_COLUMNS, tables, rows, spear, aquarium };
 }
 
 /** Fetch both logs from XIVAPI and build the dataset. `fetchFn` lets Node and the browser share this. */
 export async function loadFishFromXivapi({ fetchFn = fetch, signal } = {}) {
-  const [{ rows, version }, spearRows, versions] = await Promise.all([
+  const [{ rows, version }, spearRows, aquariumRows, versions] = await Promise.all([
     fetchFishParameterRows(fetchFn, signal), fetchSpearfishingRows(fetchFn, signal),
+    fetchAquariumRows(fetchFn, signal).catch(() => []), // optional: the app works without it
     getJson(`${XIVAPI}/version`, fetchFn, signal).then(d => d.versions, () => null),
   ]);
-  return buildDataset(rows, { fetched: new Date().toISOString().slice(0, 10), version, patch: patchName(versions, version) }, spearRows);
+  return buildDataset(rows, { fetched: new Date().toISOString().slice(0, 10), version, patch: patchName(versions, version) }, spearRows, aquariumRows);
 }

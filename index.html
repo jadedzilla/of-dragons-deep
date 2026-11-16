@@ -77,6 +77,18 @@
     </div>
   </form>
 </dialog>
+<dialog class="fish-dialog" id="fishDialog" aria-labelledby="fvName" tabindex="-1">
+  <div class="fv-head">
+    <div class="fv-icon" id="fvIcon"></div>
+    <div class="fv-title">
+      <h2 id="fvName"></h2>
+      <div class="fv-tags" id="fvTags"></div>
+    </div>
+    <button type="button" class="fv-x" id="fvClose" aria-label="Close">×</button>
+  </div>
+  <dl class="fv-facts" id="fvFacts"></dl>
+  <div class="fv-desc" id="fvDesc"></div>
+</dialog>
 <div class="tooltip" id="tooltip"></div>
 <div class="toast import-result" id="toast" role="status" aria-live="polite"></div>
 <script type="module" src="src/main.js"></script>

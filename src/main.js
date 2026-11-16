@@ -1,6 +1,7 @@
 import { loadFish, CATEGORIES, OCEAN_FISHING } from "./data.js";
 import { fishIcon, fishPlaceholder, loadIcons, prefetchSheets, sheetsFor, sheetsReady, sheetCount } from "./icons.js";
 import { loadCaught, saveCaught, loadTab, saveTab } from "./storage.js";
+import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
 
 const PER_PAGE = 100; // 10x10 grid
 
@@ -153,6 +154,82 @@ function showTip(t) {
 }
 const hideTip = () => { tip.style.display = "none"; };
 
+/* ---------- Fish detail view ---------- */
+// Clicking/tapping a fish while Edit is off opens this view. The in-game item description is fetched from XIVAPI
+// on first open (and remembered); everything else comes from the loaded data, so the view works offline too.
+const fishDialog = $("#fishDialog");
+let viewing = null; // id of the fish shown
+const descriptions = new Map(); // item id → Promise<string|null>
+function loadDescription(id) {
+  if (!descriptions.has(id)) {
+    descriptions.set(id, fetch(`${XIVAPI}/sheet/Item/${id}?fields=Description&schema=${encodeURIComponent(XIVAPI_SCHEMA)}`)
+      .then(r => r.ok ? r.json() : null).then(d => d?.fields?.Description || null, () => null)
+      .then(text => { if (text === null) descriptions.delete(id); return text; })); // retry next time if it failed
+  }
+  return descriptions.get(id);
+}
+// Canvas and aquarium notes in the description ("[Suitable for printing on small canvases.]", "[Suitable for
+// display in aquariums tier 2 and higher.]") are shown as their own lines in the view, so they're left out here.
+const SHOWN_AS_FACTS = /^\[Suitable for (printing on .* canvases|display in aquariums)/;
+function renderDescription(el, text) {
+  el.replaceChildren();
+  if (!text) { el.innerHTML = `<span class="loading">Description unavailable right now.</span>`; return; }
+  for (const block of text.split(/\n\n+/)) {
+    for (const line of block.split("\n")) {
+      if (!line.trim() || SHOWN_AS_FACTS.test(line.trim())) continue;
+      const p = document.createElement("div");
+      p.textContent = line;
+      if (/^\[.*\]$/.test(line.trim())) p.className = "note";
+      el.appendChild(p);
+    }
+  }
+}
+// Fish prints: the canvas size is only in the item description (there's no canvas table in the game data).
+function canvasFrom(text) {
+  const m = /printing on (extra large|small|medium|large) canvases/i.exec(text);
+  if (m) return m[1][0].toUpperCase() + m[1].slice(1);
+  return /Use item to acquire/i.test(text) ? "Can't be printed (minion item)" : "Can't be printed";
+}
+// Aquariums: AquariumFish size 1–4 (S/M/L/XL) is also the smallest tank tier that holds the fish.
+const aquariumText = a => a ? `${a.water}, tier ${a.size} tanks and up (size ${["", "S", "M", "L", "XL"][a.size]})` : "Not suitable";
+function openFishView(f) {
+  viewing = f.id;
+  $("#fvName").textContent = f.name;
+  $("#fvIcon").innerHTML = fishIcon(f);
+  $("#fvTags").innerHTML = [
+    caught.has(f.id) ? `<span class="caught">✓ Caught</span>` : "",
+    f.big ? `<span class="big">◆ Big fish</span>` : "",
+    f.collectable ? `<span>Collectable</span>` : "",
+    f.spear ? `<span>Spearfishing</span>` : "",
+  ].join("");
+  const facts = [
+    ["Location", f.zone + (f.zone !== f.region ? ", " + f.region : "")],
+    [f.spear ? "Size" : "Water", f.water],
+    f.cat !== OCEAN_FISHING ? ["Level", String(f.lvl)] : null,
+    [f.cat === OCEAN_FISHING ? "Category" : "Expansion", CATEGORIES[f.cat]],
+    ["Aquarium", aquariumText(f.aquarium)],
+    ["Canvas", "…"], // filled in from the description below
+    ["Status", caught.has(f.id) ? "Caught" : "Not yet caught"],
+    ["Item ID", String(f.id)],
+  ].filter(Boolean);
+  $("#fvFacts").innerHTML = facts.map(([k, v]) => `<dt>${k}</dt><dd${k === "Canvas" ? ` id="fvCanvas" class="pending"` : ""}>${esc(v)}</dd>`).join("");
+  const desc = $("#fvDesc");
+  desc.innerHTML = `<span class="loading">Loading description…</span>`;
+  loadDescription(f.id).then(text => {
+    if (viewing !== f.id) return;
+    renderDescription(desc, text);
+    const canvas = $("#fvCanvas");
+    canvas.textContent = text ? canvasFrom(text) : "Unavailable right now";
+    canvas.classList.toggle("pending", !text);
+  });
+  hideTip();
+  if (!fishDialog.open) fishDialog.showModal();
+  fishDialog.focus(); // the dialog itself, so the × doesn't show a focus ring on open
+}
+fishDialog.addEventListener("close", () => { viewing = null; });
+$("#fvClose").addEventListener("click", () => fishDialog.close());
+fishDialog.addEventListener("click", e => { if (e.target === fishDialog) fishDialog.close(); }); // click on backdrop
+
 /* ---------- Edit mode and the grid ---------- */
 // Edit mode: clicking a fish only toggles caught while it's on (Import works either way). Always off on page load.
 let editing = false;
@@ -170,7 +247,7 @@ setEditing(false);
 grid.addEventListener("click", e => {
   const t = e.target.closest(".tile[data-id]");
   if (!t) return;
-  if (!editing) { showTip(t); return; } // view only: show details (also handy on touch screens)
+  if (!editing) { openFishView(BY_ID.get(+t.dataset.id)); return; } // view only: open the fish's details
   const id = +t.dataset.id;
   caught.has(id) ? caught.delete(id) : caught.add(id);
   saveCaught(caught);

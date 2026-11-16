@@ -30,7 +30,8 @@ async function loadSnapshot() {
 // Rows are in the game's log order (today the same as the FFXIV Fish Tracker's Fish Guide). The grid shows
 // fish in this order (left to right, top to bottom, 100 per page), so never sort them.
 // Spearfishing rows use the same columns; their "water" is the size class (Small/Average/Big).
-function decode(T, rows = [], spear = false) {
+// aquarium: { itemId: [size 1–4, water] } for fish that can go in an aquarium.
+function decode(T, rows = [], spear = false, aquarium = {}) {
   const oceanRegion = T.reg.indexOf("The High Seas");
   return rows.map(([id, name, icon, lvl, exp, water, region, zone, big, collectable, rarity]) => ({
     id,
@@ -44,11 +45,13 @@ function decode(T, rows = [], spear = false) {
     big: big === 1 || rarity >= 2,             // rarity ≥ 2 = big fish (also covers ocean-fishing rares)
     collectable: collectable === 1,
     spear,
+    aquarium: aquarium[id] ? { size: aquarium[id][0], water: aquarium[id][1] } : null,
   }));
 }
 
 const lists = (raw, extra) => ({
-  fish: decode(raw.tables, raw.rows), spear: decode(raw.tables, raw.spear, true), fetched: raw.fetched, patch: raw.patch, ...extra,
+  fish: decode(raw.tables, raw.rows, false, raw.aquarium), spear: decode(raw.tables, raw.spear, true, raw.aquarium),
+  fetched: raw.fetched, patch: raw.patch, ...extra,
 });
 
 /** Returns { fish, spear, live, fetched, patch, error } — `live` false means the snapshot was used (`error` says why). */
