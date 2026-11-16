@@ -13,6 +13,7 @@ export default async function (t) {
   const d = await t.page({ clock: T0, path: "#route" });
   await d.waitForSelector(".lr-step");
   const ds = await steps(d);
+  t.check("without timed fish: step 1 says Next, no times anywhere", ds[0].when === "Next" && ds.slice(1).every(x => x.when === ""), ds.map(x => x.when));
   t.check("Include timed fish is off by default: no timed steps, a note says how many were left out", !(await d.isChecked("#lrTimed"))
     && ds.every(x => x.kind !== "timed") && /^\d{3} timed fish not in the route — tick Include timed fish to add them\.$/.test(await text(d, ".lr-leftout")), await text(d, "#lrSummary"));
   await d.check("#lrTimed");
@@ -27,7 +28,9 @@ export default async function (t) {
   t.check("summary: fish left, steps, hours", /^1,517 fish left \(0 \/ 1,517 caught\) · \d+ steps · land fishing ≈ \d+ h$/.test(await text(p, "#lrSummary")), await text(p, "#lrSummary"));
   let s = await steps(p);
   t.check("15 steps at a time", s.length === 15);
-  t.check("step 1: 'Now', a timed fish whose window is open", s[0].when === "Now" && s[0].kind === "timed" && s[0].up, s[0]);
+  t.check("step 1: 'Next', a timed fish whose window is open", s[0].when === "Next" && s[0].kind === "timed" && s[0].up, s[0]);
+  t.check("only step 1 says Next; spot stops show no time; later timed steps show ≈ local time", s.slice(1).every(x => x.when !== "Next")
+    && s.filter(x => x.kind === "stop").every(x => x.when === "" || x === s[0]) && s.slice(1).filter(x => x.kind === "timed").every(x => /^≈ /.test(x.when)), s.map(x => [x.kind, x.when]));
   const stop = s.find(x => x.kind === "stop");
   t.check("a spot stop: place + zone + count, a bait line per fish", /^Go to .+, .+ · \d+ fish$/.test(stop.where) && stop.fish.length > 1 && stop.fish.every(f => f.bait.includes("→")), stop);
   t.check("stop zones are the spot's own (Moraby Bay is in Lower La Noscea)", s.filter(x => /Moraby Bay/.test(x.where)).every(x => /Moraby Bay, Lower La Noscea/.test(x.where)));
@@ -85,7 +88,7 @@ export default async function (t) {
   const o = await t.page({ clock: T0, path: "#route", storage: { "odd-caught-v2": JSON.stringify(land) } });
   await o.waitForSelector(".lr-step");
   const os = await steps(o);
-  t.check("ocean only: 259 fish left, every step a voyage stop", /^259 fish left/.test(await text(o, "#lrSummary")) && os.every(x => x.kind === "ocean")
+  t.check("ocean only: 259 fish left, every step a voyage stop, the first labelled Next", /^259 fish left/.test(await text(o, "#lrSummary")) && os.every(x => x.kind === "ocean") && os[0].when === "Next"
     && /^Ocean fishing from Limsa Lominsa Lower Decks \(Indigo route\) — stop Galadion Bay · \d+ fish$/.test(os[0].where), os.map(x => x.where));
   t.check("ocean: spectral-current fish listed separately; time-of-day voyages named", await o.$$eval(".lr-sub", e => e.length) > 0
     && /need a voyage that reaches Galadion Bay then: .*(Day|Sunset|Night)/.test(await o.$eval(".lr-step .lr-notes", e => e.textContent)));

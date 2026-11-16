@@ -249,11 +249,11 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
   const windowStatus = (w, now) => w.start <= now ? `<span class="tm-up">up now</span>, ends in <b>${tmDuration(w.end - now)}</b>`
     : `window opens ${tmLocal(w.start, now)} (in <b>${tmDuration(w.start - now)}</b>), lasts ${tmDuration(w.end - w.start)}`;
 
+  // Labels: render() marks the first step "Next"; later timed steps show the estimated local time they're due.
   function stepHtml(step, n, now) {
     if (step.kind === "stop") {
       const f0 = step.fish[0], baits = [...new Set(step.fish.map(f => chainsAt(f.id, step.spot)[0]?.[0]).filter(Boolean))];
-      return `<div class="lr-when">${step.at <= now + 60 ? "Now" : `≈ ${tmLocal(step.at, now)}`}</div>
-        <div class="lr-where">Go to ${spotHtml(step.spot, f0)} · ${step.fish.length} fish</div>
+      return `<div class="lr-where">Go to ${spotHtml(step.spot, f0)} · ${step.fish.length} fish</div>
         <div class="lr-notes">Bring: ${baits.map(itemHtml).join(", ") || "—"}</div>
         <ol class="lr-fish">${step.fish.map(f => fishRow(f, step.spot)).join("")}</ol>`;
     }
@@ -261,7 +261,7 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
       const { f, e, w } = step, t = base.windows.get(f.id);
       const hours = t.start === t.end ? "" : `ET ${tmEtHour(t.start)}–${tmEtHour(t.end)}`;
       const weather = (t.prev ? weatherHtml([...t.prev]) + `<span class="tm-arrow" title="then">→</span>` : "") + (t.weather ? weatherHtml([...t.weather]) : "");
-      return `<div class="lr-when">${step.at <= now + 60 ? "Now" : `≈ ${tmLocal(step.at, now)}`}</div>
+      return `${n === 1 ? "" : `<div class="lr-when">≈ ${tmLocal(step.at, now)}</div>`}
         <div class="lr-where">Go to ${spotHtml(e.spot, f)} for a timed fish</div>
         <div class="lr-notes">${[hours, weather && `<span class="tm-weather">${weather}</span>`].filter(Boolean).join(" ")} — <span class="lr-countdown">${windowStatus(w, now)}</span></div>
         <ol class="lr-fish">${fishRow(f, e.spot)}</ol>`;
@@ -341,7 +341,7 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
         + (plan.missed ? `<div class="lr-missed">${plan.missed} timed fish missed ${plan.missed === 1 ? "its" : "their"} window — <b>Re-plan</b> to fit ${plan.missed === 1 ? "it" : "them"} back in.</div>` : "")
       : `Fish Guide complete! 🎉`;
     list.innerHTML = plan.left ? `<ol class="lr-steps">${visible.map((s, i) => `<li class="lr-step ${s.kind}${s.kind === "timed" && s.w.start <= now ? " up" : ""}" data-step="${stepId(s)}">
-        <span class="ns-rank">${i + 1}</span><div class="lr-body">${stepHtml(s, i + 1, now)}</div></li>`).join("")}</ol>`
+        <span class="ns-rank">${i + 1}</span><div class="lr-body">${i === 0 ? `<div class="lr-when">Next</div>` : ""}${stepHtml(s, i + 1, now)}</div></li>`).join("")}</ol>`
       + (steps.length > shown ? `<button type="button" class="btn ns-more-ach" id="lrMore">Show ${Math.min(STEP_PAGE, steps.length - shown)} more steps (${steps.length - shown} left)</button>` : "")
       : `<div class="empty-msg">Every Fish Guide fish is caught. 🎉</div>`;
   }
