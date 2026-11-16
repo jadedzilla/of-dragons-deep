@@ -16,6 +16,7 @@ export default async function (t) {
   const html = await readFile(new URL("dist/index.html", ROOT), "utf8");
   t.check("single file: scripts, styles, data and sheets inlined", !/<script[^>]+src=/.test(html) && !/href="src\/styles\.css"/.test(html)
     && html.includes("__FISH_DATA__") && /data:image\/webp;base64,/.test(html), (await stat(new URL("dist/index.html", ROOT))).size);
+  t.check("single file: no manifest (can't install from disk), apple-touch-icon inlined", !html.includes('rel="manifest"') && /<link rel="apple-touch-icon" href="data:image\/png;base64,/.test(html));
   t.check("single file: favicon inlined", /<link rel="icon" type="image\/png" href="data:image\/png;base64,/.test(html) && !html.includes('"public/'));
   const p = await t.page({ path: DIST });
   await gridReady(p);
@@ -48,6 +49,9 @@ export default async function (t) {
   await build("--external-icons");
   const ext = await readFile(new URL("dist/index.html", ROOT), "utf8");
   const sheets = [...ext.matchAll(/icons\/(sheet-\d+\.webp)\?v=([0-9a-f]{10})/g)];
+  const manifest = JSON.parse(await readFile(new URL("dist/manifest.webmanifest", ROOT), "utf8"));
+  t.check("external icons build: manifest + its icons + apple-touch-icon copied", ext.includes('<link rel="manifest" href="manifest.webmanifest">')
+    && (await Promise.all([...manifest.icons.map(i => i.src), "public/app-icon-180.png"].map(f => stat(new URL(`dist/${f}`, ROOT))))).length === 4);
   t.check("external icons build: favicon copied next to the page", ext.includes('href="public/neptodragon-icon-clean-512x.png"') && !!(await stat(new URL("dist/public/neptodragon-icon-clean-512x.png", ROOT))));
   t.check("external icons: 13 sheets with ?v= content hashes", sheets.length === 13 && (await Promise.all(sheets.map(m => stat(new URL(`dist/icons/${m[1]}`, ROOT))))).length === 13, sheets.length);
 }

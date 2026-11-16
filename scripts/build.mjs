@@ -41,8 +41,19 @@ html = html
   .replace('<script type="module" src="src/main.js"></script>',
     () => `<script>window.__FISH_DATA__ = ${data};\nwindow.__ICON_DATA__ = ${JSON.stringify(icons)};</script>\n<script type="module">\n${js}</script>`);
 
-// Files from public/ referenced by the page (the favicon): inlined as data: URIs in the single file, copied next to
-// the page with --external-icons.
+// Web app manifest (home-screen install): copied with the icons it lists for --external-icons. The single file drops
+// it — an app can't be installed from a file opened from disk, and a data: manifest has no origin to resolve against.
+if (externalIcons) {
+  const manifest = JSON.parse(await read("manifest.webmanifest"));
+  await copyFile(new URL("manifest.webmanifest", root), new URL("dist/manifest.webmanifest", root));
+  await mkdir(new URL("dist/public/", root), { recursive: true });
+  for (const icon of manifest.icons) await copyFile(new URL(icon.src, root), new URL(`dist/${icon.src}`, root));
+} else {
+  html = html.replace(/<link rel="manifest"[^>]*>\n?/, "");
+}
+
+// Files from public/ referenced by the page (favicon, apple-touch-icon): inlined as data: URIs in the single file,
+// copied next to the page with --external-icons.
 for (const path of new Set([...html.matchAll(/(?:href|src)="(public\/[^"]+)"/g)].map(m => m[1]))) {
   if (externalIcons) {
     await mkdir(new URL("dist/public/", root), { recursive: true });

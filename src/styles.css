@@ -9,10 +9,13 @@
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0;min-height:100%}
+@media (display-mode:standalone){body{overscroll-behavior-y:none}} /* no pull-to-refresh bounce when opened as an app */
 body{
   font-family:"Noto Sans",sans-serif;color:var(--text);
   background:radial-gradient(ellipse at top,#22304f 0%,var(--bg1) 60%) fixed, var(--bg1);
   display:flex;flex-direction:column;align-items:center;padding:28px 12px 70px; /* bottom room for the tabs under the window */
+  /* full-screen home-screen app: keep clear of the notch, status bar and home indicator (0 in a normal browser tab) */
+  padding:calc(28px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(70px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
 }
 /* navigation bar above the window: Fish Guide / Fish Timers */
 .topnav{width:100%;max-width:720px;display:flex;gap:6px;margin:0 0 10px;padding:0 4px}

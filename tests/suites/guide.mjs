@@ -18,6 +18,19 @@ export default async function (t) {
     return !!l && /neptodragon-icon-clean-512x\.png$/.test(l.getAttribute("href")) && (await fetch(l.href)).ok;
   }));
 
+  // home-screen app: manifest (standalone, icons) + iOS tags; Chromium says it's installable
+  const app = await p.evaluate(async () => {
+    const m = await (await fetch(document.querySelector('link[rel="manifest"]').href)).json();
+    const icons = await Promise.all(m.icons.map(i => fetch(new URL(i.src, document.querySelector('link[rel="manifest"]').href)).then(r => r.ok)));
+    const meta = n => document.querySelector(`meta[name="${n}"]`)?.content;
+    return { display: m.display, start: m.start_url, icons: icons.every(Boolean) && icons.length === 3, ios: meta("apple-mobile-web-app-capable"),
+      touch: (await fetch(document.querySelector('link[rel="apple-touch-icon"]').href)).ok, cover: /viewport-fit=cover/.test(meta("viewport")) };
+  });
+  t.check("home-screen app: standalone manifest, icons load, iOS tags", app.display === "standalone" && app.start === "./" && app.icons && app.ios === "yes" && app.touch && app.cover, app);
+  const cdp = await p.context().newCDPSession(p);
+  const { installabilityErrors } = await cdp.send("Page.getInstallabilityErrors");
+  t.check("Chromium: installable as an app", installabilityErrors.length === 0, installabilityErrors);
+
   // paging: arrows and search never move
   const pos = () => p.evaluate(() => ["#pages .pg.arrow:first-child", "#pages .pg.arrow:last-child", "#search"].map(s => Math.round(document.querySelector(s).getBoundingClientRect().left)).join());
   const seen = new Set([await pos()]), active = new Set();

@@ -17,6 +17,14 @@ Deploy: `.github/workflows/pages.yml` runs `node scripts/build.mjs --external-ic
 
 **Workflow rule (from the project owner): never commit, push or deploy without explicit confirmation.** After making a change, show the owner the new version first (publish a preview, plus screenshots/summary), then ask and wait for their OK. Pushing to `main` deploys to GitHub Pages, so it needs the same confirmation.
 
+## Home-screen app
+
+Added to a phone's home screen, the app opens full screen like a native app (no address bar):
+- Android/Chrome: `manifest.webmanifest` — `display: standalone`, `start_url`/`scope` `./` (relative, so it works under the Pages sub-path), name "Of Dragons Deep" / short name "Dragons Deep", theme/background `#0d1220`, icons 192/512 + a maskable 512. Chromium reports it installable (checked in the guide test via `Page.getInstallabilityErrors`). No service worker: the pages still need the network (fish data falls back to the snapshot as usual).
+- iOS Safari: `apple-mobile-web-app-capable`, status bar `black-translucent` (content runs under the status bar), title "Dragons Deep", `apple-touch-icon` = `public/app-icon-180.png`. Because of the translucent status bar and `viewport-fit=cover`, `body` padding adds `env(safe-area-inset-*)` (notch, home indicator; 0 in a normal tab). In standalone mode pull-to-refresh bounce is off.
+- Builds: `--external-icons` (Pages) copies the manifest and its icons; the single file drops the manifest link (a file opened from disk can't be installed) and inlines the apple-touch-icon.
+- Regenerate the icons from the clean dragon with `node scripts/app-icons.mjs` (Playwright).
+
 ## Tests
 
 `npm test` after changes (and look at the page in a browser for anything visual). `tests/run.mjs` serves the repo, launches one Chromium and runs `tests/suites/*.mjs` in parallel (4 at a time); every page gets its own browser context (own localStorage). **No network**: `tests/lib/network.mjs` answers XIVAPI/Teamcraft from `tests/fixtures/network.json.gz` (exact recorded URLs, plus `?rows=` lookups filtered from recorded tables), XIVAPI images with a 1×1 PNG, and aborts anything else (fonts). A suite overrides a URL with `page.route()` (e.g. to simulate an outage). Re-record with `npm run test:record` when the game data or the app's requests change; the recorder runs the app's own loaders, so URLs always match.
@@ -39,8 +47,10 @@ Writing tests: `export default async t => {…}` with `t.page({ width, height, p
 - `scripts/fetch-fish-data.mjs` — refreshes the fallback snapshot using `src/fishsource.js`
 - `scripts/fetch-icons.mjs` — icon downloader (writes PNG sheets); `scripts/webp-sheets.mjs` — converts them to WebP via headless Chromium; `scripts/png.mjs` — tiny PNG decode/encode used to pack sheets
 - `scripts/build.mjs`, `scripts/serve.mjs` — build and dev server
+- `scripts/app-icons.mjs` — makes the home-screen icons in `public/` (headless Chromium)
 - `tests/` — `run.mjs` (runner), `suites/*.mjs`, `lib/` (network mock, helpers), `fixtures/` (recorded network + `record.mjs`)
-- `public/` — branding: `neptodragon-icon-clean-512x.png` (favicon, transparent), `ofdragonsdeep-banner.png` (README header, Nepto Dragon from FFIII), `neptodragon-icon-512x.png` (textured version, unused); `robots.txt` is left over from an earlier version. Any `public/…` path in `index.html` is inlined as a data: URI by the build (copied to `dist/public/` with `--external-icons`).
+- `public/` — branding: `neptodragon-icon-clean-512x.png` (favicon, transparent), `app-icon-180/192/512.png` + `app-icon-maskable-512.png` (home-screen icons: the dragon on the app's dark blue, made by `scripts/app-icons.mjs`), `ofdragonsdeep-banner.png` (README header, Nepto Dragon from FFIII), `neptodragon-icon-512x.png` (textured version, unused); `robots.txt` is left over from an earlier version. Any `public/…` path in `index.html` is inlined as a data: URI by the build (copied to `dist/public/` with `--external-icons`).
+- `manifest.webmanifest` — web app manifest for adding to the home screen (see Home-screen app)
 - `data/fish.json` — committed fallback snapshot (`rows` = Fish Guide, `spear` = spearfishing log), used when the live fetch fails
 - `data/icons.json` + `data/icons/sheet-NN.webp` — committed icon snapshot (1,243 unique icons — fishing first, then spearfishing — 80×80, 10×10 per sheet; WebP q0.82, ≈1.7 MB for all 13)
 

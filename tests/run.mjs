@@ -12,7 +12,7 @@ import { mockNetwork } from "./lib/network.mjs";
 
 const { chromium } = createRequire(import.meta.url)("playwright");
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
-const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".webp": "image/webp", ".svg": "image/svg+xml" };
+const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".webp": "image/webp", ".svg": "image/svg+xml", ".webmanifest": "application/manifest+json" };
 const CONCURRENCY = 4;
 
 // static server for the dev files (like npm run dev)
