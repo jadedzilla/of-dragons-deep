@@ -54,7 +54,12 @@
     <div class="grid" id="grid"><div class="empty-msg">Loading the Fish Guide from XIVAPI…</div></div>
 
     <div class="footer">
-      <div><span id="hint">Turn on <b>Edit</b> to mark fish as caught.</span> <span id="showing" class="showing"></span><div id="dataNote" class="note"></div></div>
+      <div><span id="hint">Turn on <b>Edit</b> to mark fish as caught.</span> <span id="showing" class="showing"></span>
+        <div class="bulk" id="bulkBar" hidden>
+          <button type="button" class="btn small" id="markAllBtn">Mark all caught</button>
+          <button type="button" class="btn small" id="unmarkAllBtn">Mark all uncaught</button>
+        </div>
+        <div id="dataNote" class="note"></div></div>
       <div class="legend">
         <span id="bigLegend"><i style="background:var(--gold-hi);transform:rotate(45deg)"></i>Big fish</span>
         <span><i class="check"></i>Caught</span>
@@ -83,6 +88,16 @@
     <div class="actions">
       <button type="button" class="btn" id="importCancel">Close</button>
       <button type="submit" class="btn primary" id="importGo" value="import">Import</button>
+    </div>
+  </form>
+</dialog>
+<dialog class="import-dialog confirm-dialog" id="bulkDialog" aria-labelledby="bulkTitle">
+  <form method="dialog">
+    <h2 id="bulkTitle"></h2>
+    <p class="hint" id="bulkText"></p>
+    <div class="actions">
+      <button type="submit" class="btn" value="cancel" id="bulkCancel">Cancel</button>
+      <button type="submit" class="btn primary" value="confirm" id="bulkGo"></button>
     </div>
   </form>
 </dialog>

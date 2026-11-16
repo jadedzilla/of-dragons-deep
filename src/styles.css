@@ -263,6 +263,12 @@ body{
 .btn:hover{border-color:var(--gold-hi);color:var(--gold-hi)}
 .btn.primary{color:#1b1608;background:linear-gradient(180deg,var(--gold-hi),var(--gold));border-color:var(--gold-hi)}
 .btn.primary:hover{color:#1b1608;filter:brightness(1.08)}
+.btn.small{height:26px;padding:0 10px;font-size:12px}
+.bulk{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.bulk[hidden]{display:none}
+.confirm-dialog{width:min(400px,calc(100vw - 32px))}
+.confirm-dialog .hint{font-size:13px;color:var(--text);margin-bottom:14px}
+.confirm-dialog .hint b{color:var(--gold-hi)}
 .btn.danger{background:linear-gradient(180deg,#e0866a,#b4513a);border-color:#f0a58c;color:#1b0b06}
 
 @media (max-width:520px){

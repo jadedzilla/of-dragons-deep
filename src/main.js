@@ -295,9 +295,46 @@ function setEditing(on) {
   editBtn.setAttribute("aria-pressed", on);
   grid.classList.toggle("editing", on);
   $("#hint").innerHTML = on ? "<b>Editing:</b> click a fish to mark it caught." : "Turn on <b>Edit</b> to mark fish as caught.";
+  $("#bulkBar").hidden = !on;
 }
 editBtn.addEventListener("click", () => setEditing(!editing));
 setEditing(false);
+
+// Edit mode also offers "Mark all caught" / "Mark all uncaught" for the list on the current tab, each confirmed in a
+// dialog first (not confirm(), which sandboxed iframes block).
+const bulkDialog = $("#bulkDialog");
+let bulkAction = null;
+function askBulk(markCaught) {
+  const tab = mode === "spear" ? "Spearfishing" : "Fishing", noun = mode === "spear" ? "spearfish" : "fish";
+  const have = countCaught(FISH), total = FISH.length, n = (markCaught ? total - have : have).toLocaleString("en-US");
+  $("#bulkTitle").textContent = markCaught ? `Mark all ${noun} as caught?` : `Mark all ${noun} as uncaught?`;
+  $("#bulkText").innerHTML = markCaught
+    ? (have === total ? `Every ${noun} on the ${tab} tab is already caught.`
+      : have === 0 ? `This marks all <b>${n}</b> ${noun} on the ${tab} tab as caught.`
+      : `This marks the remaining <b>${n}</b> ${noun} on the ${tab} tab as caught, so all ${total.toLocaleString("en-US")} will be caught.`)
+    : (have === 0 ? `No ${noun} on the ${tab} tab are marked caught.` : `This unmarks all <b>${n}</b> caught ${noun} on the ${tab} tab. It can't be undone (except by marking them again or re-importing).`);
+  const go = $("#bulkGo");
+  go.hidden = markCaught ? have === total : have === 0;
+  go.textContent = markCaught ? "Mark all caught" : "Unmark all";
+  go.classList.toggle("danger", !markCaught);
+  go.classList.toggle("primary", markCaught);
+  $("#bulkCancel").textContent = go.hidden ? "Close" : "Cancel";
+  bulkAction = markCaught;
+  bulkDialog.showModal();
+  $("#bulkCancel").focus(); // the safe choice is focused, so Enter doesn't confirm by accident
+}
+bulkDialog.addEventListener("close", () => {
+  if (bulkDialog.returnValue === "confirm" && bulkAction !== null) {
+    for (const f of FISH) bulkAction ? caught.add(f.id) : caught.delete(f.id);
+    saveCaught(caught);
+    render();
+  }
+  bulkAction = null;
+  bulkDialog.returnValue = "";
+});
+bulkDialog.addEventListener("click", e => { if (e.target === bulkDialog) bulkDialog.close(); }); // click on backdrop
+$("#markAllBtn").addEventListener("click", () => askBulk(true));
+$("#unmarkAllBtn").addEventListener("click", () => askBulk(false));
 
 grid.addEventListener("click", e => {
   const t = e.target.closest(".tile[data-id]");
