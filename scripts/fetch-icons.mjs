@@ -53,8 +53,9 @@ async function fetchIcon(id) {
   return lr ? { img: toSize(decodePng(lr)), hr: false } : null;
 }
 
-const { rows } = JSON.parse(await readFile(new URL("data/fish.json", root), "utf8"));
-const ids = [...new Set(rows.map(r => r[2]).filter(Boolean))];
+const { rows, spear = [] } = JSON.parse(await readFile(new URL("data/fish.json", root), "utf8"));
+// Fishing icons first, then spearfishing, so adding spearfish never moves an existing icon to another sheet.
+const ids = [...new Set([...rows, ...spear].map(r => r[2]).filter(Boolean))];
 console.log(`Downloading ${ids.length} icons from v2.xivapi.com …`);
 
 const results = new Array(ids.length);

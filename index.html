@@ -50,10 +50,14 @@
     <div class="footer">
       <div><span id="hint">Turn on <b>Edit</b> to mark fish as caught.</span> <span id="showing" class="showing"></span><div id="dataNote" class="note"></div></div>
       <div class="legend">
-        <span><i style="background:var(--gold-hi);transform:rotate(45deg)"></i>Big fish</span>
+        <span id="bigLegend"><i style="background:var(--gold-hi);transform:rotate(45deg)"></i>Big fish</span>
         <span><i class="check"></i>Caught</span>
       </div>
     </div>
+  </div>
+  <div class="tabs" id="tabs" role="tablist" aria-label="Guide">
+    <button class="tab active" type="button" role="tab" aria-selected="true" data-mode="fish">Fishing</button>
+    <button class="tab" type="button" role="tab" aria-selected="false" data-mode="spear">Spearfishing</button>
   </div>
 </div>
 <dialog class="import-dialog" id="importDialog">

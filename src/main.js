@@ -8,20 +8,49 @@ const $ = s => document.querySelector(s);
 const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const grid = $("#grid"), pagesEl = $("#pages"), tip = $("#tooltip");
 
-const [{ fish: FISH, live, fetched, patch, error }] = await Promise.all([loadFish(), loadIcons()]);
-const BY_ID = new Map(FISH.map(f => [f.id, f]));
+const [{ fish: FISH_LIST, spear: SPEAR_LIST, live, fetched, patch, error }] = await Promise.all([loadFish(), loadIcons()]);
+// Two lists, switched with the tabs under the window: the Fish Guide and the spearfishing log.
+// Caught state, lookups and Import cover both (their item ids never overlap).
+const LISTS = { fish: FISH_LIST, spear: SPEAR_LIST };
+const TAB_KEY = "odd-tab";
+let mode = "fish";
+try { if (localStorage.getItem(TAB_KEY) === "spear" && SPEAR_LIST.length) mode = "spear"; } catch { /* storage unavailable */ }
+let FISH = LISTS[mode]; // the list currently shown
+const BY_ID = new Map([...FISH_LIST, ...SPEAR_LIST].map(f => [f.id, f]));
 const caught = loadCaught(new Set(BY_ID.keys()));
 
 const allCats = () => new Set(CATEGORIES.map((_, i) => i));
 const filters = { status: "all", cats: allCats(), bigOnly: false, collOnly: false };
 let page = 0, query = "";
 
-$("#expFilters").innerHTML = CATEGORIES.map((c, i) =>
-  `<label><input type="checkbox" data-cat="${i}" checked> ${c} <span class="n">${FISH.filter(f => f.cat === i).length}</span></label>`).join("");
-$("#dataNote").textContent = live
-  ? `${FISH.length} fish · live game data from XIVAPI${patch ? ` (patch ${patch})` : ""}`
-  : `${FISH.length} fish · offline snapshot from ${fetched}${patch ? `, patch ${patch}` : ""} (couldn't reach XIVAPI: ${error})`;
-$("#dataNote").classList.toggle("offline", !live);
+// Category checkboxes for the current list (categories it doesn't use are hidden; their state is kept).
+// Lists without big fish (spearfishing) also hide "Big fish only" and the legend; the setting is kept for later.
+let hasBig = true;
+function buildCatFilters() {
+  hasBig = FISH.some(f => f.big);
+  $("#bigOnly").closest("label").hidden = !hasBig;
+  $("#bigLegend").hidden = !hasBig;
+  $("#expFilters").innerHTML = CATEGORIES.map((c, i) => {
+    const n = FISH.filter(f => f.cat === i).length;
+    return n ? `<label><input type="checkbox" data-cat="${i}"${filters.cats.has(i) ? " checked" : ""}> ${c} <span class="n">${n}</span></label>` : "";
+  }).join("");
+}
+function updateNote() {
+  const what = mode === "spear" ? "spearfish" : "fish";
+  $("#dataNote").textContent = live
+    ? `${FISH.length} ${what} · live game data from XIVAPI${patch ? ` (patch ${patch})` : ""}`
+    : `${FISH.length} ${what} · offline snapshot from ${fetched}${patch ? `, patch ${patch}` : ""} (couldn't reach XIVAPI: ${error})`;
+  $("#dataNote").classList.toggle("offline", !live);
+}
+const tabs = document.querySelectorAll("#tabs .tab");
+function setMode(m) {
+  mode = m; FISH = LISTS[m]; page = 0;
+  tabs.forEach(t => { const on = t.dataset.mode === m; t.classList.toggle("active", on); t.setAttribute("aria-selected", on); });
+  try { localStorage.setItem(TAB_KEY, m); } catch { /* storage unavailable */ }
+  buildCatFilters(); updateNote();
+}
+tabs.forEach(t => t.addEventListener("click", () => { if (t.dataset.mode !== mode) { setMode(t.dataset.mode); render(); } }));
+$("#tabs").hidden = !SPEAR_LIST.length;
 
 // Filtering keeps source order (the tracker's Fish Guide order); don't sort.
 function visible() {
@@ -29,7 +58,7 @@ function visible() {
   return FISH.filter(f =>
     (!q || f.name.toLowerCase().includes(q) || f.zone.toLowerCase().includes(q)) &&
     filters.cats.has(f.cat) &&
-    (!filters.bigOnly || f.big) &&
+    (!filters.bigOnly || f.big || !hasBig) &&
     (!filters.collOnly || f.collectable) &&
     (filters.status === "all" || (filters.status === "caught") === caught.has(f.id))
   );
@@ -87,10 +116,10 @@ function render() {
     grid.innerHTML = html;
   }
 
-  $("#caughtCount").textContent = caught.size;
+  $("#caughtCount").textContent = FISH.reduce((n, f) => n + caught.has(f.id), 0);
   $("#totalCount").textContent = FISH.length;
   $("#showing").textContent = list.length === FISH.length ? "" : `${list.length} match`;
-  const active = (filters.status !== "all") + (filters.cats.size !== CATEGORIES.length) + filters.bigOnly + filters.collOnly;
+  const active = (filters.status !== "all") + (filters.cats.size !== CATEGORIES.length) + (filters.bigOnly && hasBig) + filters.collOnly;
   const fc = $("#filterCount");
   fc.textContent = active;
   fc.classList.toggle("on", active > 0);
@@ -105,7 +134,7 @@ function showTip(t) {
   const tags = [f.big ? "Big fish" : "", f.collectable ? "Collectable" : ""].filter(Boolean).join(" · ");
   tip.innerHTML = `<div class="n">${esc(f.name)}</div>
     <div class="m">${esc(f.zone)}${f.zone !== f.region ? ", " + esc(f.region) : ""}</div>
-    <div class="m">${esc(f.water)}${f.cat !== OCEAN_FISHING ? " · Lv. " + f.lvl : ""} · ${CATEGORIES[f.cat]}</div>
+    <div class="m">${f.spear ? "Spearfishing · " : ""}${esc(f.water)}${f.cat !== OCEAN_FISHING ? " · Lv. " + f.lvl : ""} · ${CATEGORIES[f.cat]}</div>
     ${tags ? `<div class="t">${tags}</div>` : ""}
     <div class="m">${caught.has(f.id) ? "✔ Caught" : "Not yet caught"}</div>`;
   const r = t.getBoundingClientRect();
@@ -246,7 +275,10 @@ $("#importForm").addEventListener("submit", e => {
 
   const parts = [`Marked <b>${added}</b> new fish as caught` + (known.length - added ? ` (${known.length - added} already caught)` : "") + "."];
   if (removed.length) parts.push(`Unmarked <b>${removed.length}</b> fish not in the list.`);
-  parts.push(`You now have <b>${caught.size}</b> / ${FISH.length} caught.`);
+  const have = list => list.reduce((n, f) => n + caught.has(f.id), 0);
+  parts.push(SPEAR_LIST.length
+    ? `You now have <b>${have(FISH_LIST)}</b> / ${FISH_LIST.length} fish and <b>${have(SPEAR_LIST)}</b> / ${SPEAR_LIST.length} spearfish caught.`
+    : `You now have <b>${have(FISH_LIST)}</b> / ${FISH_LIST.length} caught.`);
   if (unknown.length) parts.push(`<div class="sub">Skipped ${unknown.length} ID${unknown.length > 1 ? "s that aren't fish" : " that isn't a fish"}: ${listSample(unknown)}</div>`);
   if (invalid.length) parts.push(`<div class="sub">Skipped ${invalid.length} entr${invalid.length > 1 ? "ies that aren't numbers" : "y that isn't a number"}: ${listSample(invalid)}</div>`);
   // Success: close the dialog and show the summary as a short-lived notice instead.
@@ -314,6 +346,7 @@ $("#resetFilters").addEventListener("click", () => {
   render();
 });
 
+setMode(mode);
 render();
 
 // Then, once the first page is showing, quietly load the remaining sheets (≈1.5 MB in all) so every page

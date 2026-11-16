@@ -8,16 +8,33 @@
   --caught-check:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12.5l5 5L20 6.5' stroke='%23000' stroke-width='7' stroke-opacity='.75'/%3E%3Cpath d='M4 12.5l5 5L20 6.5' stroke='%2366d36e' stroke-width='3.6'/%3E%3C/svg%3E");
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;min-height:100%}
 body{
   font-family:"Noto Sans",sans-serif;color:var(--text);
   background:radial-gradient(ellipse at top,#22304f 0%,var(--bg1) 60%) fixed, var(--bg1);
-  display:flex;justify-content:center;padding:28px 12px;
+  display:flex;justify-content:center;padding:28px 12px 70px; /* bottom room for the tabs under the window */
 }
 .window{
-  width:100%;max-width:720px;background:var(--panel);
+  position:relative;width:100%;max-width:720px;background:var(--panel);
   border:1px solid var(--gold-dim);border-radius:10px;
   box-shadow:0 0 0 1px #000,0 0 0 3px rgba(201,169,92,.18),0 18px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06);
+}
+/* Fishing / Spearfishing tabs hanging from the bottom-left of the window, like in-game window tabs.
+   The active tab overlaps the window's bottom border so it reads as part of the window. */
+.tabs{position:absolute;top:100%;left:18px;display:flex;gap:4px;align-items:flex-start}
+.tabs[hidden]{display:none}
+.tab{
+  margin-top:3px;height:30px;padding:0 16px;cursor:pointer;
+  font:700 12px Cinzel,serif;letter-spacing:.08em;color:var(--muted);
+  background:linear-gradient(0deg,#1a1f2e,#141824);border:1px solid #4a4434;border-top:0;border-radius:0 0 8px 8px;
+  box-shadow:0 6px 12px rgba(0,0,0,.45);transition:color .12s,border-color .12s;
+}
+.tab:hover{color:var(--text);border-color:var(--gold-dim)}
+.tab.active{
+  margin-top:-1px;height:34px;color:var(--gold-hi);cursor:default;
+  background:linear-gradient(0deg,#1d2232,var(--panel) 70%);border-color:var(--gold-dim);
+  text-shadow:0 0 8px rgba(241,220,160,.3);box-shadow:0 0 0 1px #000,0 8px 16px rgba(0,0,0,.5);clip-path:inset(1px -20px -20px -20px);
 }
 .titlebar{
   display:flex;align-items:center;justify-content:space-between;
@@ -147,7 +164,7 @@ body{
 .footer .note.offline{color:#d9a35b;opacity:.9}
 .footer .showing{color:var(--gold)}
 .footer{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font-size:12px;color:var(--muted)}
-.legend span{margin-left:12px}
+.legend span{margin-left:12px;white-space:nowrap}
 .legend i{display:inline-block;width:8px;height:8px;margin-right:4px;vertical-align:middle}
 .legend i.check{width:13px;height:13px;margin-top:-2px;background:var(--caught-check) center/contain no-repeat}
 .empty-msg{grid-column:1/-1;text-align:center;padding:40px 0;color:var(--muted);font-size:14px}

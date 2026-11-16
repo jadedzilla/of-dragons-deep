@@ -8,7 +8,11 @@
 //   FishingRecordType.Addon.Text                                water type (Coastlines, Rivers, …)
 //   FishingSpot.TerritoryType.PlaceNameRegion / PlaceName       region / zone
 //   Unknown1                                                    ocean-fishing guide number (see fishGuideOrder)
-// Requests pin the XIVAPI schema revision so field names (notably Unknown1) can't change under us.
+// Spearfishing comes from the SpearfishingItem sheet (rows with IsInLog; the spearfishing log), in row order, with
+//   FishingRecordType.Addon.Text as the size class (Small/Average/Big) in place of water type,
+//   SpearfishingNotebook.TerritoryType.PlaceNameRegion / PlaceName as region / zone, and
+//   Unknown2 = expansion bucket (4000 Stormblood … 7000 Dawntrail).
+// Requests pin the XIVAPI schema revision so field names (notably Unknown1/Unknown2) can't change under us.
 
 export const XIVAPI = "https://v2.xivapi.com/api";
 export const XIVAPI_SCHEMA = "exdschema@2:rev:e773c41a90aed788cf4c1c48469fa85618ef01fb";
@@ -21,11 +25,19 @@ const FIELDS = [
   "FishingRecordType.Addon.Text",
   "FishingSpot.TerritoryType.PlaceName.Name", "FishingSpot.TerritoryType.PlaceNameRegion.Name",
 ].join(",");
+const SPEAR_FIELDS = [
+  "IsInLog", "Unknown2",
+  "Item.Name", "Item.Icon", "Item.IsCollectable", "Item.Rarity",
+  "GatheringItemLevel.GatheringItemLevel",
+  "FishingRecordType.Addon.Text",
+  "SpearfishingNotebook.TerritoryType.PlaceName.Name", "SpearfishingNotebook.TerritoryType.PlaceNameRegion.Name",
+].join(",");
 const PAGE = 500;          // XIVAPI's maximum page size
-const WINDOWS = 4;         // pages fetched in parallel up front (the Fish Guide is rows 1…~1520)
+const WINDOWS = 4;         // FishParameter pages fetched in parallel up front (the Fish Guide is rows 1…~1520)
 
-const pageUrl = after => `${XIVAPI}/sheet/FishParameter?limit=${PAGE}&schema=${encodeURIComponent(XIVAPI_SCHEMA)}`
-  + `&fields=${FIELDS}` + (after >= 0 ? `&after=${after}` : "");
+const pageUrl = (after, sheet = "FishParameter", fields = FIELDS) =>
+  `${XIVAPI}/sheet/${sheet}?limit=${PAGE}&schema=${encodeURIComponent(XIVAPI_SCHEMA)}`
+  + `&fields=${fields}` + (after >= 0 ? `&after=${after}` : "");
 
 async function getJson(url, fetchFn, signal) {
   const r = await fetchFn(url, { signal });
@@ -46,12 +58,15 @@ async function fetchFishParameterRows(fetchFn, signal) {
   return { rows: [...byId.values()], version: pages[0].version };
 }
 
-/** Game patch name (e.g. "7.58") for an XIVAPI data version key; null if it can't be found. */
-async function patchName(versionKey, fetchFn, signal) {
-  try {
-    const { versions } = await getJson(`${XIVAPI}/version`, fetchFn, signal);
-    return versions.find(v => v.key === versionKey)?.names.find(n => n !== "latest") ?? null;
-  } catch { return null; }
+/** All SpearfishingItem rows (≈320 today, so normally one page; keeps paging if it ever grows). */
+async function fetchSpearfishingRows(fetchFn, signal) {
+  const rows = [];
+  for (let after = -1; ;) {
+    const p = await getJson(pageUrl(after, "SpearfishingItem", SPEAR_FIELDS), fetchFn, signal);
+    rows.push(...p.rows);
+    if (p.rows.length < PAGE) return rows;
+    after = p.rows.at(-1).row_id;
+  }
 }
 
 /**
@@ -86,8 +101,8 @@ function expansionOf(level, region) {
 // Read a nested XIVAPI field: f(row, "Item", "Name") → row.fields.Item.fields.Name
 const f = (node, ...path) => path.reduce((v, k) => v?.fields?.[k], node);
 
-/** Build the compact dataset from FishParameter rows. */
-export function buildDataset(fishParameterRows, meta) {
+/** Build the compact dataset from FishParameter rows (and SpearfishingItem rows, if given). */
+export function buildDataset(fishParameterRows, meta, spearfishingRows = []) {
   const tables = { rec: [], reg: [], zone: [] };
   const idx = (t, v) => {
     let i = tables[t].indexOf(v);
@@ -106,12 +121,30 @@ export function buildDataset(fishParameterRows, meta) {
       rarity >= 2 ? 1 : 0, f(r, "Item", "IsCollectable") ? 1 : 0, rarity,
     ];
   });
-  return { source: `${XIVAPI}/sheet/FishParameter`, ...meta, columns: FISH_COLUMNS, tables, rows };
+  // Spearfishing log: row order; expansion from Unknown2 (4000 = Stormblood → 2), else level/region.
+  const spear = spearfishingRows.filter(r => r.fields.IsInLog && f(r, "Item")?.value > 0)
+    .sort((a, b) => a.row_id - b.row_id).map(r => {
+      const level = f(r, "GatheringItemLevel", "GatheringItemLevel");
+      const territory = f(r, "SpearfishingNotebook", "TerritoryType");
+      const region = f(territory, "PlaceNameRegion", "Name") ?? "", zone = f(territory, "PlaceName", "Name") ?? "";
+      const bucket = Math.floor((r.fields.Unknown2 ?? 0) / 1000) - 2;
+      const rarity = f(r, "Item", "Rarity");
+      return [
+        f(r, "Item").value, f(r, "Item", "Name"), f(r, "Item", "Icon")?.id ?? 0, level,
+        bucket >= 0 && bucket <= 5 ? bucket : expansionOf(level, region),
+        idx("rec", f(r, "FishingRecordType", "Addon", "Text") ?? ""), idx("reg", region), idx("zone", zone),
+        rarity >= 2 ? 1 : 0, f(r, "Item", "IsCollectable") ? 1 : 0, rarity,
+      ];
+    });
+  return { source: `${XIVAPI}/sheet/FishParameter`, ...meta, columns: FISH_COLUMNS, tables, rows, spear };
 }
 
 /** Fetch the Fish Guide from XIVAPI and build the dataset. `fetchFn` lets Node and the browser share this. */
 export async function loadFishFromXivapi({ fetchFn = fetch, signal } = {}) {
-  const { rows, version } = await fetchFishParameterRows(fetchFn, signal);
-  const patch = await patchName(version, fetchFn, signal);
-  return buildDataset(rows, { fetched: new Date().toISOString().slice(0, 10), version, patch });
+  const [{ rows, version }, spearRows, patch] = await Promise.all([
+    fetchFishParameterRows(fetchFn, signal), fetchSpearfishingRows(fetchFn, signal),
+    getJson(`${XIVAPI}/version`, fetchFn, signal).then(({ versions }) => versions, () => null),
+  ]);
+  const patchNameFor = key => patch?.find(v => v.key === key)?.names.find(n => n !== "latest") ?? null;
+  return buildDataset(rows, { fetched: new Date().toISOString().slice(0, 10), version, patch: patchNameFor(version) }, spearRows);
 }

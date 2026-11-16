@@ -29,31 +29,33 @@ async function loadSnapshot() {
 
 // Row order is the in-game Fish Guide order (the same order as the FFXIV Fish Tracker's Fish Guide). The grid shows
 // fish in this order (left to right, top to bottom, 100 per page), so never sort these rows.
-function decode({ tables: T, rows }) {
+// Spearfishing rows use the same columns; their "water" is the size class (Small/Average/Big).
+function decode(T, rows = [], spear = false) {
   const oceanRegion = T.reg.indexOf("The High Seas");
   return rows.map(([id, name, icon, lvl, exp, water, region, zone, big, collectable, rarity]) => ({
     id,
     name: name.trim(),
     icon,                                      // game icon id, e.g. 29063 → icon 029063
     lvl,
-    cat: region === oceanRegion ? OCEAN_FISHING : exp,
+    cat: !spear && region === oceanRegion ? OCEAN_FISHING : exp,
     water: T.rec[water],
     region: T.reg[region],
     zone: T.zone[zone],
     big: big === 1 || rarity >= 2,             // rarity ≥ 2 = big fish (also covers ocean-fishing rares)
     collectable: collectable === 1,
+    spear,
   }));
 }
 
-/** Returns { fish, live, fetched, error } — `live` false means the snapshot was used, with `error` saying why. */
+/** Returns { fish, spear, live, fetched, patch, error } — `live` false means the snapshot was used (`error` says why). */
 export async function loadFish() {
   try {
     const raw = await loadLive();
-    return { fish: decode(raw), live: true, fetched: raw.fetched, patch: raw.patch };
+    return { fish: decode(raw.tables, raw.rows), spear: decode(raw.tables, raw.spear, true), live: true, fetched: raw.fetched, patch: raw.patch };
   } catch (e) {
     const error = e.name === "AbortError" ? "timed out" : e.message;
     console.warn(`Live fish data unavailable (${error}); using snapshot.`);
     const raw = await loadSnapshot();
-    return { fish: decode(raw), live: false, fetched: raw.fetched, patch: raw.patch, error };
+    return { fish: decode(raw.tables, raw.rows), spear: decode(raw.tables, raw.spear, true), live: false, fetched: raw.fetched, patch: raw.patch, error };
   }
 }
