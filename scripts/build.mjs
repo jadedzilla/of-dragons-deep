@@ -13,7 +13,7 @@ import { createHash } from "node:crypto";
 
 const root = new URL("..", import.meta.url);
 const read = p => readFile(new URL(p, root), "utf8");
-const MODULES = ["src/storage.js", "src/icons.js", "src/fishsource.js", "src/data.js", "src/main.js"];
+const MODULES = ["src/storage.js", "src/icons.js", "src/fishsource.js", "src/data.js", "src/timers.js", "src/main.js"];
 
 const js = (await Promise.all(MODULES.map(read)))
   .map((src, i) => `// ---- ${MODULES[i]} ----\n` + src.replace(/^import .*$/gm, "").replace(/^export /gm, ""))

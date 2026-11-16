@@ -22,6 +22,7 @@ There are no tests yet. After changes, run the dev server and check the page in 
 - `index.html` — page shell and markup
 - `src/main.js` — app: filtering, paging, rendering, events
 - `src/data.js` — loads fish (live, else snapshot) and decodes rows; defines categories
+- `src/timers.js` — Fish Timers page: loads catch windows + zone weather, forecasts weather, computes each fish's current/next window, renders the list
 - `src/fishsource.js` — loads the Fish Guide from XIVAPI and builds the compact dataset; shared by the browser and `fetch-fish-data.mjs`
 - `src/icons.js` — loads the icon manifest and renders sprite-sheet icons (SVG placeholder if an icon is missing)
 - `src/storage.js` — per-browser localStorage: caught set (key `odd-caught-v2`, game item ids) and the last tab (`odd-tab`)
@@ -50,6 +51,14 @@ Rules in `src/fishsource.js` / `src/data.js`:
 - Category = expansion, except region "The High Seas" → Ocean Fishing.
 - Big fish = `rarity >= 2` (`Item.Rarity`; covers big fish and ocean-fishing rares).
 - Ocean fishing fish have level 1 in the source; don't show it.
+
+## Fish Timers
+
+**Pages:** a navigation bar above the window switches between **Fish Guide** (default) and **Fish Timers** (`#timers` in the URL, so Back/Forward and bookmarks work). Timers hides the guide toolbar/grid/footer, the Fishing/Spearfishing tabs and the caught count. Its data loads only when the page is first opened.
+**Catch windows** come from the FFXIV Fish Tracker's `js/app/data.js` (`FISH`: `startHour`/`endHour` in Eorzea hours, `weatherSet`, `previousWeatherSet`, `location` → `FISHING_SPOTS`/`SPEARFISHING_SPOTS` → `territory_id`), parsed as text, never executed — the game data has no windows. 444 fish today (443 fishing + 1 spearfish), all present in our lists. Credited on the page.
+**Weather** odds come from XIVAPI (`TerritoryType?rows=…` → `WeatherRate.Weather[]`/`Rate`; identical to the tracker's tables for all 69 zones); weather names/icons from the same response (icon falls back to the name if it can't load). Forecast: the game's formula (`forecastTarget`, as in SaintCoinach): weather periods are 8 Eorzea hours = 1400 s; 1 Eorzea hour = 175 s.
+**Windows:** `nextWindow(fish, from)` walks weather periods (previous + current weather must match), intersects the fish's Eorzea hours (which may wrap midnight or be fractional), merges across period boundaries, and looks ≈39 Earth days ahead. Verified against an independent per-5-second brute force: 2,587 windows, 0 mismatches.
+**List:** up-now fish first (soonest end), then upcoming (soonest start); countdowns tick every second and the list re-sorts when a window opens/closes. Filters: Hide caught (default on), Big fish only, search. Clicking a fish opens the detail view.
 
 ## Icons
 

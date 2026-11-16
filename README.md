@@ -4,7 +4,7 @@
 
 **Use it:** https://jadedzilla.github.io/of-dragons-deep/
 
-Track the fish you've caught in Final Fantasy XIV and work toward the big fishing achievements. Covers the Fish Guide and, on its own tab, the spearfishing log.
+Track the fish you've caught in Final Fantasy XIV and work toward the big fishing achievements. Covers the Fish Guide and, on its own tab, the spearfishing log, plus a Fish Timers page showing which fish are up now and when the rest are next catchable.
 
 ## Run it
 
@@ -26,6 +26,7 @@ One-time setup: **Settings → Pages → Build and deployment → Source: GitHub
 
 ## Credits
 
-Fish data and icons come from the game data on [XIVAPI](https://v2.xivapi.com/).
+Fish data, icons and weather come from the game data on [XIVAPI](https://v2.xivapi.com/).
+Catch windows (times and weather) for the Fish Timers come from the [FFXIV Fish Tracker](https://ff14fish.carbuncleplushy.com/) by Carbuncle Plushy.
 Fish Guide order and fields were checked against the [FFXIV Fish Tracker](https://ff14fish.carbuncleplushy.com/) by Carbuncle Plushy.
 FINAL FANTASY XIV © SQUARE ENIX CO., LTD.

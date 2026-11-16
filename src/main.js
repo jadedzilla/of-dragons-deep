@@ -2,6 +2,7 @@ import { loadFish, CATEGORIES, OCEAN_FISHING } from "./data.js";
 import { fishIcon, fishPlaceholder, loadIcons, prefetchSheets, sheetsFor, sheetsReady, sheetCount } from "./icons.js";
 import { loadCaught, saveCaught, loadTab, saveTab } from "./storage.js";
 import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
+import { createTimers } from "./timers.js";
 
 const PER_PAGE = 100; // 10x10 grid
 
@@ -432,9 +433,31 @@ if (linkParams.has("import")) {
   }
 }
 
+/* ---------- Pages: Fish Guide / Fish Timers (navigation bar, #timers in the URL) ---------- */
+let timers = null; // created the first time the Timers page is opened
+function route() {
+  const view = location.hash === "#timers" ? "timers" : "guide";
+  document.body.dataset.view = view;
+  $("#guideView").hidden = view !== "guide";
+  $("#timersView").hidden = view !== "timers";
+  $("#tabs").hidden = view !== "guide" || !SPEAR_LIST.length;
+  $(".progress").hidden = view !== "guide";
+  document.querySelectorAll("#topnav a").forEach(a => a.toggleAttribute("aria-current", a.dataset.view === view));
+  hideTip(); closePanel();
+  if (view === "timers") {
+    timers ??= createTimers($("#timersView"), { byId: BY_ID, isCaught: id => caught.has(id), fishIcon, onOpen: openFishView, esc });
+    timers.show();
+  } else {
+    timers?.hide();
+    render();
+  }
+}
+window.addEventListener("hashchange", route);
+
 /* ---------- Start ---------- */
 setMode(mode);
 render();
+route();
 
 // Then, once the first page is showing, quietly load the remaining sheets (≈1.7 MB in all) so every page
 // switch is instant. Skipped when the browser asks to save data; neighbours are still prefetched.

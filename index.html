@@ -9,12 +9,17 @@
 <link rel="stylesheet" href="src/styles.css">
 </head>
 <body>
+<nav class="topnav" id="topnav" aria-label="Pages">
+  <a href="#guide" data-view="guide" aria-current="page">Fish Guide</a>
+  <a href="#timers" data-view="timers">Fish Timers</a>
+</nav>
 <div class="window">
   <div class="titlebar">
     <h1>Of Dragons Deep</h1>
     <div class="progress"><b id="caughtCount">0</b> / <span id="totalCount">0</span> caught</div>
   </div>
   <div class="body">
+    <div id="guideView">
     <div class="toolbar">
       <div class="pages" id="pages"></div>
       <input class="search" id="search" type="search" placeholder="Search fish or zone…" autocomplete="off" aria-label="Search fish or zone" title="Search">
@@ -54,6 +59,8 @@
         <span><i class="check"></i>Caught</span>
       </div>
     </div>
+    </div>
+    <section id="timersView" class="timers" hidden aria-label="Fish timers"></section>
   </div>
   <div class="tabs" id="tabs" role="tablist" aria-label="Guide">
     <button class="tab active" type="button" role="tab" aria-selected="true" data-mode="fish">Fishing</button>
