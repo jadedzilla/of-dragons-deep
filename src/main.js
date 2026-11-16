@@ -26,11 +26,12 @@ let hasBig = true; // whether the current list has big fish (spearfishing doesn'
 
 /* ---------- Tabs ---------- */
 // Category checkboxes for the current list (categories it doesn't use are hidden; their state is kept).
-// Lists without big fish (spearfishing) also hide "Big fish only" and the legend; the setting is kept for later.
+// Lists without big fish (spearfishing) also hide "Big fish only" and the legend entry; the setting is kept for later.
+// The legend entry only turns invisible (keeping its space) so the rest of the legend doesn't move between tabs.
 function buildCatFilters() {
   hasBig = FISH.some(f => f.big);
   $("#bigOnly").closest("label").hidden = !hasBig;
-  $("#bigLegend").hidden = !hasBig;
+  $("#bigLegend").classList.toggle("off", !hasBig);
   $("#expFilters").innerHTML = CATEGORIES.map((c, i) => {
     const n = FISH.filter(f => f.cat === i).length;
     return n ? `<label><input type="checkbox" data-cat="${i}"${filters.cats.has(i) ? " checked" : ""}> ${c} <span class="n">${n}</span></label>` : "";
