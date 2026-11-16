@@ -8,7 +8,8 @@ Currently a proof of concept: plain HTML/CSS/ES modules, **no dependencies and n
 
 - `npm run dev` — serve at http://localhost:5173 (ES modules + `fetch` need a server; opening index.html from disk won't work)
 - `npm run fetch-data` — download fresh fish data into `data/fish.json` (needs network access to ff14fish.carbuncleplushy.com)
-- `npm run build` — single self-contained file at `dist/index.html`
+- `npm run fetch-icons` — download fish icons from XIVAPI into `data/icons/` sprite sheets (needs network access to v2.xivapi.com; behind a proxy on Node ≥ 22.21 run with `NODE_USE_ENV_PROXY=1`)
+- `npm run build` — single self-contained file at `dist/index.html` (~11 MB, icons inlined); `node scripts/build.mjs --external-icons` keeps the sheets as `dist/icons/*.png` instead
 
 There are no tests yet. After changes, run the dev server and check the page in a browser.
 
@@ -17,12 +18,14 @@ There are no tests yet. After changes, run the dev server and check the page in 
 - `index.html` — page shell and markup
 - `src/main.js` — app: filtering, paging, rendering, events
 - `src/data.js` — loads and decodes `data/fish.json`; defines categories
-- `src/icons.js` — placeholder SVG fish icons
+- `src/icons.js` — loads the icon manifest and renders sprite-sheet icons (SVG placeholder if an icon is missing)
 - `src/storage.js` — caught set in localStorage (key `odd-caught-v2`, game fish ids)
 - `src/styles.css` — all styles; theme colours are CSS variables in `:root`
 - `scripts/fetch-fish-data.mjs` — data downloader (parses the source JS as text, never executes it)
+- `scripts/fetch-icons.mjs` — icon downloader; `scripts/png.mjs` — tiny PNG decode/encode used to pack sheets
 - `scripts/build.mjs`, `scripts/serve.mjs` — build and dev server
 - `data/fish.json` — committed data snapshot, so the app works without fetching
+- `data/icons.json` + `data/icons/sheet-NN.png` — committed icon snapshot (1,078 unique icons, 80×80, 10×10 per sheet)
 
 ## Data
 
@@ -36,6 +39,13 @@ Decoding rules in `src/data.js`:
 - Big fish = `bigFish` flag OR `rarity >= 2` (the rarity rule picks up ocean-fishing rares).
 - Ocean fishing fish have level 1 in the source; don't show it.
 
+## Icons
+
+From XIVAPI v2: `https://v2.xivapi.com/api/asset?path=ui/icon/029000/029063_hr1.tex&format=png` (`_hr1` = 80px; plain = 40px fallback).
+Icons are packed into 800×800 sheets (bundling ~1,000 files individually is impractical); `icons.json` maps game icon id → index, sheet = index / 100.
+Sheets are ordered by first appearance in `fish.json`, so the first grid page needs only one. Each sheet gets a CSS class (`.ic.sN`) injected at load; tiles set `background-position`.
+Game icons include their own square backdrop, so they fill the tile.
+
 ## UI requirements (from the project owner)
 
 - Fish shown in a paged **10×10 grid** (100 per page), each icon a square with slightly rounded corners.
@@ -44,6 +54,7 @@ Decoding rules in `src/data.js`:
 
 ## Known gaps / next steps
 
-- Icons are placeholders. Real icons: `fish.icon` is the game icon id (e.g. 29063 → `029063`); they'd need to be downloaded and bundled, or served from an icon CDN once the app is hosted somewhere that allows remote images.
+- Re-run `npm run fetch-icons` after `npm run fetch-data` if new fish (new icon ids) appear; missing icons fall back to the SVG placeholder.
+- Tiles aren't keyboard-accessible yet (they're divs with no tabindex/key handler).
 - Progress lives in one browser's localStorage only — no accounts, sync, or import/export yet.
 - No achievement mapping yet (which fish count toward which achievement).

@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "fetch-data": "node scripts/fetch-fish-data.mjs",
+    "fetch-icons": "node scripts/fetch-icons.mjs",
     "build": "node scripts/build.mjs"
   }
 }

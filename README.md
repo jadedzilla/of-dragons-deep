@@ -9,10 +9,12 @@ Requires [Node.js](https://nodejs.org) 18 or newer. No `npm install` needed — 
 ```sh
 npm run dev          # open http://localhost:5173
 npm run fetch-data   # refresh data/fish.json from the FFXIV Fish Tracker
+npm run fetch-icons  # refresh fish icons (data/icons/) from XIVAPI
 npm run build        # single-file build at dist/index.html
 ```
 
 ## Credits
 
+Fish icons come from [XIVAPI](https://v2.xivapi.com/).
 Fish data comes from the [FFXIV Fish Tracker](https://ff14fish.carbuncleplushy.com/) by Carbuncle Plushy.
 FINAL FANTASY XIV © SQUARE ENIX CO., LTD.

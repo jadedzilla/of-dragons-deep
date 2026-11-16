@@ -1,5 +1,5 @@
 import { loadFish, CATEGORIES, OCEAN_FISHING } from "./data.js";
-import { fishIcon } from "./icons.js";
+import { fishIcon, loadIcons } from "./icons.js";
 import { loadCaught, saveCaught } from "./storage.js";
 
 const PER_PAGE = 100; // 10x10 grid
@@ -8,7 +8,7 @@ const $ = s => document.querySelector(s);
 const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const grid = $("#grid"), pagesEl = $("#pages"), tip = $("#tooltip");
 
-const { fish: FISH, fetched } = await loadFish();
+const [{ fish: FISH, fetched }] = await Promise.all([loadFish(), loadIcons()]);
 const BY_ID = new Map(FISH.map(f => [f.id, f]));
 const caught = loadCaught(new Set(BY_ID.keys()));
 
@@ -18,7 +18,7 @@ let page = 0, query = "";
 
 $("#expFilters").innerHTML = CATEGORIES.map((c, i) =>
   `<label><input type="checkbox" data-cat="${i}" checked> ${c} <span class="n">${FISH.filter(f => f.cat === i).length}</span></label>`).join("");
-$("#dataNote").textContent = `${FISH.length} fish · data from ff14fish.carbuncleplushy.com (snapshot ${fetched})`;
+$("#dataNote").textContent = `${FISH.length} fish · data from ff14fish.carbuncleplushy.com (snapshot ${fetched}) · icons via XIVAPI`;
 
 function visible() {
   const q = query.trim().toLowerCase();
