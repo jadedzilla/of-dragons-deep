@@ -103,7 +103,7 @@ export function achievementDone(a, ctx, seen = new Set()) {
 const SECTIONS = [
   ["log", "Fish log", "Tracked from the fish you've marked caught (Fish Guide and spearfishing log)."],
   ["big", "Big fish", "Tracked from the big fish you've marked caught."],
-  ["ocean", "Ocean fishing log", "Tracked from the ocean fish you've marked caught."],
+  ["ocean", "Ocean Fishing", "Tracked from the ocean fish you've marked caught."],
   ["milestones", "Fishing milestones", "The app can't count casts — mark these obtained yourself."],
   ["voyage", "Ocean fishing voyages", "Voyage scores and bonuses aren't tracked — mark these obtained yourself."],
   ["other", "Other", "Not tracked — mark these obtained yourself."],
