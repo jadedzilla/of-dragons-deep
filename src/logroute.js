@@ -240,6 +240,10 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
       ${spectral.length ? `<div class="lr-sub">During a spectral current</div><ol class="lr-fish">${spectral.map(row).join("")}</ol>` : ""}`;
   }
 
+  /** "up now, ends in 6m 40s" / "window opens 05:33 PM (in 6m 40s), lasts 5m 50s"; updated every second by tick(). */
+  const windowStatus = (w, now) => w.start <= now ? `<span class="tm-up">up now</span>, ends in <b>${tmDuration(w.end - now)}</b>`
+    : `window opens ${tmLocal(w.start, now)} (in <b>${tmDuration(w.start - now)}</b>), lasts ${tmDuration(w.end - w.start)}`;
+
   function stepHtml(step, n, now) {
     if (step.kind === "stop") {
       const f0 = step.fish[0], baits = [...new Set(step.fish.map(f => chainsAt(f.id, step.spot)[0]?.[0]).filter(Boolean))];
@@ -252,11 +256,9 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
       const { f, e, w } = step, t = base.windows.get(f.id);
       const hours = t.start === t.end ? "" : `ET ${tmEtHour(t.start)}–${tmEtHour(t.end)}`;
       const weather = (t.prev ? weatherHtml([...t.prev]) + `<span class="tm-arrow" title="then">→</span>` : "") + (t.weather ? weatherHtml([...t.weather]) : "");
-      const status = w.start <= now ? `<span class="tm-up">up now</span>, ends in <b>${tmDuration(w.end - now)}</b>`
-        : `window opens ${tmLocal(w.start, now)} (in <b>${tmDuration(w.start - now)}</b>), lasts ${tmDuration(w.end - w.start)}`;
       return `<div class="lr-when">${step.at <= now + 60 ? "Now" : `≈ ${tmLocal(step.at, now)}`}</div>
         <div class="lr-where">Go to ${spotHtml(e.spot, f)} for a timed fish</div>
-        <div class="lr-notes">${[hours, weather && `<span class="tm-weather">${weather}</span>`].filter(Boolean).join(" ")} — ${status}</div>
+        <div class="lr-notes">${[hours, weather && `<span class="tm-weather">${weather}</span>`].filter(Boolean).join(" ")} — <span class="lr-countdown">${windowStatus(w, now)}</span></div>
         <ol class="lr-fish">${fishRow(f, e.spot)}</ol>`;
     }
     if (step.kind === "ocean") return oceanHtml(step);
@@ -296,18 +298,43 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
   function replan() {
     const now = Date.now() / 1000;
     plan = { ...planLogRoute({ fish: fishList.filter(f => !isCaught(f.id)), sources: base.sources, windows: base.windows,
-      ocean: base.ocean, oceanCategory, now, spotZone: base.spotZone }), now };
+      ocean: base.ocean, oceanCategory, now, spotZone: base.spotZone }), missed: 0 };
   }
+
+  // Every second while shown: timed steps' countdowns tick, a step turns "up now" when its window opens, and a step
+  // whose window has closed is dropped (the fish stays uncaught; Re-plan fits it back in at its next window).
+  let ticker = null;
+  function tick() {
+    if (!plan || document.hidden) return;
+    const now = Date.now() / 1000;
+    const expired = plan.steps.filter(s => s.kind === "timed" && now >= s.w.end);
+    if (expired.length) {
+      plan.steps = plan.steps.filter(s => !expired.includes(s));
+      plan.missed += expired.length;
+      render();
+      return;
+    }
+    for (const li of list.querySelectorAll(".lr-step.timed")) {
+      const step = stepsById.get(li.dataset.step);
+      if (!step) continue;
+      li.querySelector(".lr-countdown").innerHTML = windowStatus(step.w, now);
+      li.classList.toggle("up", step.w.start <= now);
+    }
+  }
+  let stepsById = new Map(), nextStepId = 0;
+  const stepId = s => (s.uid ??= String(++nextStepId));
   async function render() {
     if (!plan) return;
-    const my = ++token, { steps, now } = plan, visible = steps.slice(0, shown);
+    const my = ++token, { steps } = plan, visible = steps.slice(0, shown);
     await ensureNames(visible);
     if (my !== token) return;
-    const caught = fishList.length - plan.left, hours = plan.minutes / 60;
+    const now = Date.now() / 1000, caught = fishList.length - plan.left, hours = plan.minutes / 60;
+    stepsById = new Map(visible.map(s => [stepId(s), s]));
     summary.innerHTML = plan.left
       ? `<b>${plan.left.toLocaleString("en-US")}</b> fish left (${caught.toLocaleString("en-US")} / ${fishList.length.toLocaleString("en-US")} caught) · ${steps.length} steps · land fishing ≈ <b>${hours >= 1 ? `${Math.round(hours)} h` : `${plan.minutes} min`}</b>`
+        + (plan.missed ? `<div class="lr-missed">${plan.missed} timed fish missed ${plan.missed === 1 ? "its" : "their"} window — <b>Re-plan</b> to fit ${plan.missed === 1 ? "it" : "them"} back in.</div>` : "")
       : `Fish Guide complete! 🎉`;
-    list.innerHTML = plan.left ? `<ol class="lr-steps">${visible.map((s, i) => `<li class="lr-step ${s.kind}${s.kind === "timed" && s.w.start <= now ? " up" : ""}">
+    list.innerHTML = plan.left ? `<ol class="lr-steps">${visible.map((s, i) => `<li class="lr-step ${s.kind}${s.kind === "timed" && s.w.start <= now ? " up" : ""}" data-step="${stepId(s)}">
         <span class="ns-rank">${i + 1}</span><div class="lr-body">${stepHtml(s, i + 1, now)}</div></li>`).join("")}</ol>`
       + (steps.length > shown ? `<button type="button" class="btn ns-more-ach" id="lrMore">Show ${Math.min(STEP_PAGE, steps.length - shown)} more steps (${steps.length - shown} left)</button>` : "")
       : `<div class="empty-msg">Every Fish Guide fish is caught. 🎉</div>`;
@@ -342,7 +369,11 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
   root.querySelector("#lrRecalc").addEventListener("click", () => { if (base) { replan(); shown = STEP_PAGE; render(); } });
 
   return {
-    show() { if (base) { replan(); render(); } else load(); },
-    hide() {},
+    show() {
+      if (base) { replan(); render(); } else load();
+      clearInterval(ticker);
+      ticker = setInterval(tick, 1000);
+    },
+    hide() { clearInterval(ticker); ticker = null; },
   };
 }

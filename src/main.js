@@ -558,7 +558,7 @@ function route() {
     logRoute ??= createLogRoute($("#routeView"), { fishList: FISH_LIST, byId: BY_ID, isCaught: id => caught.has(id),
       markCaught: id => { caught.add(id); saveCaught(caught); }, fishIcon, onOpen: openFishView, esc, oceanCategory: OCEAN_FISHING });
     logRoute.show();
-  }
+  } else logRoute?.hide();
   if (view === "guide") render();
 }
 window.addEventListener("hashchange", route);

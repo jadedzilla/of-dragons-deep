@@ -93,6 +93,7 @@ Rules in `src/fishsource.js` / `src/data.js`:
 Then fish with no window in ~5 weeks, and any without Teamcraft data.
 **Each fish line:** bait → mooch chain with each step's hookset + tug at that spot ("or …" alternatives), intuition predators, Snagging, lures, minimum Gathering. Stops list the baits to bring; timed steps show ET hours, weather (previous → current) and the window countdown. Spot/zone names (`FishingSpot` PlaceName + TerritoryType.PlaceName), item names/icons and ocean weathers come from XIVAPI for the steps on screen.
 **UI:** summary (fish left, steps, ≈ hours of land fishing), 15 steps at a time ("Show more"), **↻ Re-plan from now**, a ✓ per fish marks it caught and removes it without re-planning (order stays stable), icon opens the fish view.
+**Live:** while the page is shown, timed steps' window countdowns (`.lr-countdown`) update every second (`tick()`, paused when the tab is hidden; stopped on leaving the page); a step turns green "up now" when its window opens, and a step whose window has closed is removed from the list (the next steps move up). Its fish stays uncaught: the summary shows "N timed fish missed their window — Re-plan to fit them back in", and ↻ Re-plan schedules them at their next window.
 
 ## Fish Timers
 

@@ -23,6 +23,33 @@ export default async function (t) {
   await p.click("#lrMore");
   await p.waitForFunction(() => document.querySelectorAll(".lr-step").length === 30);
   t.check("Show more adds 15 steps", true);
+
+  // live countdowns: tick each second, flip to "up now" when a window opens, drop a step when its window closes
+  const secs = str => { const m = /(?:(\d+)d )?(?:(\d+)h )?(?:(\d+)m)?(?: (\d+)s)?$/.exec(str.trim()); return (+(m[1] || 0)) * 86400 + (+(m[2] || 0)) * 3600 + (+(m[3] || 0)) * 60 + (+(m[4] || 0)); };
+  const timed = () => p.$$eval(".lr-step.timed", ls => ls.map(l => ({ id: l.dataset.step, up: l.classList.contains("up"), cd: l.querySelector(".lr-countdown").textContent.replace(/\s+/g, " ").trim() })));
+  let tm = await timed();
+  const firstUp = tm.find(x => x.up), endsIn = secs(/ends in (.+)$/.exec(firstUp.cd)[1]);
+  await p.clock.setFixedTime(new Date((T0 + 5) * 1000));
+  await p.waitForFunction(([id, cd]) => document.querySelector(`.lr-step[data-step="${id}"] .lr-countdown`).textContent.replace(/\s+/g, " ").trim() !== cd, [firstUp.id, firstUp.cd]);
+  tm = await timed();
+  t.check("countdowns tick live", secs(/ends in (.+)$/.exec(tm.find(x => x.id === firstUp.id).cd)[1]) === endsIn - 5, tm.find(x => x.id === firstUp.id));
+  const opening = tm.filter(x => !x.up).map(x => ({ ...x, at: T0 + 5 + secs(/\(in (.+?)\)/.exec(x.cd)[1]) })).sort((a, b) => a.at - b.at)[0];
+  if (opening) {
+    await p.clock.setFixedTime(new Date((opening.at + 1) * 1000));
+    await p.waitForFunction(id => document.querySelector(`.lr-step[data-step="${id}"]`)?.classList.contains("up"), opening.id);
+    t.check("a step turns 'up now' when its window opens", /^up now, ends in /.test(await text(p, `.lr-step[data-step="${opening.id}"] .lr-countdown`)));
+  }
+  const stepsBefore = await p.$$eval(".lr-step", l => l.length);
+  await p.clock.setFixedTime(new Date((T0 + endsIn + 1) * 1000));
+  await p.waitForFunction(id => !document.querySelector(`.lr-step[data-step="${id}"]`), firstUp.id);
+  t.check("a step whose window closed is removed; the list refills; summary notes the miss",
+    await p.$$eval(".lr-step", l => l.length) === stepsBefore && /^\d+ timed fish missed (its|their) window — Re-plan to fit (it|them) back in\.$/.test(await text(p, ".lr-missed")) && /^1,517 fish left/.test(await text(p, "#lrSummary")));
+  await p.click("#lrRecalc");
+  await p.waitForFunction(() => !document.querySelector(".lr-missed"));
+  t.check("Re-plan clears the missed note", true);
+  await p.clock.setFixedTime(new Date(T0 * 1000));
+  await p.click("#lrRecalc");
+  await p.waitForFunction(() => document.querySelectorAll(".lr-step").length === 15);
   s = await steps(p);
 
   const victim = stop.fish[0].id;
