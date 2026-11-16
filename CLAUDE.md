@@ -56,12 +56,11 @@ Game icons include their own square backdrop, so they fill the tile.
 - Fish shown in a paged **10×10 grid** (100 per page), each icon a square with slightly rounded corners.
 - **Order = the tracker's order** (`FISH_INFO` array order, as in its Fish Guide), left to right, top to bottom, so app page N holds the same fish as the tracker's guide page N. Never sort; filters keep this order.
 - **Page numbers top-left above the grid, search box immediately after them, filter button top-right.**
-- Click a fish to toggle caught.
+- Click a fish to toggle caught. Keyboard accessibility is not a requirement (owner's call) — don't flag or add it.
 - **Import** button (left of Filter; icon-only on phones) opens a dialog to paste or load (.txt/.csv) game item ids, comma-separated (spaces/semicolons/new lines also accepted). "Add" marks them caught; "Replace" makes the caught set exactly the list and needs a second click when it would unmark fish (no `confirm()` — it's silently blocked in sandboxed iframes). Ids that aren't fish or aren't numbers are skipped and listed.
 
 ## Known gaps / next steps
 
 - New fish from the live data whose icons aren't in the sheets load from XIVAPI directly (placeholder if that fails); re-run `npm run fetch-data` and `npm run fetch-icons` to bundle them.
-- Tiles aren't keyboard-accessible yet (they're divs with no tabindex/key handler).
 - Progress lives in one browser's localStorage only — no accounts or sync; import exists but no export yet.
 - No achievement mapping yet (which fish count toward which achievement).
