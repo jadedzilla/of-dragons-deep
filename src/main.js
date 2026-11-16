@@ -36,17 +36,23 @@ function visible() {
 }
 
 // ‹ first … current±2 … last ›
+// Always the same number of slots between the arrows (7 once there are more than 7 pages), and gaps are as
+// wide as buttons, so the arrows and the search box don't move when you change page.
+const SLOTS = 7;
+function pageSlots(count) {
+  const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+  if (count <= SLOTS) return range(0, count - 1);
+  const last = count - 1;
+  if (page <= 3) return [...range(0, 4), null, last];                // 1 2 3 4 5 … N
+  if (page >= last - 3) return [0, null, ...range(last - 4, last)];  // 1 … N-4 N-3 N-2 N-1 N
+  return [0, null, page - 1, page, page + 1, null, last];           // 1 … p-1 p p+1 … N
+}
 function pageButtons(count) {
-  const set = new Set([0, count - 1]);
-  for (let i = page - 2; i <= page + 2; i++) if (i >= 0 && i < count) set.add(i);
-  const list = [...set].sort((a, b) => a - b);
-  const out = [{ label: "‹", to: page - 1, dis: page === 0, arrow: true }];
-  list.forEach((p, i) => {
-    if (i && p - list[i - 1] > 1) out.push({ gap: true });
-    out.push({ label: p + 1, to: p, active: p === page });
-  });
-  out.push({ label: "›", to: page + 1, dis: page >= count - 1, arrow: true });
-  return out;
+  return [
+    { label: "‹", to: page - 1, dis: page === 0, arrow: true },
+    ...pageSlots(count).map(p => p === null ? { gap: true } : { label: p + 1, to: p, active: p === page }),
+    { label: "›", to: page + 1, dis: page >= count - 1, arrow: true },
+  ];
 }
 
 function render() {
