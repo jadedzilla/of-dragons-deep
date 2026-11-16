@@ -11,6 +11,8 @@ Currently a proof of concept: plain HTML/CSS/ES modules, **no dependencies and n
 - `npm run fetch-icons` — download fish icons from XIVAPI into `data/icons/` sprite sheets (needs network access to v2.xivapi.com; behind a proxy on Node ≥ 22.21 run with `NODE_USE_ENV_PROXY=1`)
 - `npm run build` — single self-contained file at `dist/index.html` (~11 MB, icons inlined); `node scripts/build.mjs --external-icons` keeps the sheets as `dist/icons/*.png` instead
 
+Deploy: `.github/workflows/pages.yml` runs `node scripts/build.mjs --external-icons` on every push to `main` and publishes `dist/` to GitHub Pages at https://jadedzilla.github.io/of-dragons-deep/ (a sub-path, so keep every URL in the app relative — no leading `/`).
+
 There are no tests yet. After changes, run the dev server and check the page in a browser.
 
 ## Layout

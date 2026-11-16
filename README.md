@@ -2,6 +2,8 @@
 
 **Of Dragons Deep** is a fishing tracker. Yes, another one.
 
+**Use it:** https://jadedzilla.github.io/of-dragons-deep/
+
 Track the fish you've caught in Final Fantasy XIV and work toward the big fishing achievements.
 
 ## Run it
@@ -16,6 +18,11 @@ npm run build        # single-file build at dist/index.html
 ```
 
 Fish data is loaded live from the FFXIV Fish Tracker each time the app opens; a bundled snapshot is used if it can't be reached.
+
+## Deploy
+
+Every push to `main` builds the app and publishes it to GitHub Pages (`.github/workflows/pages.yml`).
+One-time setup: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
 ## Credits
 
