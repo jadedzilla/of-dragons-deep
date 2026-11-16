@@ -12,12 +12,12 @@ Requires [Node.js](https://nodejs.org) 18 or newer. No `npm install` needed — 
 
 ```sh
 npm run dev          # open http://localhost:5173
-npm run fetch-data   # refresh the offline fallback data/fish.json
+npm run fetch-data   # refresh the offline fallback data/fish.json from XIVAPI
 npm run fetch-icons  # refresh fish icons (data/icons/) from XIVAPI
 npm run build        # single-file build at dist/index.html
 ```
 
-Fish data is loaded live from the FFXIV Fish Tracker each time the app opens; a bundled snapshot is used if it can't be reached.
+Fish data is loaded live from the game data on XIVAPI each time the app opens; a bundled snapshot is used if it can't be reached.
 
 ## Deploy
 
@@ -26,6 +26,6 @@ One-time setup: **Settings → Pages → Build and deployment → Source: GitHub
 
 ## Credits
 
-Fish icons come from [XIVAPI](https://v2.xivapi.com/).
-Fish data comes from the [FFXIV Fish Tracker](https://ff14fish.carbuncleplushy.com/) by Carbuncle Plushy.
+Fish data and icons come from the game data on [XIVAPI](https://v2.xivapi.com/).
+Fish Guide order and fields were checked against the [FFXIV Fish Tracker](https://ff14fish.carbuncleplushy.com/) by Carbuncle Plushy.
 FINAL FANTASY XIV © SQUARE ENIX CO., LTD.

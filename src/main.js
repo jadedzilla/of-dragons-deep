@@ -8,7 +8,7 @@ const $ = s => document.querySelector(s);
 const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const grid = $("#grid"), pagesEl = $("#pages"), tip = $("#tooltip");
 
-const [{ fish: FISH, live, fetched, error }] = await Promise.all([loadFish(), loadIcons()]);
+const [{ fish: FISH, live, fetched, patch, error }] = await Promise.all([loadFish(), loadIcons()]);
 const BY_ID = new Map(FISH.map(f => [f.id, f]));
 const caught = loadCaught(new Set(BY_ID.keys()));
 
@@ -19,8 +19,8 @@ let page = 0, query = "";
 $("#expFilters").innerHTML = CATEGORIES.map((c, i) =>
   `<label><input type="checkbox" data-cat="${i}" checked> ${c} <span class="n">${FISH.filter(f => f.cat === i).length}</span></label>`).join("");
 $("#dataNote").textContent = live
-  ? `${FISH.length} fish · live from ff14fish.carbuncleplushy.com${fetched ? ` (updated ${fetched})` : ""} · icons via XIVAPI`
-  : `${FISH.length} fish · offline snapshot from ${fetched} (couldn't reach ff14fish.carbuncleplushy.com: ${error}) · icons via XIVAPI`;
+  ? `${FISH.length} fish · live game data from XIVAPI${patch ? ` (patch ${patch})` : ""}`
+  : `${FISH.length} fish · offline snapshot from ${fetched}${patch ? `, patch ${patch}` : ""} (couldn't reach XIVAPI: ${error})`;
 $("#dataNote").classList.toggle("offline", !live);
 
 // Filtering keeps source order (the tracker's Fish Guide order); don't sort.

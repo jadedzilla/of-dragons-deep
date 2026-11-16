@@ -7,7 +7,7 @@ Currently a proof of concept: plain HTML/CSS/ES modules, **no dependencies and n
 ## Commands
 
 - `npm run dev` — serve at http://localhost:5173 (ES modules + `fetch` need a server; opening index.html from disk won't work)
-- `npm run fetch-data` — refresh the fallback snapshot `data/fish.json` (needs network access to ff14fish.carbuncleplushy.com)
+- `npm run fetch-data` — refresh the fallback snapshot `data/fish.json` from XIVAPI (needs network access to v2.xivapi.com; behind a proxy on Node ≥ 22.21 run with `NODE_USE_ENV_PROXY=1`)
 - `npm run fetch-icons` — download fish icons from XIVAPI into `data/icons/` sprite sheets (needs network access to v2.xivapi.com; behind a proxy on Node ≥ 22.21 run with `NODE_USE_ENV_PROXY=1`)
 - `npm run build` — single self-contained file at `dist/index.html` (~11 MB, icons inlined); `node scripts/build.mjs --external-icons` keeps the sheets as `dist/icons/*.png` instead
 
@@ -22,7 +22,7 @@ There are no tests yet. After changes, run the dev server and check the page in 
 - `index.html` — page shell and markup
 - `src/main.js` — app: filtering, paging, rendering, events
 - `src/data.js` — loads fish (live, else snapshot) and decodes rows; defines categories
-- `src/fishsource.js` — parses `fish_info_data.js` into the compact dataset; shared by the browser and `fetch-fish-data.mjs`
+- `src/fishsource.js` — loads the Fish Guide from XIVAPI and builds the compact dataset; shared by the browser and `fetch-fish-data.mjs`
 - `src/icons.js` — loads the icon manifest and renders sprite-sheet icons (SVG placeholder if an icon is missing)
 - `src/storage.js` — caught set in localStorage (key `odd-caught-v2`, game fish ids)
 - `src/styles.css` — all styles; theme colours are CSS variables in `:root`
@@ -34,16 +34,18 @@ There are no tests yet. After changes, run the dev server and check the page in 
 
 ## Data
 
-**Live:** on every load the browser fetches `https://ff14fish.carbuncleplushy.com/js/app/fish_info_data.js` (the FFXIV Fish Tracker by Carbuncle Plushy; it sends `Access-Control-Allow-Origin: *`, ~950 KB gzipped, cached 10 min) and parses it as text — the JSON array after `const FISH_INFO = [` is extracted and `JSON.parse`d; the tracker's code is never executed. "Updated" in the footer is the file's `Last-Modified` date.
-**Fallback:** if the fetch fails, errors or takes over 15 s, the app uses `data/fish.json` (inlined in the single-file build) and the footer says so in amber.
+**Live:** on every load the browser loads the Fish Guide from XIVAPI's game data (`src/fishsource.js`): the `FishParameter` sheet, rows with `IsInLog` (exactly the Fish Guide), fetched as 4 parallel 500-row pages plus further pages only while they still contain guide rows (today 5 requests, ~25 KB each gzipped, ~1–2 s). Fields: `Item.Name/Icon/IsCollectable/Rarity`, `GatheringItemLevel.GatheringItemLevel`, `FishingRecordType.Addon.Text` (water), `FishingSpot.TerritoryType.PlaceNameRegion/PlaceName` (region/zone), `Unknown1` (ocean-fishing guide number). Every request pins the XIVAPI schema revision (`XIVAPI_SCHEMA`) so field names, notably the unnamed `Unknown1`, can't change. XIVAPI sends `Access-Control-Allow-Origin: *`. The footer shows the game patch (from `/api/version`).
+**Order:** row order, except ocean-fishing fish (non-round `Unknown1`, e.g. 7001…) are reordered by `Unknown1` within the positions they occupy (`fishGuideOrder`).
+**Verified:** when switching from the FFXIV Fish Tracker (Carbuncle Plushy) to XIVAPI (patch 7.58), all 1,517 fish matched the tracker exactly — same order and identical id, name, icon, level, water, region, zone, collectable, rarity and category.
+**Fallback:** if XIVAPI fails, errors or takes over 15 s, the app uses `data/fish.json` (inlined in the single-file build) and the footer says so in amber.
 
-`data/fish.json` (and the live parse) is compact: string `tables` (`rec` water type, `reg` region, `zone`) plus `rows` of
+`data/fish.json` (and the live load) is compact: string `tables` (`rec` water type, `reg` region, `zone`) plus `rows` of
 `[id, name, icon, level, expansion, water, region, zone, bigFish, collectable, rarity]`.
 
 Rules in `src/fishsource.js` / `src/data.js`:
-- Expansion = level band (≤50 ARR … >90 Dawntrail), raised to the region's own expansion when later (`REGION_EXPANSION`). `fish_info_data.js` has no patch numbers; the tracker's `data.js` does, but isn't fetched — this rule matches it for all but 2 fish (level-50 La Noscea fish added in 4.x, shown as ARR).
+- Expansion = level band (≤50 ARR … >90 Dawntrail), raised to the region's own expansion when later (`REGION_EXPANSION`). The game data has no patch numbers per fish; this rule matches patch-based expansions for all but 2 fish (level-50 La Noscea fish added in 4.x, shown as ARR).
 - Category = expansion, except region "The High Seas" → Ocean Fishing.
-- Big fish = `rarity >= 2` (a superset of the tracker's `bigFish` flag; also covers ocean-fishing rares).
+- Big fish = `rarity >= 2` (`Item.Rarity`; covers big fish and ocean-fishing rares).
 - Ocean fishing fish have level 1 in the source; don't show it.
 
 ## Icons
@@ -56,7 +58,7 @@ Game icons include their own square backdrop, so they fill the tile. Icons fade 
 ## UI requirements (from the project owner)
 
 - Fish shown in a paged **10×10 grid** (100 per page), each icon a square with slightly rounded corners.
-- **Order = the tracker's order** (`FISH_INFO` array order, as in its Fish Guide), left to right, top to bottom, so app page N holds the same fish as the tracker's guide page N. Never sort; filters keep this order.
+- **Order = the Fish Guide order** (identical to the FFXIV Fish Tracker's Fish Guide), left to right, top to bottom, so app page N holds the same fish as the tracker's guide page N. Never sort; filters keep this order.
 - **Page numbers top-left above the grid, search immediately after them, filter button top-right.** Search shows as a round magnifier icon while empty and unfocused (pure CSS: `:not(:focus):placeholder-shown`); clicking it expands it into the box, and it stays open while it has text.
 - **Edit mode:** an Edit toggle (left of Import) must be on for clicking a fish to change it (Import is not locked). It's off on every page load; while off, clicking a fish only shows its details. While on, the button is gold, the grid gets a gold outline, and clicking a fish toggles caught. Keyboard accessibility is not a requirement (owner's call) — don't flag or add it.
 - **Edit, Import and Filter are icon-only buttons** on every device; on mouse hover (`@media (hover:hover)`) or keyboard focus the label slides out (animated `max-width`). The Filter count badge always shows.

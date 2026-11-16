@@ -1,8 +1,8 @@
-// Loads fish data. First choice is live: fish_info_data.js fetched straight from the FFXIV Fish Tracker
-// (it sends Access-Control-Allow-Origin: *) and parsed in the browser by src/fishsource.js.
+// Loads fish data. First choice is live: the Fish Guide straight from XIVAPI's game data
+// (it sends Access-Control-Allow-Origin: *), built into the dataset by src/fishsource.js.
 // If that fails or is too slow, falls back to the committed snapshot data/fish.json
 // (inlined as window.__FISH_DATA__ in the single-file build).
-import { FISH_SOURCE_URL, parseFishInfo } from "./fishsource.js";
+import { loadFishFromXivapi } from "./fishsource.js";
 
 export const CATEGORIES = ["A Realm Reborn", "Heavensward", "Stormblood", "Shadowbringers", "Endwalker", "Dawntrail", "Ocean Fishing"];
 export const OCEAN_FISHING = 6;
@@ -12,11 +12,9 @@ async function loadLive() {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), LIVE_TIMEOUT_MS);
   try {
-    const r = await fetch(FISH_SOURCE_URL, { signal: ctrl.signal });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const text = await r.text();
-    const modified = r.headers.get("Last-Modified");
-    return parseFishInfo(text, modified ? new Date(modified).toISOString().slice(0, 10) : null);
+    const data = await loadFishFromXivapi({ signal: ctrl.signal });
+    if (!data.rows.length) throw new Error("XIVAPI returned no fish");
+    return data;
   } finally {
     clearTimeout(timer);
   }
@@ -29,8 +27,8 @@ async function loadSnapshot() {
   });
 }
 
-// Row order is the tracker's FISH_INFO order, which is also its Fish Guide order. The grid shows fish in this
-// order (left to right, top to bottom, 100 per page), so never sort these rows.
+// Row order is the in-game Fish Guide order (the same order as the FFXIV Fish Tracker's Fish Guide). The grid shows
+// fish in this order (left to right, top to bottom, 100 per page), so never sort these rows.
 function decode({ tables: T, rows }) {
   const oceanRegion = T.reg.indexOf("The High Seas");
   return rows.map(([id, name, icon, lvl, exp, water, region, zone, big, collectable, rarity]) => ({
@@ -51,11 +49,11 @@ function decode({ tables: T, rows }) {
 export async function loadFish() {
   try {
     const raw = await loadLive();
-    return { fish: decode(raw), live: true, fetched: raw.fetched };
+    return { fish: decode(raw), live: true, fetched: raw.fetched, patch: raw.patch };
   } catch (e) {
     const error = e.name === "AbortError" ? "timed out" : e.message;
     console.warn(`Live fish data unavailable (${error}); using snapshot.`);
     const raw = await loadSnapshot();
-    return { fish: decode(raw), live: false, fetched: raw.fetched, error };
+    return { fish: decode(raw), live: false, fetched: raw.fetched, patch: raw.patch, error };
   }
 }
