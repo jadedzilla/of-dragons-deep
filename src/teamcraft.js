@@ -3,6 +3,7 @@
 //   fishing-sources.json       { itemId: [{ spot, bait, hookset, tug, spawn?, duration?, weathers?, weathersFrom?,
 //                                            oceanFishingTime?, … }] }  one entry per fishing spot (FishingSpot row id)
 //   spearfishing-sources.json  { itemId: [{ speed, shadowSize, spawn?, duration?, … }] }
+//   fishing-spots.json         [{ id (FishingSpot), zoneId (PlaceName), mapId, fishes, … }]   (Log Route grouping)
 // Names, icons, places and weather come from XIVAPI game data.
 
 import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";

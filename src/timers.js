@@ -86,6 +86,12 @@ export async function loadTimerData({ fetchFn = fetch, signal } = {}) {
   return { fish, weather };
 }
 
+let timerDataPromise = null; // shared by the Fish Timers and Log Route pages; dropped on failure so it's retried
+export function getTimerData() {
+  timerDataPromise ??= loadTimerData().catch(e => { timerDataPromise = null; throw e; });
+  return timerDataPromise;
+}
+
 const weatherCache = new Map(); // `${territory}:${periodStart}` → weather id
 function weatherAt(fish, periodStart) {
   const key = fish.territory + ":" + periodStart;
@@ -136,15 +142,15 @@ export function nextWindow(fish, from) {
 
 /* ---------- Timers page ---------- */
 const tmPad = n => String(n).padStart(2, "0");
-function tmEtHour(h) { const m = Math.round(h * 60); return `${tmPad(Math.floor(m / 60) % 24)}:${tmPad(m % 60)}`; }
-function tmDuration(s) {
+export function tmEtHour(h) { const m = Math.round(h * 60); return `${tmPad(Math.floor(m / 60) % 24)}:${tmPad(m % 60)}`; }
+export function tmDuration(s) {
   s = Math.max(0, Math.round(s));
   const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
   if (d) return `${d}d ${h}h`;
   if (h) return `${h}h ${tmPad(m)}m`;
   return `${m}m ${tmPad(s % 60)}s`;
 }
-function tmLocal(unixSeconds, now) {
+export function tmLocal(unixSeconds, now) {
   const d = new Date(unixSeconds * 1000), today = new Date(now * 1000).toDateString() === d.toDateString();
   const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   return today ? time : `${d.toLocaleDateString([], { weekday: "short" })} ${time}`;
@@ -218,7 +224,7 @@ export function createTimers(root, { byId, isCaught, fishIcon, onOpen, esc }) {
   }
 
   function load() {
-    loading ??= loadTimerData().then(d => {
+    loading ??= getTimerData().then(d => {
       data = d;
       entries = d.fish.filter(t => byId.has(t.id)).map(t => ({ t, f: byId.get(t.id), win: null }));
       render();

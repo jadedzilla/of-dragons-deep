@@ -59,6 +59,47 @@ function oceanSpotFor(desc, oceanSpots) {
   return best;
 }
 
+let achievementsPromise = null; // loaded once (dropped on failure so it can be retried)
+export function getAchievements() {
+  achievementsPromise ??= loadAchievements().catch(e => { achievementsPromise = null; throw e; });
+  return achievementsPromise;
+}
+
+/**
+ * What an achievement needs: { kind: "count", section, need, fish } (any `need` of `fish`), { kind: "set", section,
+ * fish } (all of them), { kind: "meta", ids } (all those achievements) or { kind: "manual", section }.
+ */
+export function achievementRequirement(a, data, allFish, byId) {
+  if (a.type === 1 && a.key === UNIQUE_FISH) return { kind: "count", section: "log", need: a.data[0], fish: allFish };
+  if (a.type === 1 && BIG_FISH_COUNTERS[a.key]) {
+    const cats = BIG_FISH_COUNTERS[a.key];
+    return { kind: "count", section: "big", need: a.data[0], fish: allFish.filter(f => !f.spear && f.big && cats.includes(f.cat)) };
+  }
+  if (a.type === 27) {
+    const spot = oceanSpotFor(a.desc, data.oceanSpots);
+    if (spot) {
+      const ids = /current is present/i.test(a.desc) ? spot.sub : spot.main;
+      return { kind: "set", section: "ocean", fish: ids.map(id => byId.get(id)).filter(Boolean) };
+    }
+  }
+  if (a.type === 2) return { kind: "meta", ids: [a.key, ...a.data] };
+  const section = /ocean fishing/i.test(a.desc) ? "voyage" : a.order < 40 ? "milestones" : "other";
+  return { kind: "manual", section };
+}
+
+/** Whether an achievement is obtained. ctx: { reqs: Map(id → requirement), byAch: Map(id → achievement), isCaught, marks }. */
+export function achievementDone(a, ctx, seen = new Set()) {
+  const r = ctx.reqs.get(a.id);
+  if (r.kind === "count") return r.fish.filter(f => ctx.isCaught(f.id)).length >= r.need;
+  if (r.kind === "set") return r.fish.length > 0 && r.fish.every(f => ctx.isCaught(f.id));
+  if (r.kind === "meta") {
+    if (seen.has(a.id)) return false;
+    seen.add(a.id);
+    return r.ids.every(id => ctx.byAch.has(id) ? achievementDone(ctx.byAch.get(id), ctx, seen) : ctx.marks.has(id));
+  }
+  return ctx.marks.has(a.id);
+}
+
 const SECTIONS = [
   ["log", "Fish log", "Tracked from the fish you've marked caught (Fish Guide and spearfishing log)."],
   ["big", "Big fish", "Tracked from the big fish you've marked caught."],
@@ -95,36 +136,8 @@ export function createAchievements(root, { allFish, byId, isCaught, fishIcon, on
     try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...collapsed])); } catch { /* storage unavailable */ }
   }, true); // toggle doesn't bubble
 
-  function requirement(a) {
-    if (a.type === 1 && a.key === UNIQUE_FISH) return { kind: "count", section: "log", need: a.data[0], fish: allFish };
-    if (a.type === 1 && BIG_FISH_COUNTERS[a.key]) {
-      const cats = BIG_FISH_COUNTERS[a.key];
-      return { kind: "count", section: "big", need: a.data[0], fish: allFish.filter(f => !f.spear && f.big && cats.includes(f.cat)) };
-    }
-    if (a.type === 27) {
-      const spot = oceanSpotFor(a.desc, data.oceanSpots);
-      if (spot) {
-        const ids = /current is present/i.test(a.desc) ? spot.sub : spot.main;
-        return { kind: "set", section: "ocean", fish: ids.map(id => byId.get(id)).filter(Boolean) };
-      }
-    }
-    if (a.type === 2) return { kind: "meta", ids: [a.key, ...a.data] };
-    const section = /ocean fishing/i.test(a.desc) ? "voyage" : a.order < 40 ? "milestones" : "other";
-    return { kind: "manual", section };
-  }
   const byAch = () => new Map(data.achievements.map(a => [a.id, a]));
-  function isDone(a, seen = new Set()) {
-    const r = reqs.get(a.id);
-    if (r.kind === "count") return r.fish.filter(f => isCaught(f.id)).length >= r.need;
-    if (r.kind === "set") return r.fish.length > 0 && r.fish.every(f => isCaught(f.id));
-    if (r.kind === "meta") {
-      if (seen.has(a.id)) return false;
-      seen.add(a.id);
-      const all = byAch();
-      return r.ids.every(id => all.has(id) ? isDone(all.get(id), seen) : marks.has(id));
-    }
-    return marks.has(a.id);
-  }
+  const isDone = a => achievementDone(a, { reqs, byAch: byAch(), isCaught, marks });
 
   function rowHtml(a, done) {
     const r = reqs.get(a.id);
@@ -179,9 +192,9 @@ export function createAchievements(root, { allFish, byId, isCaught, fishIcon, on
   }
 
   function load() {
-    loading ??= loadAchievements().then(d => {
+    loading ??= getAchievements().then(d => {
       data = d;
-      reqs = new Map(d.achievements.map(a => [a.id, requirement(a)]));
+      reqs = new Map(d.achievements.map(a => [a.id, achievementRequirement(a, d, allFish, byId)]));
       render();
     }, err => {
       loading = null;

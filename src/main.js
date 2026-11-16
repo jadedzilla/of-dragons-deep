@@ -4,6 +4,7 @@ import { loadCaught, saveCaught, loadTab, saveTab, loadMarks, saveMarks } from "
 import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
 import { createTimers } from "./timers.js";
 import { createAchievements } from "./achievements.js";
+import { createLogRoute } from "./logroute.js";
 import { baitChains, hooksetAndTug, loadTeamcraft, xivAsset, xivRows } from "./teamcraft.js";
 
 const PER_PAGE = 100; // 10x10 grid
@@ -524,15 +525,16 @@ if (linkParams.has("import")) {
   }
 }
 
-/* ---------- Pages: Fish Guide / Fish Timers / Achievements (navigation bar, #timers / #achievements in the URL) ---------- */
-let timers = null, achievements = null; // created the first time their page is opened
-const VIEWS = { "#timers": "timers", "#achievements": "achievements" };
+/* ---------- Pages: Fish Guide / Fish Timers / Achievements / Log Route (navigation bar; #timers, #achievements, #route) ---------- */
+let timers = null, achievements = null, logRoute = null; // created the first time their page is opened
+const VIEWS = { "#timers": "timers", "#achievements": "achievements", "#route": "route" };
 function route() {
   const view = VIEWS[location.hash] ?? "guide";
   document.body.dataset.view = view;
   $("#guideView").hidden = view !== "guide";
   $("#timersView").hidden = view !== "timers";
   $("#achievementsView").hidden = view !== "achievements";
+  $("#routeView").hidden = view !== "route";
   $("#tabs").hidden = view !== "guide" || !SPEAR_LIST.length;
   $(".progress").hidden = view !== "guide";
   document.querySelectorAll("#topnav a").forEach(a => a.toggleAttribute("aria-current", a.dataset.view === view));
@@ -545,6 +547,11 @@ function route() {
     achievements ??= createAchievements($("#achievementsView"), { allFish: [...FISH_LIST, ...SPEAR_LIST], byId: BY_ID,
       isCaught: id => caught.has(id), fishIcon, onOpen: openFishView, esc, marks: loadMarks(), saveMarks });
     achievements.show();
+  }
+  if (view === "route") {
+    logRoute ??= createLogRoute($("#routeView"), { fishList: FISH_LIST, byId: BY_ID, isCaught: id => caught.has(id),
+      markCaught: id => { caught.add(id); saveCaught(caught); }, fishIcon, onOpen: openFishView, esc, oceanCategory: OCEAN_FISHING });
+    logRoute.show();
   }
   if (view === "guide") render();
 }
