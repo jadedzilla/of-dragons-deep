@@ -103,23 +103,6 @@ body{
   background:var(--gold-hi);box-shadow:0 0 0 1px #000;
 }
 .tile.empty{cursor:default;background:rgba(255,255,255,.025);border-color:#2a2820;box-shadow:none}
-
-/* Game icon frame with reflective shine (data/icons/frame.png, 96×96 cell; the 80px icon sits at 8,4).
-   The frame replaces the tile's own border and background. */
-.grid:has(.shine){gap:2px}
-.tile:has(.shine){background:none;border:none;box-shadow:none;border-radius:0;overflow:visible}
-.tile:has(.shine) > .ic,.tile:has(.shine) > img,.tile:has(.shine) > svg{
-  position:absolute;left:8.333%;top:4.167%;width:83.333%;height:83.333%;border-radius:6%}
-.tile .shine{position:absolute;inset:0;z-index:1;pointer-events:none;background:center/100% 100% no-repeat;transition:filter .12s}
-.tile:has(.shine):hover .shine{filter:drop-shadow(0 0 3px rgba(241,220,160,.85))}
-.tile.caught:has(.shine) .shine{filter:drop-shadow(0 0 2px rgba(201,169,92,.7))}
-.tile.caught:has(.shine):hover .shine{filter:drop-shadow(0 0 3px rgba(241,220,160,.95))}
-.tile:has(.shine)::before,.tile:has(.shine)::after{z-index:2}
-.tile.big:has(.shine)::before{left:10%;top:7%}
-.tile.caught:has(.shine)::after{right:10%;bottom:12%}
-/* empty slots: a faint copy of the same frame, so they line up exactly */
-.grid:has(.shine) .tile.empty{background:none;border:none}
-.grid:has(.shine) .tile.empty::after{content:"";position:absolute;inset:0;background:center/100% 100% no-repeat;opacity:.13;filter:grayscale(1)}
 .tile.empty:hover{transform:none}
 
 .tooltip{

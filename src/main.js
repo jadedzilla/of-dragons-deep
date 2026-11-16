@@ -1,5 +1,5 @@
 import { loadFish, CATEGORIES, OCEAN_FISHING } from "./data.js";
-import { fishIcon, fishPlaceholder, loadIcons, shine } from "./icons.js";
+import { fishIcon, fishPlaceholder, loadIcons } from "./icons.js";
 import { loadCaught, saveCaught } from "./storage.js";
 
 const PER_PAGE = 100; // 10x10 grid
@@ -82,7 +82,7 @@ function render() {
     grid.innerHTML = `<div class="empty-msg">No fish match your search.</div>`;
   } else {
     let html = "";
-    for (const f of slice) html += `<div class="tile${caught.has(f.id) ? " caught" : ""}${f.big ? " big" : ""}" data-id="${f.id}">${fishIcon(f)}${shine()}</div>`;
+    for (const f of slice) html += `<div class="tile${caught.has(f.id) ? " caught" : ""}${f.big ? " big" : ""}" data-id="${f.id}">${fishIcon(f)}</div>`;
     for (let i = slice.length; i < PER_PAGE; i++) html += `<div class="tile empty"></div>`;
     grid.innerHTML = html;
   }

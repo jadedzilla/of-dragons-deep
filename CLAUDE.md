@@ -49,8 +49,7 @@ Rules in `src/fishsource.js` / `src/data.js`:
 From XIVAPI v2: `https://v2.xivapi.com/api/asset?path=ui/icon/029000/029063_hr1.tex&format=png` (`_hr1` = 80px; plain = 40px fallback).
 Icons are packed into 800×800 sheets (bundling ~1,000 files individually is impractical); `icons.json` maps game icon id → index, sheet = index / 100.
 Sheets are ordered by first appearance in `fish.json`, so the first grid page needs only one. Each sheet gets a CSS class (`.ic.sN`) injected at load; tiles set `background-position`.
-Game icons include their own square backdrop.
-**Frame/shine:** `data/icons/frame.png` is the game's item-icon frame with its reflective shine (top-left 96×96 cell of `ui/uld/IconA_Frame_hr1.tex`, from XIVAPI; `npm run fetch-icons -- --frame-only` refreshes just this). Each fish tile gets an `<i class="shine">` overlay (pointer-events: none) and the 80px icon is placed at 8,4 inside the 96 cell, as in-game; the frame replaces the tile's own border. Empty slots show the same frame faintly. Without the frame (manifest has no `frame`), tiles fall back to the plain bordered look.
+Game icons include their own square backdrop, so they fill the tile.
 
 ## UI requirements (from the project owner)
 
