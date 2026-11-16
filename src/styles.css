@@ -201,3 +201,13 @@ body{
   .titlebar h1{font-size:17px;letter-spacing:.03em}
   .progress{font-size:12px}
 }
+
+/* import summary notice, shown after the dialog closes */
+.toast{
+  position:fixed;left:50%;bottom:20px;z-index:20;width:min(440px,calc(100vw - 32px));margin:0;padding:10px 34px 10px 12px;
+  background:rgba(16,19,28,.97);box-shadow:0 8px 24px rgba(0,0,0,.6);
+  opacity:0;transform:translate(-50%,12px);pointer-events:none;transition:opacity .2s,transform .2s;
+}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast-x{position:absolute;top:4px;right:6px;width:24px;height:24px;border:0;background:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer}
+.toast-x:hover{color:var(--gold-hi)}

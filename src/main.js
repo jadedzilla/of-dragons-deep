@@ -244,8 +244,21 @@ $("#importForm").addEventListener("submit", e => {
   parts.push(`You now have <b>${caught.size}</b> / ${FISH.length} caught.`);
   if (unknown.length) parts.push(`<div class="sub">Skipped ${unknown.length} ID${unknown.length > 1 ? "s that aren't fish" : " that isn't a fish"}: ${listSample(unknown)}</div>`);
   if (invalid.length) parts.push(`<div class="sub">Skipped ${invalid.length} entr${invalid.length > 1 ? "ies that aren't numbers" : "y that isn't a number"}: ${listSample(invalid)}</div>`);
-  showResult(parts.join(" "), unknown.length || invalid.length ? "ok partial" : "ok");
+  // Success: close the dialog and show the summary as a short-lived notice instead.
+  dlg.close();
+  importText.value = "";
+  showToast(parts.join(" "), unknown.length || invalid.length ? 9000 : 5000);
 });
+
+const toast = $("#toast");
+let toastTimer;
+function showToast(html, ms) {
+  toast.innerHTML = html + `<button type="button" class="toast-x" aria-label="Dismiss">×</button>`;
+  toast.classList.add("show", "ok");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), ms);
+}
+toast.addEventListener("click", e => { if (e.target.closest(".toast-x")) { clearTimeout(toastTimer); toast.classList.remove("show"); } });
 
 /* ---------- Import from a link (?import=) ---------- */
 // Links from the Of Dragons Deep Dalamud plugin: ?import=1.<data>, where <data> is the sorted item ids
