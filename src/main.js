@@ -188,13 +188,14 @@ function showResult(html, kind) {
 }
 const listSample = (arr, n = 12) => esc(arr.slice(0, n).join(", ")) + (arr.length > n ? `, … (+${arr.length - n} more)` : "");
 
-$("#importBtn").addEventListener("click", () => {
+function openImportDialog() {
   panel.classList.remove("open"); fbtn.classList.remove("open");
   resetImportState();
   showResult("");
-  dlg.showModal();
+  if (!dlg.open) dlg.showModal();
   importText.focus();
-});
+}
+$("#importBtn").addEventListener("click", openImportDialog);
 $("#importCancel").addEventListener("click", () => dlg.close());
 dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); }); // click on backdrop
 importText.addEventListener("input", resetImportState);
@@ -245,6 +246,46 @@ $("#importForm").addEventListener("submit", e => {
   if (invalid.length) parts.push(`<div class="sub">Skipped ${invalid.length} entr${invalid.length > 1 ? "ies that aren't numbers" : "y that isn't a number"}: ${listSample(invalid)}</div>`);
   showResult(parts.join(" "), unknown.length || invalid.length ? "ok partial" : "ok");
 });
+
+/* ---------- Import from a link (?import=) ---------- */
+// Links from the Of Dragons Deep Dalamud plugin: ?import=1.<data>, where <data> is the sorted item ids
+// stored as deltas (LEB128 varints), raw-DEFLATE compressed, base64url without padding.
+// A plain id list (?import=4776,4869) works too.
+async function decodeImportParam(value) {
+  if (/^[\d\s,;]+$/.test(value)) return value;
+  const m = /^1\.([A-Za-z0-9_-]*)$/.exec(value);
+  if (!m) throw new Error("Unrecognised import link");
+  const bytes = Uint8Array.from(atob(m[1].replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  const raw = new Uint8Array(await new Response(stream).arrayBuffer());
+  const ids = [];
+  let prev = 0, cur = 0, shift = 0;
+  for (const b of raw) {
+    cur += (b & 0x7f) * 2 ** shift;
+    if (b & 0x80) { shift += 7; continue; }
+    prev += cur; ids.push(prev);
+    cur = 0; shift = 0;
+  }
+  return ids.join(", ");
+}
+
+const linkParams = new URLSearchParams(location.search);
+if (linkParams.has("import")) {
+  const value = linkParams.get("import");
+  // Drop the parameter so reloading or bookmarking the page doesn't import again.
+  linkParams.delete("import");
+  const rest = linkParams.toString();
+  history.replaceState(null, "", location.pathname + (rest ? "?" + rest : "") + location.hash);
+
+  openImportDialog();
+  try {
+    importText.value = await decodeImportParam(value);
+    dlg.querySelector("input[name=importMode][value=add]").checked = true;
+    $("#importForm").requestSubmit(); // runs the normal "Add" import and shows its result
+  } catch {
+    showResult("This import link couldn't be read. It may have been cut off when it was copied.", "warn");
+  }
+}
 
 $("#resetFilters").addEventListener("click", () => {
   Object.assign(filters, { status: "all", bigOnly: false, collOnly: false, cats: allCats() });
