@@ -41,5 +41,18 @@ html = html
   .replace('<script type="module" src="src/main.js"></script>',
     () => `<script>window.__FISH_DATA__ = ${data};\nwindow.__ICON_DATA__ = ${JSON.stringify(icons)};</script>\n<script type="module">\n${js}</script>`);
 
+// Files from public/ referenced by the page (the favicon): inlined as data: URIs in the single file, copied next to
+// the page with --external-icons.
+for (const path of new Set([...html.matchAll(/(?:href|src)="(public\/[^"]+)"/g)].map(m => m[1]))) {
+  if (externalIcons) {
+    await mkdir(new URL("dist/public/", root), { recursive: true });
+    await copyFile(new URL(path, root), new URL(`dist/${path}`, root));
+  } else {
+    const type = { png: "image/png", jpg: "image/jpeg", svg: "image/svg+xml", webp: "image/webp", ico: "image/x-icon" }[path.split(".").pop()] ?? "application/octet-stream";
+    const uri = `data:${type};base64,` + (await readFile(new URL(path, root))).toString("base64");
+    html = html.replaceAll(`"${path}"`, `"${uri}"`);
+  }
+}
+
 await writeFile(new URL("dist/index.html", root), html);
 console.log(`Wrote dist/index.html (${(html.length / 1024).toFixed(0)} KB)` + (externalIcons ? ` + ${icons.sheets.length} sheets in dist/icons/` : ""));

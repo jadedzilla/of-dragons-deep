@@ -1,6 +1,6 @@
 # Of Dragons Deep
 
-Web app that tracks fish caught in Final Fantasy XIV to help players complete the big fishing achievements. The UI should feel like it belongs in the game: dark translucent windows, gold trim, Cinzel headings.
+Web app that tracks fish caught in Final Fantasy XIV to help players complete the big fishing achievements. The UI should feel like it belongs in the game: dark translucent windows, gold trim, Cinzel headings. The title bar is text only — **no logo in the title bar** (owner's call); the clean Nepto Dragon icon is the favicon.
 
 Currently a proof of concept: plain HTML/CSS/ES modules, **no dependencies and no framework**. Keep it that way unless a change clearly needs one (ask first).
 
@@ -40,6 +40,7 @@ Writing tests: `export default async t => {…}` with `t.page({ width, height, p
 - `scripts/fetch-icons.mjs` — icon downloader (writes PNG sheets); `scripts/webp-sheets.mjs` — converts them to WebP via headless Chromium; `scripts/png.mjs` — tiny PNG decode/encode used to pack sheets
 - `scripts/build.mjs`, `scripts/serve.mjs` — build and dev server
 - `tests/` — `run.mjs` (runner), `suites/*.mjs`, `lib/` (network mock, helpers), `fixtures/` (recorded network + `record.mjs`)
+- `public/` — branding: `neptodragon-icon-clean-512x.png` (favicon, transparent), `ofdragonsdeep-banner.png` (README header, Nepto Dragon from FFIII), `neptodragon-icon-512x.png` (textured version, unused); `robots.txt` is left over from an earlier version. Any `public/…` path in `index.html` is inlined as a data: URI by the build (copied to `dist/public/` with `--external-icons`).
 - `data/fish.json` — committed fallback snapshot (`rows` = Fish Guide, `spear` = spearfishing log), used when the live fetch fails
 - `data/icons.json` + `data/icons/sheet-NN.webp` — committed icon snapshot (1,243 unique icons — fishing first, then spearfishing — 80×80, 10×10 per sheet; WebP q0.82, ≈1.7 MB for all 13)
 

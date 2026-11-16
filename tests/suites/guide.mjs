@@ -12,7 +12,11 @@ export default async function (t) {
   t.check("page numbers: 16 pages", await p.$$eval("#pages .pg:not(.arrow)", b => b.at(-1).textContent) === "16");
   await p.waitForFunction(() => document.querySelectorAll(".tile .ic.ready").length >= 90);
   t.check("icons come from the WebP sprite sheets", await p.evaluate(() => getComputedStyle(document.querySelector(".tile .ic")).backgroundImage.includes(".webp")));
-  t.check("title bar", await text(p, ".titlebar h1") === "Of Dragons Deep");
+  t.check("title bar: text only, no logo", await text(p, ".titlebar h1") === "Of Dragons Deep" && !(await p.$(".titlebar img")));
+  t.check("favicon: the clean Nepto Dragon icon, and it loads", await p.evaluate(async () => {
+    const l = document.querySelector('link[rel="icon"]');
+    return !!l && /neptodragon-icon-clean-512x\.png$/.test(l.getAttribute("href")) && (await fetch(l.href)).ok;
+  }));
 
   // paging: arrows and search never move
   const pos = () => p.evaluate(() => ["#pages .pg.arrow:first-child", "#pages .pg.arrow:last-child", "#search"].map(s => Math.round(document.querySelector(s).getBoundingClientRect().left)).join());
