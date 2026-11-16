@@ -23,6 +23,7 @@ $("#dataNote").textContent = live
   : `${FISH.length} fish · offline snapshot from ${fetched} (couldn't reach ff14fish.carbuncleplushy.com: ${error}) · icons via XIVAPI`;
 $("#dataNote").classList.toggle("offline", !live);
 
+// Filtering keeps source order (the tracker's Fish Guide order); don't sort.
 function visible() {
   const q = query.trim().toLowerCase();
   return FISH.filter(f =>
@@ -96,6 +97,7 @@ function showTip(t) {
     <div class="m">${esc(f.zone)}${f.zone !== f.region ? ", " + esc(f.region) : ""}</div>
     <div class="m">${esc(f.water)}${f.cat !== OCEAN_FISHING ? " · Lv. " + f.lvl : ""} · ${CATEGORIES[f.cat]}</div>
     ${tags ? `<div class="t">${tags}</div>` : ""}
+    <div class="m">Fish Guide #${f.no} · page ${Math.ceil(f.no / PER_PAGE)}</div>
     <div class="m">${caught.has(f.id) ? "✔ Caught" : "Not yet caught"}</div>`;
   const r = t.getBoundingClientRect();
   tip.style.display = "block";
