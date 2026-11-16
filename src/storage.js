@@ -5,6 +5,7 @@
 const CAUGHT_KEY = "odd-caught-v2";
 const TAB_KEY = "odd-tab";
 const MARKS_KEY = "odd-achievements-v1";
+const PROGRESS_KEY = "odd-achievements-progress-v1";
 
 export function loadCaught(validIds) {
   try {
@@ -34,4 +35,16 @@ export function loadMarks() {
 
 export function saveMarks(marks) {
   try { localStorage.setItem(MARKS_KEY, JSON.stringify([...marks])); } catch { /* storage unavailable */ }
+}
+
+/** Achievement progress imported from the plugin: { at: ISO date or null, items: { id: [current, max] } }. */
+export function loadAchievementProgress() {
+  try {
+    const v = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "null");
+    return v && typeof v.items === "object" ? v : { at: null, items: {} };
+  } catch { return { at: null, items: {} }; }
+}
+
+export function saveAchievementProgress(progress) {
+  try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); } catch { /* storage unavailable */ }
 }

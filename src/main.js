@@ -1,9 +1,9 @@
 import { loadFish, CATEGORIES, OCEAN_FISHING } from "./data.js";
 import { fishIcon, fishPlaceholder, loadIcons, prefetchSheets, sheetsFor, sheetsReady, sheetCount } from "./icons.js";
-import { loadCaught, saveCaught, loadTab, saveTab, loadMarks, saveMarks } from "./storage.js";
+import { loadCaught, saveCaught, loadTab, saveTab, loadMarks, saveMarks, loadAchievementProgress, saveAchievementProgress } from "./storage.js";
 import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
 import { createTimers } from "./timers.js";
-import { createAchievements } from "./achievements.js";
+import { createAchievements, looksLikeAchievementExport } from "./achievements.js";
 import { createLogRoute } from "./logroute.js";
 import { baitChains, hooksetAndTug, loadTeamcraft, xivAsset, xivRows } from "./teamcraft.js";
 
@@ -431,6 +431,11 @@ $("#importFile").addEventListener("change", async e => {
 
 $("#importForm").addEventListener("submit", e => {
   e.preventDefault();
+  if (looksLikeAchievementExport(importText.value)) {
+    showResult(`This is an <b>achievements</b> export. Import it on the <a href="#achievements" id="toAchImport">Achievements</a> page instead.`, "warn");
+    $("#toAchImport").addEventListener("click", () => dlg.close());
+    return;
+  }
   const { ids, invalid } = parseIds(importText.value);
   const known = ids.filter(id => BY_ID.has(id)), unknown = ids.filter(id => !BY_ID.has(id));
   const replace = dlg.querySelector("input[name=importMode]:checked").value === "replace";
@@ -545,7 +550,8 @@ function route() {
   } else timers?.hide();
   if (view === "achievements") {
     achievements ??= createAchievements($("#achievementsView"), { allFish: [...FISH_LIST, ...SPEAR_LIST], byId: BY_ID,
-      isCaught: id => caught.has(id), fishIcon, onOpen: openFishView, esc, marks: loadMarks(), saveMarks });
+      isCaught: id => caught.has(id), fishIcon, onOpen: openFishView, esc, marks: loadMarks(), saveMarks,
+      progress: loadAchievementProgress(), saveProgress: saveAchievementProgress });
     achievements.show();
   }
   if (view === "route") {
