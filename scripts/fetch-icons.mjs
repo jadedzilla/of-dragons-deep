@@ -6,9 +6,7 @@
 // so the default first page of the grid only needs the first sheet.
 //
 // Source: XIVAPI v2 asset endpoint, high-resolution (_hr1, 80×80) icons; falls back to the 40×40 icon, upscaled.
-// Also writes data/icons/frame.png: the game's item-icon frame with its reflective shine (ui/uld/IconA_Frame_hr1.tex,
-// top-left 96×96 cell; the 80px icon sits at 8,4 inside it), drawn over every tile.
-// Requires Node 18+ and network access to v2.xivapi.com. Usage: npm run fetch-icons [-- --frame-only]
+// Requires Node 18+ and network access to v2.xivapi.com. Usage: npm run fetch-icons
 import { readFile, writeFile, mkdir, readdir, unlink } from "node:fs/promises";
 import { decodePng, encodePng } from "./png.mjs";
 
@@ -54,27 +52,6 @@ async function fetchIcon(id) {
   return lr ? { img: toSize(decodePng(lr)), hr: false } : null;
 }
 
-const FRAME_CELL = 96;
-async function fetchFrame() {
-  const url = `https://v2.xivapi.com/api/asset?path=${encodeURIComponent("ui/uld/IconA_Frame_hr1.tex")}&format=png`;
-  const buf = await download(url);
-  if (!buf) throw new Error("Icon frame not found: " + url);
-  const atlas = decodePng(buf), data = Buffer.alloc(FRAME_CELL * FRAME_CELL * 4);
-  for (let y = 0; y < FRAME_CELL; y++) atlas.data.copy(data, y * FRAME_CELL * 4, y * atlas.width * 4, (y * atlas.width + FRAME_CELL) * 4);
-  await mkdir(outDir, { recursive: true });
-  await writeFile(new URL("frame.png", outDir), encodePng({ width: FRAME_CELL, height: FRAME_CELL, data }));
-  return "frame.png";
-}
-
-if (process.argv.includes("--frame-only")) {
-  const manifestUrl = new URL("data/icons.json", root);
-  const manifest = JSON.parse(await readFile(manifestUrl, "utf8"));
-  manifest.frame = await fetchFrame();
-  await writeFile(manifestUrl, JSON.stringify(manifest));
-  console.log("Wrote data/icons/frame.png");
-  process.exit(0);
-}
-
 const { rows } = JSON.parse(await readFile(new URL("data/fish.json", root), "utf8"));
 const ids = [...new Set(rows.map(r => r[2]).filter(Boolean))];
 console.log(`Downloading ${ids.length} icons from v2.xivapi.com …`);
@@ -110,8 +87,7 @@ for (let s = 0; s * PER_SHEET < found.length; s++) {
   sheets.push(file);
 }
 
-const frame = await fetchFrame();
-const manifest = { source: "https://v2.xivapi.com/api/asset", fetched: new Date().toISOString().slice(0, 10), size: SIZE, cols: COLS, sheets, frame, icons };
+const manifest = { source: "https://v2.xivapi.com/api/asset", fetched: new Date().toISOString().slice(0, 10), size: SIZE, cols: COLS, sheets, icons };
 await writeFile(new URL("data/icons.json", root), JSON.stringify(manifest));
 console.log(`Wrote ${sheets.length} sheets with ${found.length} icons to data/icons/`);
 if (lowRes.length) console.log(`  ${lowRes.length} icon(s) only available at 40px (upscaled): ${lowRes.join(", ")}`);

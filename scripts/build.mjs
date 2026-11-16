@@ -2,7 +2,7 @@
 // Bundles the app into one self-contained file: dist/index.html (CSS, JS, icons and the fallback fish snapshot inlined;
 // fish data is still fetched live at runtime when the source is reachable).
 // Handy for hosting anywhere static or sharing as a single file. Usage: npm run build
-//   --external-icons  keep the icon sprite sheets and frame as separate files in dist/icons/ instead of inlining them
+//   --external-icons  keep the icon sprite sheets as separate files in dist/icons/ instead of inlining them
 //                     (smaller HTML that renders sooner; sheets load only when needed)
 //
 // Bundling is deliberately simple: modules are concatenated in dependency order with their
@@ -23,13 +23,11 @@ const icons = JSON.parse(await read("data/icons.json"));
 await mkdir(new URL("dist/", root), { recursive: true });
 if (externalIcons) {
   await mkdir(new URL("dist/icons/", root), { recursive: true });
-  for (const s of [...icons.sheets, icons.frame].filter(Boolean)) await copyFile(new URL(`data/icons/${s}`, root), new URL(`dist/icons/${s}`, root));
+  for (const s of icons.sheets) await copyFile(new URL(`data/icons/${s}`, root), new URL(`dist/icons/${s}`, root));
   icons.sheets = icons.sheets.map(s => `icons/${s}`);
-  if (icons.frame) icons.frame = `icons/${icons.frame}`;
 } else {
-  const inline = async s => "data:image/png;base64," + (await readFile(new URL(`data/icons/${s}`, root))).toString("base64");
-  icons.sheets = await Promise.all(icons.sheets.map(inline));
-  if (icons.frame) icons.frame = await inline(icons.frame);
+  icons.sheets = await Promise.all(icons.sheets.map(async s =>
+    "data:image/png;base64," + (await readFile(new URL(`data/icons/${s}`, root))).toString("base64")));
 }
 let html = await read("index.html");
 
