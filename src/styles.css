@@ -37,13 +37,13 @@ body{
 .pages{display:flex;gap:4px;flex-shrink:0}
 .pg{
   min-width:30px;height:30px;padding:0 6px;border-radius:5px;cursor:pointer;
-  font:600 13px "Noto Sans",sans-serif;color:var(--muted);
+  font:600 13px "Noto Sans",sans-serif;font-variant-numeric:tabular-nums;color:var(--muted);
   background:linear-gradient(180deg,#30374c,#1e2333);border:1px solid #4a4434;
 }
 .pg:hover{color:var(--text);border-color:var(--gold-dim)}
 .pg:disabled{opacity:.35;cursor:default}
 .pg.arrow{min-width:24px;padding:0 4px}
-.pages .gap{color:var(--muted);align-self:center;padding:0 1px;font-size:12px}
+.pages .gap{color:var(--muted);align-self:center;min-width:30px;text-align:center;font-size:12px} /* same width as a page button */
 .pg.active{color:#1b1608;background:linear-gradient(180deg,var(--gold-hi),var(--gold));border-color:var(--gold-hi)}
 .search{
   flex:0 1 200px;min-width:120px;height:30px;padding:0 10px 0 28px;border-radius:15px;
