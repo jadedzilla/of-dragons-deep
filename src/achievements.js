@@ -147,10 +147,9 @@ export function createAchievements(root, { allFish, byId, isCaught, fishIcon, on
       const have = Math.min(need, r.fish.filter(f => isCaught(f.id)).length);
       progress = `<div class="ac-progress"><div class="ac-bar"><i style="width:${need ? (have / need) * 100 : 0}%"></i></div><span>${have.toLocaleString("en-US")} / ${need.toLocaleString("en-US")}</span></div>`;
       if (r.kind === "set") progress += `<div class="ac-fish">${r.fish.map(f => `<button type="button" class="ac-f${isCaught(f.id) ? " caught" : ""}" data-fish="${f.id}" title="${esc(f.name)}${isCaught(f.id) ? " ✓" : ""}">${fishIcon(f)}</button>`).join("")}</div>`;
-    } else if (r.kind === "meta") {
-      const all = byAch();
-      progress = `<div class="ac-reqs">Requires: ${r.ids.map(id => { const x = all.get(id);
-        return `<span class="${x && isDone(x) ? "ok" : ""}">${esc(x?.name ?? `achievement ${id}`)}${x && isDone(x) ? " ✓" : ""}</span>`; }).join(", ")}</div>`;
+    } else if (r.kind === "meta") { // its parts are listed underneath it (see render)
+      const all = byAch(), have = r.ids.filter(id => all.has(id) ? isDone(all.get(id)) : marks.has(id)).length, need = r.ids.length;
+      progress = `<div class="ac-progress"><div class="ac-bar"><i style="width:${(have / need) * 100}%"></i></div><span>${have} / ${need} achievements</span></div>`;
     } else {
       status = `<label class="ac-mark"><input type="checkbox" data-mark="${a.id}"${done ? " checked" : ""}> Obtained</label>`;
     }
@@ -178,15 +177,31 @@ export function createAchievements(root, { allFish, byId, isCaught, fishIcon, on
     const nDone = [...done.values()].filter(Boolean).length;
     const pts = data.achievements.reduce((s, a) => s + a.points, 0), ptsDone = data.achievements.reduce((s, a) => s + (done.get(a.id) ? a.points : 0), 0);
     $a("#acSummary").innerHTML = `<b>${nDone}</b> of ${data.achievements.length} obtained · <b>${ptsDone}</b> of ${pts} points`;
+    // Achievements obtained by completing other achievements are shown as a group: the meta achievement with its parts
+    // nested underneath (recursively — "A Fisher's Life for Me: Greater Eorzea" holds the three region ones). A part is
+    // listed only inside its group, not on its own.
+    const parentOf = new Map();
+    for (const a of data.achievements) {
+      const r = reqs.get(a.id);
+      if (r.kind === "meta") for (const id of r.ids) if (all.has(id) && !parentOf.has(id)) parentOf.set(id, a.id);
+    }
+    const node = (a, depth) => {
+      if (hideDone && done.get(a.id)) return "";
+      const r = reqs.get(a.id), row = rowHtml(a, done.get(a.id));
+      if (r.kind !== "meta") return depth ? row.replace('class="ac-row', 'class="ac-row ac-sub') : row;
+      const parts = r.ids.map(id => all.get(id)).filter(Boolean).map(x => node(x, depth + 1)).join("");
+      return `<div class="ac-group${depth ? " ac-sub" : ""}" data-group="${a.id}">${row}${parts ? `<div class="ac-children">${parts}</div>` : ""}</div>`;
+    };
     list.innerHTML = SECTIONS.map(([key, title, note]) => {
       const items = data.achievements.filter(a => sectionOf(a) === key);
       if (!items.length) return "";
       const got = items.filter(a => done.get(a.id)).length;
-      const shown = items.filter(a => !hideDone || !done.get(a.id));
+      const roots = items.filter(a => !parentOf.has(a.id));
+      const html = roots.map(a => node(a, 0)).join("");
       return `<details class="ac-section" data-section="${key}"${expanded.has(key) ? " open" : ""}>
         <summary><h3>${title} <span class="ac-count">${got} / ${items.length}</span></h3></summary>
         <div class="ac-note">${note}</div>
-        ${shown.length ? shown.map(a => rowHtml(a, done.get(a.id))).join("") : `<div class="ac-all">All obtained.</div>`}
+        ${html || `<div class="ac-all">All obtained.</div>`}
       </details>`;
     }).join("");
   }
