@@ -13,6 +13,8 @@ Currently a proof of concept: plain HTML/CSS/ES modules, **no dependencies and n
 
 Deploy: `.github/workflows/pages.yml` runs `node scripts/build.mjs --external-icons` on every push to `main` and publishes `dist/` to GitHub Pages at https://jadedzilla.github.io/of-dragons-deep/ (a sub-path, so keep every URL in the app relative — no leading `/`).
 
+**Workflow rule (from the project owner): never commit, push or deploy without explicit confirmation.** After making a change, show the owner the new version first (publish a preview, plus screenshots/summary), then ask and wait for their OK. Pushing to `main` deploys to GitHub Pages, so it needs the same confirmation.
+
 There are no tests yet. After changes, run the dev server and check the page in a browser.
 
 ## Layout
