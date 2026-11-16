@@ -10,12 +10,18 @@ Currently a proof of concept: plain HTML/CSS/ES modules, **no dependencies and n
 - `npm run fetch-data` — refresh the fallback snapshot `data/fish.json` from XIVAPI (needs network access to v2.xivapi.com; behind a proxy on Node ≥ 22.21 run with `NODE_USE_ENV_PROXY=1`)
 - `npm run fetch-icons` — download fish icons from XIVAPI into `data/icons/` sprite sheets, then convert them to WebP (needs network access to v2.xivapi.com; behind a proxy on Node ≥ 22.21 run with `NODE_USE_ENV_PROXY=1`). The WebP step needs the dev-only Playwright dependency: `npm install && npx playwright install chromium` once. The app itself still has no dependencies.
 - `npm run build` — single self-contained file at `dist/index.html` (~11 MB, icons inlined); `node scripts/build.mjs --external-icons` keeps the sheets as `dist/icons/*.png` instead
+- `npm test` — run the test suites (≈15 s; `npm test -- timers achievements` runs matching suites only; `SHOTS=<dir>` saves screenshots). Needs Playwright + Chromium (see fetch-icons)
+- `npm run test:record` — re-record the test fixtures from XIVAPI/Teamcraft (network; `NODE_USE_ENV_PROXY=1` behind a proxy)
 
 Deploy: `.github/workflows/pages.yml` runs `node scripts/build.mjs --external-icons` on every push to `main` and publishes `dist/` to GitHub Pages at https://jadedzilla.github.io/of-dragons-deep/ (a sub-path, so keep every URL in the app relative — no leading `/`).
 
 **Workflow rule (from the project owner): never commit, push or deploy without explicit confirmation.** After making a change, show the owner the new version first (publish a preview, plus screenshots/summary), then ask and wait for their OK. Pushing to `main` deploys to GitHub Pages, so it needs the same confirmation.
 
-There are no tests yet. After changes, run the dev server and check the page in a browser.
+## Tests
+
+`npm test` after changes (and look at the page in a browser for anything visual). `tests/run.mjs` serves the repo, launches one Chromium and runs `tests/suites/*.mjs` in parallel (4 at a time); every page gets its own browser context (own localStorage). **No network**: `tests/lib/network.mjs` answers XIVAPI/Teamcraft from `tests/fixtures/network.json.gz` (exact recorded URLs, plus `?rows=` lookups filtered from recorded tables), XIVAPI images with a 1×1 PNG, and aborts anything else (fonts). A suite overrides a URL with `page.route()` (e.g. to simulate an outage). Re-record with `npm run test:record` when the game data or the app's requests change; the recorder runs the app's own loaders, so URLs always match.
+Suites: `unit` (Node only: live load = snapshot, bait chains, timer engine vs a brute-force scan, route planner, export parsing), `guide`, `edit`, `import`, `fishview`, `timers`, `achievements`, `logroute`, `build` (single file from disk + external icons + icon fallback).
+Writing tests: `export default async t => {…}` with `t.page({ width, height, path, clock, storage })`, `t.check(label, ok, detail)`, `t.noErrors(page)`, `t.shot(page, name)`; helpers in `tests/lib/app.mjs`. Wait for conditions (`waitForFunction`/`waitForSelector`), never fixed sleeps; fixed time with `clock` (`T0` from unit.mjs = ET 05:42).
 
 ## Layout
 
@@ -33,6 +39,7 @@ There are no tests yet. After changes, run the dev server and check the page in 
 - `scripts/fetch-fish-data.mjs` — refreshes the fallback snapshot using `src/fishsource.js`
 - `scripts/fetch-icons.mjs` — icon downloader (writes PNG sheets); `scripts/webp-sheets.mjs` — converts them to WebP via headless Chromium; `scripts/png.mjs` — tiny PNG decode/encode used to pack sheets
 - `scripts/build.mjs`, `scripts/serve.mjs` — build and dev server
+- `tests/` — `run.mjs` (runner), `suites/*.mjs`, `lib/` (network mock, helpers), `fixtures/` (recorded network + `record.mjs`)
 - `data/fish.json` — committed fallback snapshot (`rows` = Fish Guide, `spear` = spearfishing log), used when the live fetch fails
 - `data/icons.json` + `data/icons/sheet-NN.webp` — committed icon snapshot (1,243 unique icons — fishing first, then spearfishing — 80×80, 10×10 per sheet; WebP q0.82, ≈1.7 MB for all 13)
 

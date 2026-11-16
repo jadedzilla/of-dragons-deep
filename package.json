@@ -4,7 +4,9 @@
   "private": true,
   "description": "Web app for tracking fish caught in Final Fantasy XIV, to help with the big fishing achievements.",
   "type": "module",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "devDependencies": {
     "playwright": "1.63.0"
   },
@@ -12,6 +14,8 @@
     "dev": "node scripts/serve.mjs",
     "fetch-data": "node scripts/fetch-fish-data.mjs",
     "fetch-icons": "node scripts/fetch-icons.mjs && node scripts/webp-sheets.mjs",
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "test": "node tests/run.mjs",
+    "test:record": "node tests/fixtures/record.mjs"
   }
 }

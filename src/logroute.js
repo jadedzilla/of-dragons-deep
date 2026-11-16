@@ -29,7 +29,7 @@ const STEP_PAGE = 15;
 
 let oceanRoutesPromise = null;
 /** Ocean fishing: { spots: [{ id, name, main, sub }] (FishingSpot ids), routes: [{ stops: [[ikdSpot, timeOfDay]…] }] }. */
-function loadOceanRoutes() {
+export function loadOceanRoutes() {
   const schema = `schema=${encodeURIComponent(XIVAPI_SCHEMA)}`;
   const get = url => fetch(url).then(r => { if (!r.ok) throw new Error(`XIVAPI HTTP ${r.status}`); return r.json(); });
   oceanRoutesPromise ??= Promise.all([
