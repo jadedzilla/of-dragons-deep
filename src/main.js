@@ -143,6 +143,89 @@ panel.addEventListener("change", e => {
   page = 0;
   render();
 });
+/* ---------- Import ---------- */
+// Accepts game item ids separated by commas (also spaces, semicolons or new lines).
+function parseIds(text) {
+  const ids = [], invalid = [];
+  for (const tok of text.split(/[\s,;]+/)) {
+    if (!tok) continue;
+    if (/^\d+$/.test(tok)) ids.push(+tok); else invalid.push(tok);
+  }
+  return { ids: [...new Set(ids)], invalid };
+}
+
+const dlg = $("#importDialog"), importText = $("#importText"), importResult = $("#importResult"), importGo = $("#importGo");
+let confirmReplace = false; // "replace" needs a second click when it would unmark fish
+
+function resetImportState() {
+  confirmReplace = false;
+  importGo.textContent = "Import";
+  importGo.classList.remove("danger");
+}
+function showResult(html, kind) {
+  importResult.innerHTML = html;
+  importResult.className = "import-result" + (kind ? " " + kind : "");
+}
+const listSample = (arr, n = 12) => esc(arr.slice(0, n).join(", ")) + (arr.length > n ? `, … (+${arr.length - n} more)` : "");
+
+$("#importBtn").addEventListener("click", () => {
+  panel.classList.remove("open"); fbtn.classList.remove("open");
+  resetImportState();
+  showResult("");
+  dlg.showModal();
+  importText.focus();
+});
+$("#importCancel").addEventListener("click", () => dlg.close());
+dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); }); // click on backdrop
+importText.addEventListener("input", resetImportState);
+dlg.querySelectorAll("input[name=importMode]").forEach(r => r.addEventListener("change", resetImportState));
+$("#importFile").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  importText.value = await file.text();
+  e.target.value = "";
+  resetImportState();
+  showResult(`Loaded <b>${esc(file.name)}</b>. Click Import to apply.`);
+});
+
+$("#importForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const { ids, invalid } = parseIds(importText.value);
+  const known = ids.filter(id => BY_ID.has(id)), unknown = ids.filter(id => !BY_ID.has(id));
+  const replace = dlg.querySelector("input[name=importMode]:checked").value === "replace";
+
+  if (!known.length) {
+    showResult(ids.length || invalid.length
+      ? `None of these are fish item IDs, so nothing was changed.${unknown.length ? `<div class="sub">Not fish: ${listSample(unknown)}</div>` : ""}${invalid.length ? `<div class="sub">Not numbers: ${listSample(invalid)}</div>` : ""}`
+      : "Paste some item IDs first.", "warn");
+    return;
+  }
+
+  const knownSet = new Set(known);
+  const removed = replace ? [...caught].filter(id => !knownSet.has(id)) : [];
+  if (replace && removed.length && !confirmReplace) {
+    confirmReplace = true;
+    importGo.textContent = `Unmark ${removed.length} & import`;
+    importGo.classList.add("danger");
+    showResult(`This will <b>unmark ${removed.length}</b> fish that aren't in your list. Click the button again to confirm.`, "warn");
+    return;
+  }
+
+  const added = known.filter(id => !caught.has(id)).length;
+  if (replace) caught.clear();
+  known.forEach(id => caught.add(id));
+  saveCaught(caught);
+  render();
+  resetImportState();
+
+  const parts = [`Marked <b>${added}</b> new fish as caught` + (known.length - added ? ` (${known.length - added} already caught)` : "") + "."];
+  if (removed.length) parts.push(`Unmarked <b>${removed.length}</b> fish not in the list.`);
+  parts.push(`You now have <b>${caught.size}</b> / ${FISH.length} caught.`);
+  if (unknown.length) parts.push(`<div class="sub">Skipped ${unknown.length} ID${unknown.length > 1 ? "s that aren't fish" : " that isn't a fish"}: ${listSample(unknown)}</div>`);
+  if (invalid.length) parts.push(`<div class="sub">Skipped ${invalid.length} entr${invalid.length > 1 ? "ies that aren't numbers" : "y that isn't a number"}: ${listSample(invalid)}</div>`);
+  showResult(parts.join(" "), unknown.length || invalid.length ? "ok partial" : "ok");
+});
+
 $("#resetFilters").addEventListener("click", () => {
   Object.assign(filters, { status: "all", bigOnly: false, collOnly: false, cats: allCats() });
   panel.querySelectorAll("input").forEach(i => { i.checked = i.type === "radio" ? i.value === "all" : !!i.dataset.cat; });

@@ -121,9 +121,52 @@ body{
 .legend i{display:inline-block;width:8px;height:8px;margin-right:4px;vertical-align:middle}
 .empty-msg{grid-column:1/-1;text-align:center;padding:40px 0;color:var(--muted);font-size:14px}
 
+/* import dialog */
+.import-dialog{
+  width:min(480px,calc(100vw - 32px));padding:16px 18px;color:var(--text);
+  background:#161a26;border:1px solid var(--gold-dim);border-radius:10px;
+  box-shadow:0 0 0 1px #000,0 0 0 3px rgba(201,169,92,.18),0 18px 40px rgba(0,0,0,.7);
+}
+.import-dialog::backdrop{background:rgba(5,8,15,.65)}
+.import-dialog h2{margin:0 0 6px;font:700 16px Cinzel,serif;letter-spacing:.06em;color:var(--gold-hi)}
+.import-dialog .hint{margin:0 0 10px;font-size:12px;color:var(--muted);line-height:1.5}
+.import-dialog code{color:var(--gold-hi);background:rgba(0,0,0,.35);padding:1px 4px;border-radius:3px}
+.import-dialog textarea{
+  width:100%;resize:vertical;min-height:90px;padding:8px 10px;border-radius:6px;outline:none;
+  background:#10131c;border:1px solid #4a4434;color:var(--text);font:13px/1.4 ui-monospace,Consolas,monospace;
+}
+.import-dialog textarea:focus{border-color:var(--gold)}
+.import-dialog .file-pick{display:block;margin:6px 0 10px;font-size:12px;color:var(--muted)}
+.import-dialog .file-pick input{display:block;margin-top:4px;font-size:12px;color:var(--muted);max-width:100%}
+.import-dialog .file-pick input::file-selector-button{
+  margin-right:8px;height:26px;padding:0 10px;border-radius:5px;cursor:pointer;font:600 12px "Noto Sans",sans-serif;
+  color:var(--text);background:linear-gradient(180deg,#3a4058,#232839);border:1px solid #4a4434;
+}
+.import-dialog .file-pick input::file-selector-button:hover{border-color:var(--gold-hi);color:var(--gold-hi)}
+.import-dialog .modes label{display:flex;align-items:center;gap:8px;font-size:13px;padding:2px 0;cursor:pointer}
+.import-dialog input[type=radio]{accent-color:var(--gold)}
+.import-result{font-size:12px;line-height:1.5;margin-top:10px;overflow-wrap:anywhere}
+.import-result:empty{display:none}
+.import-result{padding:8px 10px;border-radius:6px;background:rgba(0,0,0,.3);border:1px solid #2c2a22}
+.import-result.ok{border-color:rgba(95,180,232,.5)}
+.import-result.warn{border-color:#a8763a;color:#e6c08a}
+.import-result b{color:var(--gold-hi)}
+.import-result .sub{margin-top:4px;color:var(--muted)}
+.import-dialog .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.btn{
+  height:30px;padding:0 14px;border-radius:5px;cursor:pointer;font:600 13px "Noto Sans",sans-serif;
+  color:var(--text);background:linear-gradient(180deg,#3a4058,#232839);border:1px solid #4a4434;
+}
+.btn:hover{border-color:var(--gold-hi);color:var(--gold-hi)}
+.btn.primary{color:#1b1608;background:linear-gradient(180deg,var(--gold-hi),var(--gold));border-color:var(--gold-hi)}
+.btn.primary:hover{color:#1b1608;filter:brightness(1.08)}
+.btn.danger{background:linear-gradient(180deg,#e0866a,#b4513a);border-color:#f0a58c;color:#1b0b06}
+
 @media (max-width:520px){
   .grid{gap:3px;padding:6px}
   .toolbar{flex-wrap:wrap}
   .search{flex:1 1 140px}
+  #importBtn .label{display:none}
+  #importBtn{padding:0 9px}
   .tile.caught::after{width:6px;height:6px}
 }
