@@ -281,7 +281,9 @@ if (linkParams.has("import")) {
   try {
     importText.value = await decodeImportParam(value);
     dlg.querySelector("input[name=importMode][value=add]").checked = true;
-    $("#importForm").requestSubmit(); // runs the normal "Add" import and shows its result
+    const n = parseIds(importText.value).ids.filter(id => BY_ID.has(id)).length;
+    // Nothing is changed until the Import button is pressed.
+    showResult(`Loaded <b>${n}</b> fish from your link. Choose Add or Replace, then click <b>Import</b>.`);
   } catch {
     showResult("This import link couldn't be read. It may have been cut off when it was copied.", "warn");
   }
