@@ -114,6 +114,7 @@ body{
 .tooltip .m{color:var(--muted)}
 .tooltip .t{color:var(--gold)}
 .footer .note{font-size:11px;opacity:.7;margin-top:2px}
+.footer .note.offline{color:#d9a35b;opacity:.9}
 .footer .showing{color:var(--gold)}
 .footer{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font-size:12px;color:var(--muted)}
 .legend span{margin-left:12px}

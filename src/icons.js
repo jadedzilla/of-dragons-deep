@@ -1,5 +1,6 @@
-// Fish icons: real game icons from sprite sheets (data/icons/, built by scripts/fetch-icons.mjs from XIVAPI),
-// with an SVG placeholder for any fish whose icon is missing.
+// Fish icons: real game icons from sprite sheets (data/icons/, built by scripts/fetch-icons.mjs from XIVAPI).
+// Fish added since the sheets were built load their icon straight from XIVAPI; if that fails too
+// (offline, or remote images blocked), main.js swaps in an SVG placeholder.
 
 let ICONS = null; // { cols, icons: { iconId: index } }
 
@@ -21,13 +22,18 @@ export async function loadIcons() {
   }
 }
 
+const remoteIconUrl = id => {
+  const s = String(id).padStart(6, "0");
+  return `https://v2.xivapi.com/api/asset?path=${encodeURIComponent(`ui/icon/${s.slice(0, 3)}000/${s}_hr1.tex`)}&format=png`;
+};
+
 function hash(s) {
   let h = 0;
   for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return h;
 }
 
-function placeholder(f) {
+export function fishPlaceholder(f) {
   const hue = hash(f.name) % 360, hue2 = (hue + 40) % 360;
   const body = f.big
     ? "M8 32c10-14 30-18 44-6l8-8v28l-8-8c-14 12-34 8-44-6z"
@@ -40,7 +46,7 @@ function placeholder(f) {
 
 export function fishIcon(f) {
   const i = ICONS?.icons[f.icon];
-  if (i === undefined) return placeholder(f);
+  if (i === undefined) return f.icon ? `<img class="ic" alt="" loading="lazy" src="${remoteIconUrl(f.icon)}">` : fishPlaceholder(f);
   const per = ICONS.cols * ICONS.cols, k = i % per, step = 100 / (ICONS.cols - 1);
   return `<span class="ic s${Math.floor(i / per)}" style="background-position:${(k % ICONS.cols) * step}% ${Math.floor(k / ICONS.cols) * step}%"></span>`;
 }
