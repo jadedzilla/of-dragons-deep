@@ -59,8 +59,10 @@ function oceanSpotFor(desc, oceanSpots) {
   return best;
 }
 
-/* ---------- Import from the Of Dragons Deep plugin (Achievements tab export) ---------- */
-// Formats (github.com/jadedzilla/of-dragons-deep-plugin, Exporter.ExportAchievements):
+/* ---------- Import from the Of Dragons Deep plugin (achievements) ---------- */
+// The plugin's current export (version 2: {"fish":[…],"achievements":[{"id","complete","current","max"}…]}) is
+// imported on the Fish Guide (fish and achievements together); its JSON also works here (only the achievements are used).
+// Older plugin versions had a separate achievements export:
 //   JSON  {"source":"OfDragonsDeep","category":"Fisher","achievements":[{"id","name","points","complete","current","max"}…]}
 //   CSV   id,name,points,complete,current,max          (one row per achievement; names quoted when needed)
 //   IDs   completed achievement ids, comma separated    (only says what's complete)
@@ -306,9 +308,8 @@ export function createAchievements(root, { allFish, byId, isCaught, fishIcon, on
   dialog.innerHTML = `
     <form method="dialog" id="acImportForm">
       <h2>Import achievements</h2>
-      <p class="hint">In game, open the <b>Of Dragons Deep</b> plugin (<code>/dragonsdeep</code>) → <b>Achievements</b> →
-        <b>Load achievements</b> (tick <i>Include progress</i> for counts like 312/500) → <b>Copy to clipboard</b>, then paste here.
-        JSON (recommended), CSV, the checklist or the list of IDs all work.</p>
+      <p class="hint">In game, open the <b>Of Dragons Deep</b> plugin (<code>/dragonsdeep</code>) → <b>Copy JSON</b>, then paste here.
+        (<b>Copy tracker link</b> imports fish and achievements together on the Fish Guide.) Exports from older plugin versions work too.</p>
       <textarea id="acImportText" rows="6" placeholder='{"source":"OfDragonsDeep","category":"Fisher","achievements":[…]}' spellcheck="false"></textarea>
       <label class="file-pick">or load a .json / .csv / .txt file <input type="file" id="acImportFile" accept=".json,.csv,.txt,application/json,text/csv,text/plain"></label>
       <div class="import-result" id="acImportResult" role="status"></div>
@@ -388,5 +389,13 @@ export function createAchievements(root, { allFish, byId, isCaught, fishIcon, on
     show() { if (data) render(); else load(); },
     hide() {},
     refresh() { render(); },
+    /** Takes over marks/progress saved elsewhere (the Fish Guide's Import of a plugin export). */
+    reloadSaved(newMarks, newProgress) {
+      marks.clear();
+      newMarks.forEach(id => marks.add(id));
+      imported.at = newProgress.at;
+      imported.items = newProgress.items;
+      if (data) render();
+    },
   };
 }
