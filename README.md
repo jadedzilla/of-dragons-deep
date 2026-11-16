@@ -27,6 +27,6 @@ One-time setup: **Settings → Pages → Build and deployment → Source: GitHub
 ## Credits
 
 Fish data, icons and weather come from the game data on [XIVAPI](https://v2.xivapi.com/).
-Catch windows (times and weather) for the Fish Timers come from the [FFXIV Fish Tracker](https://ff14fish.carbuncleplushy.com/) by Carbuncle Plushy.
+Best bait and the Fish Timers' catch windows (times and weather) come from [FFXIV Teamcraft](https://ffxivteamcraft.com/)'s fishing data.
 Fish Guide order and fields were checked against the [FFXIV Fish Tracker](https://ff14fish.carbuncleplushy.com/) by Carbuncle Plushy.
 FINAL FANTASY XIV © SQUARE ENIX CO., LTD.

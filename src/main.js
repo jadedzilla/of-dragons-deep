@@ -2,7 +2,8 @@ import { loadFish, CATEGORIES, OCEAN_FISHING } from "./data.js";
 import { fishIcon, fishPlaceholder, loadIcons, prefetchSheets, sheetsFor, sheetsReady, sheetCount } from "./icons.js";
 import { loadCaught, saveCaught, loadTab, saveTab } from "./storage.js";
 import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
-import { createTimers, loadCatchPaths } from "./timers.js";
+import { createTimers } from "./timers.js";
+import { baitChains, loadTeamcraft, xivAsset, xivRows } from "./teamcraft.js";
 
 const PER_PAGE = 100; // 10x10 grid
 
@@ -191,15 +192,39 @@ function canvasFrom(text) {
   if (m) return m[1][0].toUpperCase() + m[1].slice(1);
   return /Use item to acquire/i.test(text) ? "Can't be printed (minion item)" : "Can't be printed";
 }
-// Best bait: the tracker's best catch path — the bait, then any fish to mooch with ("or" between alternatives).
-function baitHtml(steps, items) {
+// Best bait: from Teamcraft's fishing data — the bait, then any fish to mooch with ("or" between baits that all work).
+// When it differs between the fish's spots, each set of baits gets its own line with its spots ("other spots" for the most common one when there are many).
+// Item and spot names/icons come from XIVAPI, fetched per fish and remembered.
+const baitInfo = new Map(); // fish id → Promise<{ groups, items: { id: {name, icon} }, spots: { id: name } }>
+function loadBait(id) {
+  if (!baitInfo.has(id)) {
+    baitInfo.set(id, loadTeamcraft("fishing-sources").then(async sources => {
+      const groups = baitChains(sources, id);
+      const multi = groups.length > 1;
+      const [itemRows, spotRows] = await Promise.all([
+        groups.length ? xivRows("Item", groups.flatMap(g => g.chains.flat()), "Name,Icon") : [],
+        multi ? xivRows("FishingSpot", groups.flatMap(g => g.spots), "PlaceName.Name") : [],
+      ]);
+      const items = Object.fromEntries(itemRows.map(r => [r.row_id, { name: r.fields.Name, icon: r.fields.Icon?.path ? xivAsset(r.fields.Icon.path) : null }]));
+      const spots = Object.fromEntries(spotRows.map(r => [r.row_id, r.fields.PlaceName?.fields?.Name || `Spot ${r.row_id}`]));
+      return { groups, items, spots };
+    }).catch(e => { baitInfo.delete(id); throw e; }));
+  }
+  return baitInfo.get(id);
+}
+function baitHtml({ groups, items, spots }) {
   const item = id => {
     const it = items[id] ?? { name: BY_ID.get(id)?.name ?? `Item ${id}` };
     const img = it.icon ? `<img src="${esc(it.icon)}" alt="" loading="lazy" onerror="this.remove()">` : "";
     return `<span class="fv-bait-item">${img}${esc(it.name)}</span>`;
   };
-  return steps.map((alts, i) => (i ? `<span class="fv-arrow">→</span> ` : "")
-    + alts.map(item).join(` <span class="fv-or">or</span> `) + (i ? ` <span class="fv-or">(mooch)</span>` : "")).join(" ");
+  const chain = ids => ids.map((id, i) => (i ? `<span class="fv-arrow">→</span> ` : "") + item(id) + (i ? ` <span class="fv-or">(mooch)</span>` : "")).join(" ");
+  const alternatives = chains => chains.map(chain).join(` <span class="fv-or">or</span> `);
+  if (groups.length === 1) return alternatives(groups[0].chains);
+  const elsewhere = groups[0].spots.length > 3; // the most common bait, listed last as "other spots"
+  const ordered = elsewhere ? [...groups.slice(1), groups[0]] : groups;
+  return ordered.map(g => `<div class="fv-bait-line">${alternatives(g.chains)} <span class="fv-spots">${elsewhere && g === groups[0]
+    ? "at other spots" : "at " + esc([...new Set(g.spots.map(s => spots[s] ?? `Spot ${s}`))].join(", "))}</span></div>`).join("");
 }
 // Aquariums: AquariumFish size 1–4 (S/M/L/XL) is also the smallest tank tier that holds the fish.
 const aquariumText = a => a ? `${a.water}, tier ${a.size} tanks and up (size ${["", "S", "M", "L", "XL"][a.size]})` : "Not suitable";
@@ -218,7 +243,7 @@ function openFishView(f) {
     [f.spear ? "Size" : "Water", f.water],
     f.cat !== OCEAN_FISHING ? ["Level", String(f.lvl)] : null,
     [f.cat === OCEAN_FISHING ? "Category" : "Expansion", CATEGORIES[f.cat]],
-    f.spear ? null : ["Best bait", "…"], // filled in from the tracker's data below
+    f.spear ? null : ["Best bait", "…"], // filled in from Teamcraft's data below
     ["Aquarium", aquariumText(f.aquarium)],
     ["Canvas", "…"], // filled in from the description below
     ["Status", caught.has(f.id) ? "Caught" : "Not yet caught"],
@@ -234,11 +259,11 @@ function openFishView(f) {
     canvas.textContent = text ? canvasFrom(text) : "Unavailable right now";
     canvas.classList.toggle("pending", !text);
   });
-  if (!f.spear) loadCatchPaths().then(({ paths, items }) => {
+  if (!f.spear) loadBait(f.id).then(info => {
     if (viewing !== f.id) return;
-    const bait = $("#fvBait"), steps = paths.get(f.id);
-    if (steps) bait.innerHTML = baitHtml(steps, items); else bait.textContent = "Not in the tracker's data";
-    bait.classList.toggle("pending", !steps);
+    const bait = $("#fvBait"), known = info.groups.length > 0;
+    if (known) bait.innerHTML = baitHtml(info); else bait.textContent = "Unknown";
+    bait.classList.toggle("pending", !known);
   }, () => {
     if (viewing === f.id) $("#fvBait").textContent = "Unavailable right now";
   });

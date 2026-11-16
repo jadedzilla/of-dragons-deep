@@ -1,14 +1,13 @@
 // Fish timers: when each time/weather-restricted fish can next be caught.
 //
-// Catch windows (Eorzea hours, required weather, required previous weather, fishing spot) come from the FFXIV Fish
-// Tracker's data.js by Carbuncle Plushy — the game data has no windows, only yes/no restriction flags. The file is
-// parsed as text (JSON objects extracted and JSON.parse'd); the tracker's code is never run.
-// Weather odds per zone come from XIVAPI game data (TerritoryType → WeatherRate; identical to the tracker's tables).
+// Catch windows (spawn Eorzea hour + duration, required weather, required previous weather, fishing spot) come
+// from FFXIV Teamcraft's fishing data (see src/teamcraft.js) — the game data has no windows, only yes/no flags.
+// Weather odds per zone come from XIVAPI game data (FishingSpot / SpearfishingNotebook → TerritoryType → WeatherRate).
 // Weather is forecast with the game's own formula (as published in the SaintCoinach library).
 
 import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
+import { loadTeamcraft, xivAsset, xivRows } from "./teamcraft.js";
 
-export const TRACKER_DATA_URL = "https://ff14fish.carbuncleplushy.com/js/app/data.js";
 const EORZEA_HOUR = 175;                 // real seconds per Eorzea hour
 const ET_DAY = 24 * EORZEA_HOUR;         // 4200 s
 const WEATHER_PERIOD = 8 * EORZEA_HOUR;  // weather changes every 8 Eorzea hours (1400 s)
@@ -31,92 +30,58 @@ export function forecastTarget(unixSeconds) {
   return step2 % 100;
 }
 
-/** Return the balanced {...} block that starts at the end of `marker`, respecting JSON strings. */
-function extractObject(text, marker) {
-  const i = text.indexOf(marker);
-  if (i < 0) throw new Error(`Marker not found: ${marker}`);
-  const start = text.indexOf("{", i + marker.length - 1);
-  let depth = 0, inStr = false, esc = false;
-  for (let k = start; k < text.length; k++) {
-    const c = text[k];
-    if (inStr) {
-      if (esc) esc = false;
-      else if (c === "\\") esc = true;
-      else if (c === '"') inStr = false;
-      continue;
-    }
-    if (c === '"') inStr = true;
-    else if (c === "{") depth++;
-    else if (c === "}" && --depth === 0) return JSON.parse(text.slice(start, k + 1));
-  }
-  throw new Error(`Unbalanced block after: ${marker}`);
-}
-
-const assetUrl = path => `${XIVAPI}/asset?path=${encodeURIComponent(path)}&format=png`;
-
-// The tracker's data.js is fetched once and shared by the timers and the fish view's best bait (retried if it failed).
-let trackerText = null;
-function loadTrackerText(fetchFn) {
-  trackerText ??= fetchFn(TRACKER_DATA_URL).then(res => {
-    if (!res.ok) throw new Error(`FFXIV Fish Tracker HTTP ${res.status}`);
-    return res.text();
-  }).catch(e => { trackerText = null; throw e; });
-  return trackerText;
-}
-
-/**
- * Best catch paths: resolves to { paths: Map(fish id → steps), items: { id: { name, icon } } }. Each step is a list
- * of alternative item ids; the first step is the bait, later ones are fish to mooch with.
- */
-let catchPaths = null;
-export function loadCatchPaths({ fetchFn = fetch } = {}) {
-  catchPaths ??= loadTrackerText(fetchFn).then(text => {
-    const FISH = extractObject(text, "FISH: {"), ITEMS = extractObject(text, "ITEMS: {");
-    const paths = new Map(), items = {};
-    for (const f of Object.values(FISH)) {
-      if (f.bestCatchPath?.length) paths.set(f._id, f.bestCatchPath.map(step => [].concat(step)));
-    }
-    for (const it of Object.values(ITEMS)) {
-      items[it._id] = { name: it.name_en, icon: it.icon ? assetUrl(`ui/icon/${it.icon.slice(0, 3)}000/${it.icon}.tex`) : null };
-    }
-    return { paths, items };
-  }).catch(e => { catchPaths = null; throw e; });
-  return catchPaths;
-}
-
 /**
  * Load everything the timers need. Resolves to { fish: [window…], weather: { id: { name, icon } } } where each
  * window is { id, start, end, weather: Set|null, prev: Set|null, territory, rates: [[weatherId, cumulative%]…] }.
+ * Ocean fishing fish are left out (their windows follow the voyage schedule, not Eorzea time and zone weather).
  */
 export async function loadTimerData({ fetchFn = fetch, signal } = {}) {
-  const text = await loadTrackerText(fetchFn);
-  const FISH = extractObject(text, "FISH: {"), SPOTS = extractObject(text, "FISHING_SPOTS: {"), SPEAR = extractObject(text, "SPEARFISHING_SPOTS: {");
-  const restricted = Object.values(FISH).filter(f =>
-    f.location != null && (f.weatherSet.length || f.previousWeatherSet.length || !(f.startHour === 0 && f.endHour === 24)));
-  const territoryOf = f => (f.gig ? SPEAR : SPOTS)[f.location]?.territory_id;
-  const territories = [...new Set(restricted.map(territoryOf).filter(Boolean))];
+  const [line, spear] = await Promise.all([loadTeamcraft("fishing-sources", fetchFn), loadTeamcraft("spearfishing-sources", fetchFn)]);
+  const isTimed = e => e.spawn !== undefined || e.weathers?.length || e.weathersFrom?.length;
+  const timedOf = sources => Object.entries(sources).flatMap(([id, entries]) => {
+    if (entries.some(e => e.oceanFishingTime !== undefined)) return [];
+    const e = entries.find(isTimed);
+    return e ? [{ id: +id, e }] : [];
+  });
+  const lineTimed = timedOf(line), spearTimed = timedOf(spear);
 
-  const wr = await fetchFn(`${XIVAPI}/sheet/TerritoryType?rows=${territories.join(",")}&limit=500`
-    + `&fields=WeatherRate.Weather[].Name,WeatherRate.Weather[].Icon,WeatherRate.Rate&schema=${encodeURIComponent(XIVAPI_SCHEMA)}`, { signal });
-  if (!wr.ok) throw new Error(`XIVAPI HTTP ${wr.status}`);
+  // Zone weather odds: FishingSpot (fish) / SpearfishingItem → SpearfishingNotebook (spearfish) → TerritoryType → WeatherRate
+  const W = ["Weather[].Name", "Weather[].Icon", "Rate"].map(f => "TerritoryType.WeatherRate." + f);
+  const spotRows = await xivRows("FishingSpot", lineTimed.map(t => t.e.spot), W.join(","), { fetchFn, signal });
+  let spearRows = [];
+  if (spearTimed.length) {
+    const r = await fetchFn(`${XIVAPI}/search?sheets=SpearfishingItem&limit=500&query=${encodeURIComponent(spearTimed.map(t => `Item=${t.id}`).join(" "))}`
+      + `&fields=Item.Name,${W.map(f => "SpearfishingNotebook." + f).join(",")}&schema=${encodeURIComponent(XIVAPI_SCHEMA)}`, { signal });
+    if (!r.ok) throw new Error(`XIVAPI HTTP ${r.status}`);
+    spearRows = (await r.json()).results;
+  }
   const rates = {}, weather = {};
-  for (const row of (await wr.json()).rows) {
-    const w = row.fields.WeatherRate?.fields;
-    if (!w) continue;
+  function addTerritory(tt) {
+    const w = tt?.fields?.WeatherRate?.fields;
+    if (!w || rates[tt.row_id]) return tt?.row_id;
     let cumulative = 0;
-    rates[row.row_id] = [];
+    rates[tt.row_id] = [];
     w.Weather.forEach((x, i) => {
       if (!(w.Rate[i] > 0)) return;
       cumulative += w.Rate[i];
-      rates[row.row_id].push([x.row_id, cumulative]);
-      weather[x.row_id] ??= { name: x.fields?.Name ?? "", icon: x.fields?.Icon?.path ? assetUrl(x.fields.Icon.path) : null };
+      rates[tt.row_id].push([x.row_id, cumulative]);
+      weather[x.row_id] ??= { name: x.fields?.Name ?? "", icon: x.fields?.Icon?.path ? xivAsset(x.fields.Icon.path) : null };
     });
+    return tt.row_id;
   }
-  const fish = restricted.map(f => ({
-    id: f._id, start: f.startHour, end: f.endHour,
-    weather: f.weatherSet.length ? new Set(f.weatherSet) : null,
-    prev: f.previousWeatherSet.length ? new Set(f.previousWeatherSet) : null,
-    territory: territoryOf(f), rates: rates[territoryOf(f)],
+  const spotTerritory = new Map(spotRows.map(r => [r.row_id, addTerritory(r.fields.TerritoryType)]));
+  const spearTerritory = new Map(spearRows.map(r => [r.fields.Item?.value, addTerritory(r.fields.SpearfishingNotebook?.fields?.TerritoryType)]));
+
+  // Teamcraft gives spawn hour + duration (hours, sometimes rounded to 2 decimals); snap the end to the ET minute.
+  const toMinute = h => Math.round(h * 60) / 60;
+  const fish = [...lineTimed.map(t => ({ ...t, territory: spotTerritory.get(t.e.spot) })),
+    ...spearTimed.map(t => ({ ...t, territory: spearTerritory.get(t.id) }))].map(({ id, e, territory }) => ({
+    id,
+    start: e.spawn ?? 0, // start === end means all day
+    end: e.spawn === undefined || !(e.duration < 24) ? e.spawn ?? 0 : toMinute((e.spawn + e.duration) % 24),
+    weather: e.weathers?.length ? new Set(e.weathers) : null,
+    prev: e.weathersFrom?.length ? new Set(e.weathersFrom) : null,
+    territory, rates: rates[territory],
   })).filter(f => f.rates?.length);
   return { fish, weather };
 }
@@ -199,8 +164,8 @@ export function createTimers(root, { byId, isCaught, fishIcon, onOpen, esc }) {
     </div>
     <div class="tm-summary" id="tmSummary"></div>
     <div class="tm-list" id="tmList"><div class="empty-msg">Loading catch windows…</div></div>
-    <div class="tm-credit">Catch windows from the <a href="https://ff14fish.carbuncleplushy.com/" target="_blank" rel="noopener">FFXIV Fish Tracker</a>
-      by Carbuncle Plushy · weather from XIVAPI game data · window times in Eorzea time (ET), countdowns and start times in your local time.</div>`;
+    <div class="tm-credit">Catch windows from <a href="https://ffxivteamcraft.com/" target="_blank" rel="noopener">FFXIV Teamcraft</a>
+      · weather from XIVAPI game data · window times in Eorzea time (ET), countdowns and start times in your local time.</div>`;
   const $t = s => root.querySelector(s);
   const list = $t("#tmList"), clock = $t("#tmClock"), summary = $t("#tmSummary");
   let data = null, loading = null, entries = [], visibleRows = [], ticker = null;
