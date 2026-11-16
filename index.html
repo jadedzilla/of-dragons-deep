@@ -17,15 +17,19 @@
   <div class="body">
     <div class="toolbar">
       <div class="pages" id="pages"></div>
-      <input class="search" id="search" type="search" placeholder="Search fish or zone…" autocomplete="off">
+      <input class="search" id="search" type="search" placeholder="Search fish or zone…" autocomplete="off" aria-label="Search fish or zone" title="Search">
       <div class="spacer"></div>
+      <button class="filter-btn edit-btn" id="editBtn" type="button" aria-pressed="false" title="Edit mode: turn on to mark fish as caught" aria-label="Edit mode">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.2V21h3.8l11-11-3.8-3.8zM20.7 7a1 1 0 0 0 0-1.4l-2.3-2.3a1 1 0 0 0-1.4 0l-1.8 1.8 3.8 3.8z"/></svg>
+        <span class="label">Edit</span>
+      </button>
       <button class="filter-btn" id="importBtn" type="button" title="Import caught fish" aria-label="Import caught fish">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11 3h2v9.2l3.3-3.3 1.4 1.4L12 16l-5.7-5.7 1.4-1.4 3.3 3.3zM4 18h16v2H4z"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11 16h2V6.8l3.3 3.3 1.4-1.4L12 3 6.3 8.7l1.4 1.4L11 6.8zM4 18h16v2H4z"/></svg>
         <span class="label">Import</span>
       </button>
-      <button class="filter-btn" id="filterBtn" type="button">
+      <button class="filter-btn" id="filterBtn" type="button" title="Filter" aria-label="Filter">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>
-        Filter <span class="count" id="filterCount">0</span>
+        <span class="label">Filter</span> <span class="count" id="filterCount">0</span>
       </button>
       <div class="filter-panel" id="filterPanel">
         <h3>Status</h3>
@@ -44,7 +48,7 @@
     <div class="grid" id="grid"><div class="empty-msg">Loading fish from ff14fish.carbuncleplushy.com…</div></div>
 
     <div class="footer">
-      <div>Click a fish to mark it caught. <span id="showing" class="showing"></span><div id="dataNote" class="note"></div></div>
+      <div><span id="hint">Turn on <b>Edit</b> to mark fish as caught.</span> <span id="showing" class="showing"></span><div id="dataNote" class="note"></div></div>
       <div class="legend">
         <span><i style="background:var(--gold-hi);transform:rotate(45deg)"></i>Big fish</span>
         <span><i style="background:var(--caught);border-radius:50%"></i>Caught</span>

@@ -112,9 +112,23 @@ function showTip(t) {
 }
 
 /* ---------- Events ---------- */
+// Edit mode: clicking a fish only toggles caught while it's on (Import works either way). Always off on page load.
+let editing = false;
+const editBtn = $("#editBtn");
+function setEditing(on) {
+  editing = on;
+  editBtn.classList.toggle("on", on);
+  editBtn.setAttribute("aria-pressed", on);
+  grid.classList.toggle("editing", on);
+  $("#hint").innerHTML = on ? "<b>Editing:</b> click a fish to mark it caught." : "Turn on <b>Edit</b> to mark fish as caught.";
+}
+editBtn.addEventListener("click", () => setEditing(!editing));
+setEditing(false);
+
 grid.addEventListener("click", e => {
   const t = e.target.closest(".tile[data-id]");
   if (!t) return;
+  if (!editing) { showTip(t); return; } // view only: show details (also handy on touch screens)
   const id = +t.dataset.id;
   caught.has(id) ? caught.delete(id) : caught.add(id);
   saveCaught(caught);
