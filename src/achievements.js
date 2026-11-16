@@ -85,6 +85,15 @@ export function createAchievements(root, { allFish, byId, isCaught, fishIcon, on
   const $a = s => root.querySelector(s);
   const list = $a("#acList");
   let data = null, loading = null, reqs = new Map();
+  // Sections can be collapsed (click the heading); which ones are remembered in this browser.
+  const COLLAPSED_KEY = "odd-achievements-collapsed";
+  const collapsed = new Set((() => { try { return JSON.parse(localStorage.getItem(COLLAPSED_KEY) || "[]"); } catch { return []; } })());
+  list.addEventListener("toggle", e => {
+    const key = e.target.dataset?.section;
+    if (!key) return;
+    if (e.target.open) collapsed.delete(key); else collapsed.add(key);
+    try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...collapsed])); } catch { /* storage unavailable */ }
+  }, true); // toggle doesn't bubble
 
   function requirement(a) {
     if (a.type === 1 && a.key === UNIQUE_FISH) return { kind: "count", section: "log", need: a.data[0], fish: allFish };
@@ -161,11 +170,11 @@ export function createAchievements(root, { allFish, byId, isCaught, fishIcon, on
       if (!items.length) return "";
       const got = items.filter(a => done.get(a.id)).length;
       const shown = items.filter(a => !hideDone || !done.get(a.id));
-      return `<section class="ac-section">
-        <h3>${title} <span class="ac-count">${got} / ${items.length}</span></h3>
+      return `<details class="ac-section" data-section="${key}"${collapsed.has(key) ? "" : " open"}>
+        <summary><h3>${title} <span class="ac-count">${got} / ${items.length}</span></h3></summary>
         <div class="ac-note">${note}</div>
         ${shown.length ? shown.map(a => rowHtml(a, done.get(a.id))).join("") : `<div class="ac-all">All obtained.</div>`}
-      </section>`;
+      </details>`;
     }).join("");
   }
 

@@ -335,6 +335,12 @@ body{
 .ac-summary{font-size:13px;color:var(--muted)}
 .ac-summary b{color:var(--gold-hi)}
 .ac-list{display:flex;flex-direction:column;gap:14px;min-height:120px}
+.ac-section > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:4px 2px;border-radius:5px;user-select:none}
+.ac-section > summary::-webkit-details-marker{display:none}
+.ac-section > summary::before{content:"";flex:none;width:7px;height:7px;margin:0 3px 0 2px;border-right:2px solid var(--gold);border-bottom:2px solid var(--gold);transform:rotate(-45deg);transition:transform .15s ease}
+.ac-section[open] > summary::before{transform:rotate(45deg) translate(-2px,-2px)}
+.ac-section > summary:hover h3{color:#fff3cf}
+.ac-section:not([open]){padding-bottom:2px;border-bottom:1px solid #2c2a22}
 .ac-section h3{margin:0;font:700 15px Cinzel,serif;letter-spacing:.05em;color:var(--gold-hi);display:flex;align-items:baseline;gap:10px}
 .ac-count{font:600 12px/1 inherit;font-family:inherit;color:var(--muted);letter-spacing:0}
 .ac-note{font-size:12px;color:var(--muted);margin:2px 0 6px}
