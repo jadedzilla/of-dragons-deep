@@ -3,7 +3,7 @@ import { fishIcon, fishPlaceholder, loadIcons, prefetchSheets, sheetsFor, sheets
 import { loadCaught, saveCaught, loadTab, saveTab } from "./storage.js";
 import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
 import { createTimers } from "./timers.js";
-import { baitChains, loadTeamcraft, xivAsset, xivRows } from "./teamcraft.js";
+import { baitChains, hooksetAndTug, loadTeamcraft, xivAsset, xivRows } from "./teamcraft.js";
 
 const PER_PAGE = 100; // 10x10 grid
 
@@ -207,7 +207,7 @@ function loadBait(id) {
       ]);
       const items = Object.fromEntries(itemRows.map(r => [r.row_id, { name: r.fields.Name, icon: r.fields.Icon?.path ? xivAsset(r.fields.Icon.path) : null }]));
       const spots = Object.fromEntries(spotRows.map(r => [r.row_id, r.fields.PlaceName?.fields?.Name || `Spot ${r.row_id}`]));
-      return { groups, items, spots };
+      return { groups, items, spots, ...hooksetAndTug(sources, id) };
     }).catch(e => { baitInfo.delete(id); throw e; }));
   }
   return baitInfo.get(id);
@@ -228,6 +228,9 @@ function baitHtml({ groups, items, spots }) {
 }
 // Aquariums: AquariumFish size 1–4 (S/M/L/XL) is also the smallest tank tier that holds the fish.
 const aquariumText = a => a ? `${a.water}, tier ${a.size} tanks and up (size ${["", "S", "M", "L", "XL"][a.size]})` : "Not suitable";
+// Facts filled in once their data arrives: their <dd> attributes.
+const LATER = { Canvas: ` id="fvCanvas" class="pending"`, "Best bait": ` id="fvBait" class="pending fv-bait"`,
+  Hookset: ` id="fvHook" class="pending"`, Tug: ` id="fvTug" class="pending"` };
 function openFishView(f) {
   viewing = f.id;
   $("#fvName").textContent = f.name;
@@ -243,13 +246,15 @@ function openFishView(f) {
     [f.spear ? "Size" : "Water", f.water],
     f.cat !== OCEAN_FISHING ? ["Level", String(f.lvl)] : null,
     [f.cat === OCEAN_FISHING ? "Category" : "Expansion", CATEGORIES[f.cat]],
-    f.spear ? null : ["Best bait", "…"], // filled in from Teamcraft's data below
+    f.spear ? null : ["Best bait", "…"], // these three are filled in from Teamcraft's data below
+    f.spear ? null : ["Hookset", "…"],
+    f.spear ? null : ["Tug", "…"],
     ["Aquarium", aquariumText(f.aquarium)],
     ["Canvas", "…"], // filled in from the description below
     ["Status", caught.has(f.id) ? "Caught" : "Not yet caught"],
     ["Item ID", String(f.id)],
   ].filter(Boolean);
-  $("#fvFacts").innerHTML = facts.map(([k, v]) => `<dt>${k}</dt><dd${k === "Canvas" ? ` id="fvCanvas" class="pending"` : k === "Best bait" ? ` id="fvBait" class="pending fv-bait"` : ""}>${esc(v)}</dd>`).join("");
+  $("#fvFacts").innerHTML = facts.map(([k, v]) => `<dt>${k}</dt><dd${LATER[k] ?? ""}>${esc(v)}</dd>`).join("");
   const desc = $("#fvDesc");
   desc.innerHTML = `<span class="loading">Loading description…</span>`;
   loadDescription(f.id).then(text => {
@@ -264,8 +269,12 @@ function openFishView(f) {
     const bait = $("#fvBait"), known = info.groups.length > 0;
     if (known) bait.innerHTML = baitHtml(info); else bait.textContent = "Unknown";
     bait.classList.toggle("pending", !known);
+    for (const [sel, value] of [["#fvHook", info.hookset], ["#fvTug", info.tug]]) {
+      $(sel).textContent = value ?? "Unknown";
+      $(sel).classList.toggle("pending", !value);
+    }
   }, () => {
-    if (viewing === f.id) $("#fvBait").textContent = "Unavailable right now";
+    if (viewing === f.id) for (const sel of ["#fvBait", "#fvHook", "#fvTug"]) $(sel).textContent = "Unavailable right now";
   });
   hideTip();
   if (!fishDialog.open) fishDialog.showModal();

@@ -61,3 +61,12 @@ export function baitChains(sources, itemId) {
   }
   return [...groups.values()].sort((a, b) => b.spots.length - a.spots.length);
 }
+
+// Teamcraft's codes (checked against the FFXIV Fish Tracker's labels): anything else means unknown.
+const HOOKSETS = { 1: "Powerful", 2: "Precision" };
+const TUGS = { 0: "Medium (!!)", 1: "Heavy (!!!)", 2: "Light (!)" };
+/** A fish's hookset and tug as display strings ("Precision", "Light (!)"); several if they differ by spot; null if unknown. */
+export function hooksetAndTug(sources, itemId) {
+  const distinct = (key, names) => [...new Set((sources[itemId] ?? []).map(e => names[e[key]]).filter(Boolean))].join(" or ") || null;
+  return { hookset: distinct("hookset", HOOKSETS), tug: distinct("tug", TUGS) };
+}
