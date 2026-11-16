@@ -68,6 +68,14 @@ body{
   background:linear-gradient(180deg,#3a4058,#232839);border:1px solid var(--gold-dim);
 }
 .filter-btn:hover,.filter-btn.open{border-color:var(--gold-hi);color:var(--gold-hi)}
+/* Toolbar buttons are icon-only; the label slides out on mouse hover or keyboard focus (not on touch screens,
+   where :hover would stick after a tap). */
+.toolbar .filter-btn{padding:0 9px;gap:0}
+.toolbar .filter-btn .label{max-width:0;opacity:0;margin-left:0;overflow:hidden;white-space:nowrap;
+  transition:max-width .22s ease,opacity .18s ease,margin-left .22s ease}
+@media (hover:hover){.toolbar .filter-btn:hover:not(:disabled) .label{max-width:80px;opacity:1;margin-left:6px}}
+.toolbar .filter-btn:focus-visible .label{max-width:80px;opacity:1;margin-left:6px}
+.filter-btn .count.on{margin-left:5px}
 .filter-btn .count{background:var(--gold);color:#1b1608;border-radius:8px;padding:0 6px;font-size:11px;display:none}
 .filter-btn .count.on{display:inline}
 
@@ -97,7 +105,9 @@ body{
   display:flex;align-items:center;justify-content:center;transition:transform .08s,border-color .08s;
 }
 .tile svg,.tile .ic{width:76%;height:76%;filter:grayscale(.85) brightness(.55);transition:filter .12s}
-.tile .ic{display:block;width:100%;height:100%;border-radius:5px;background-repeat:no-repeat} /* game icons carry their own square backdrop */
+.tile .ic{display:block;width:100%;height:100%;border-radius:5px;background-repeat:no-repeat; /* game icons carry their own square backdrop */
+  opacity:0;transition:filter .12s,opacity .4s ease} /* fade in once the sheet/image has loaded (.ready) */
+.tile .ic.ready{opacity:1}
 .tile:has(.ic){overflow:hidden;padding:0}
 .tile:not(.empty){cursor:default}
 .grid.editing .tile:not(.empty){cursor:pointer}
@@ -186,9 +196,6 @@ body{
   .pages{flex-basis:100%} /* page numbers get their own row; search, Edit, Import, Filter always share the next */
   .search{flex:1 1 90px;min-width:0}
   .toolbar{gap:8px}
-  #importBtn .label,#editBtn .label,#filterBtn .label{display:none}
-  #importBtn,#editBtn{padding:0 9px}
-  #filterBtn{padding:0 9px;gap:4px}
   .tile.caught::after{width:6px;height:6px}
 }
 

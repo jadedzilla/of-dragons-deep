@@ -3,6 +3,21 @@
 // (offline, or remote images blocked), main.js swaps in an SVG placeholder.
 
 let ICONS = null; // { cols, icons: { iconId: index } }
+let SHEET_URLS = [];
+const sheetState = []; // per sheet: undefined → "loading" → "ready"
+
+// Icons start transparent and fade in (CSS .ic.ready) once their sheet has loaded. Each sheet is requested
+// the first time a tile needs it; the browser reuses that download for the CSS background.
+function requestSheet(i) {
+  if (sheetState[i]) return;
+  sheetState[i] = "loading";
+  const img = new Image();
+  img.onload = img.onerror = () => { // on error too, so a failed sheet never leaves tiles invisible
+    sheetState[i] = "ready";
+    document.querySelectorAll(`.ic.s${i}`).forEach(e => e.classList.add("ready"));
+  };
+  img.src = SHEET_URLS[i];
+}
 
 /** Load the icon manifest and register one CSS class per sprite sheet. Resolves even if icons are unavailable. */
 export async function loadIcons() {
@@ -12,6 +27,7 @@ export async function loadIcons() {
       return r.json();
     });
     const base = window.__ICON_DATA__ ? "" : "data/icons/";
+    SHEET_URLS = m.sheets.map(s => base + s);
     const style = document.createElement("style");
     style.textContent = m.sheets.map((s, i) => `.ic.s${i}{background-image:url("${base}${s}")}`).join("\n")
       + `\n.ic{background-size:${m.cols * 100}% ${m.cols * 100}%}`;
@@ -47,6 +63,7 @@ export function fishPlaceholder(f) {
 export function fishIcon(f) {
   const i = ICONS?.icons[f.icon];
   if (i === undefined) return f.icon ? `<img class="ic" alt="" loading="lazy" src="${remoteIconUrl(f.icon)}">` : fishPlaceholder(f);
-  const per = ICONS.cols * ICONS.cols, k = i % per, step = 100 / (ICONS.cols - 1);
-  return `<span class="ic s${Math.floor(i / per)}" style="background-position:${(k % ICONS.cols) * step}% ${Math.floor(k / ICONS.cols) * step}%"></span>`;
+  const per = ICONS.cols * ICONS.cols, k = i % per, step = 100 / (ICONS.cols - 1), sheet = Math.floor(i / per);
+  requestSheet(sheet);
+  return `<span class="ic s${sheet}${sheetState[sheet] === "ready" ? " ready" : ""}" style="background-position:${(k % ICONS.cols) * step}% ${Math.floor(k / ICONS.cols) * step}%"></span>`;
 }

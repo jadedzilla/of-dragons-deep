@@ -137,6 +137,7 @@ grid.addEventListener("click", e => {
   if (nt) showTip(nt); else tip.style.display = "none";
 });
 // Icons not in the bundled sheets load from XIVAPI; if that fails, swap in the placeholder.
+grid.addEventListener("load", e => { if (e.target.matches?.("img.ic")) e.target.classList.add("ready"); }, true);
 grid.addEventListener("error", e => {
   const img = e.target;
   if (!img.matches?.("img.ic")) return;
