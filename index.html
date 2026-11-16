@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Of Dragons Deep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+<div class="window">
+  <div class="titlebar">
+    <h1>Of Dragons Deep</h1>
+    <div class="progress"><b id="caughtCount">0</b> / <span id="totalCount">0</span> caught</div>
+  </div>
+  <div class="body">
+    <div class="toolbar">
+      <div class="pages" id="pages"></div>
+      <input class="search" id="search" type="search" placeholder="Search fish or zone…" autocomplete="off">
+      <div class="spacer"></div>
+      <button class="filter-btn" id="filterBtn" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>
+        Filter <span class="count" id="filterCount">0</span>
+      </button>
+      <div class="filter-panel" id="filterPanel">
+        <h3>Status</h3>
+        <label><input type="radio" name="status" value="all" checked> All</label>
+        <label><input type="radio" name="status" value="caught"> Caught</label>
+        <label><input type="radio" name="status" value="uncaught"> Not caught</label>
+        <h3>Category</h3>
+        <div id="expFilters"></div>
+        <h3>Type</h3>
+        <label><input type="checkbox" id="bigOnly"> Big fish only</label>
+        <label><input type="checkbox" id="collOnly"> Collectables only</label>
+        <button class="reset" id="resetFilters" type="button">Reset filters</button>
+      </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="footer">
+      <div>Click a fish to mark it caught. <span id="showing" class="showing"></span><div id="dataNote" class="note"></div></div>
+      <div class="legend">
+        <span><i style="background:var(--gold-hi);transform:rotate(45deg)"></i>Big fish</span>
+        <span><i style="background:var(--caught);border-radius:50%"></i>Caught</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

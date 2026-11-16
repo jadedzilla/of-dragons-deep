@@ -1,43 +1,13 @@
 {
   "name": "of-dragons-deep",
-  "version": "1.0.0",
-  "description": "A fish tracker application for Final Fantasy XIV",
+  "version": "0.1.0",
   "private": true,
-  "dependencies": {
-    "@testing-library/jest-dom": "^5.17.0",
-    "@testing-library/react": "^13.4.0",
-    "@testing-library/user-event": "^13.5.0",
-    "axios": "^1.7.4",
-    "js-cookie": "^3.0.5",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-paginate": "^8.2.0",
-    "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4",
-    "yaml": "^2.5.0"
-  },
+  "description": "Web app for tracking fish caught in Final Fantasy XIV, to help with the big fishing achievements.",
+  "type": "module",
+  "engines": { "node": ">=18" },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "dev": "node scripts/serve.mjs",
+    "fetch-data": "node scripts/fetch-fish-data.mjs",
+    "build": "node scripts/build.mjs"
   }
 }
