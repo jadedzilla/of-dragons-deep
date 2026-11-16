@@ -57,9 +57,9 @@ Game icons include their own square backdrop, so they fill the tile.
 
 - Fish shown in a paged **10×10 grid** (100 per page), each icon a square with slightly rounded corners.
 - **Order = the tracker's order** (`FISH_INFO` array order, as in its Fish Guide), left to right, top to bottom, so app page N holds the same fish as the tracker's guide page N. Never sort; filters keep this order.
-- **Page numbers top-left above the grid, search box immediately after them, filter button top-right.**
-- Click a fish to toggle caught. Keyboard accessibility is not a requirement (owner's call) — don't flag or add it.
-- **Import** button (left of Filter; icon-only on phones) opens a dialog to paste or load (.txt/.csv) game item ids, comma-separated (spaces/semicolons/new lines also accepted). "Add" marks them caught; "Replace" makes the caught set exactly the list and needs a second click when it would unmark fish (no `confirm()` — it's silently blocked in sandboxed iframes). Ids that aren't fish or aren't numbers are skipped and listed.
+- **Page numbers top-left above the grid, search immediately after them, filter button top-right.** Search shows as a round magnifier icon while empty and unfocused (pure CSS: `:not(:focus):placeholder-shown`); clicking it expands it into the box, and it stays open while it has text.
+- **Edit mode:** an Edit toggle (left of Import) must be on for clicking a fish to change it (Import is not locked). It's off on every page load; while off, clicking a fish only shows its details. While on, the button is gold, the grid gets a gold outline, and clicking a fish toggles caught. Keyboard accessibility is not a requirement (owner's call) — don't flag or add it.
+- **Import** button (between Edit and Filter; Edit, Import and Filter are icon-only on phones, ≤520px) opens a dialog to paste or load (.txt/.csv) game item ids, comma-separated (spaces/semicolons/new lines also accepted). "Add" marks them caught; "Replace" makes the caught set exactly the list and needs a second click when it would unmark fish (no `confirm()` — it's silently blocked in sandboxed iframes). Ids that aren't fish or aren't numbers are skipped and listed.
 
 ## Known gaps / next steps
 

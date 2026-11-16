@@ -46,12 +46,21 @@ body{
 .pages .gap{color:var(--muted);align-self:center;min-width:30px;text-align:center;font-size:12px} /* same width as a page button */
 .pg.active{color:#1b1608;background:linear-gradient(180deg,var(--gold-hi),var(--gold));border-color:var(--gold-hi)}
 .search{
-  flex:0 1 200px;min-width:120px;height:30px;padding:0 10px 0 28px;border-radius:15px;
-  background:#10131c url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239a937f' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-4-4'/%3E%3C/svg%3E") no-repeat 9px center;
+  --icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239a937f' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-4-4'/%3E%3C/svg%3E");
+  flex:0 1 200px;min-width:0;height:30px;padding:0 10px 0 28px;border-radius:15px;
+  background:var(--icon) no-repeat 9px center,#10131c;
   border:1px solid #4a4434;color:var(--text);font:13px "Noto Sans",sans-serif;outline:none;
+  transition:flex-basis .18s,min-width .18s,background-position .18s,border-color .12s;
 }
 .search:focus{border-color:var(--gold)}
 .search::placeholder{color:#6b6556}
+/* Collapsed to a round icon button while empty and not focused; clicking it focuses the input, which expands it. */
+.search:not(:focus):placeholder-shown{
+  flex:0 1 30px;min-width:30px;width:30px;padding:0;cursor:pointer; /* keep shrink on: while the width animates down, the box must not push the buttons */
+  background:var(--icon) no-repeat center,linear-gradient(180deg,#30374c,#1e2333);
+}
+.search:not(:focus):placeholder-shown:hover{border-color:var(--gold-dim)}
+.search:not(:focus):placeholder-shown::placeholder{color:transparent}
 .spacer{flex:1}
 .filter-btn{
   height:30px;padding:0 12px;border-radius:5px;cursor:pointer;display:flex;align-items:center;gap:6px;
@@ -63,7 +72,7 @@ body{
 .filter-btn .count.on{display:inline}
 
 .filter-panel{
-  position:absolute;top:38px;right:0;z-index:5;width:250px;padding:12px 14px;display:none;
+  position:absolute;top:calc(100% + 8px);right:0;z-index:5;width:250px;padding:12px 14px;display:none;
   background:#161a26;border:1px solid var(--gold-dim);border-radius:8px;box-shadow:0 10px 24px rgba(0,0,0,.6);
 }
 .filter-panel.open{display:block}
@@ -90,7 +99,16 @@ body{
 .tile svg,.tile .ic{width:76%;height:76%;filter:grayscale(.85) brightness(.55);transition:filter .12s}
 .tile .ic{display:block;width:100%;height:100%;border-radius:5px;background-repeat:no-repeat} /* game icons carry their own square backdrop */
 .tile:has(.ic){overflow:hidden;padding:0}
-.tile:hover{transform:translateY(-1px);border-color:var(--gold-hi)}
+.tile:not(.empty){cursor:default}
+.grid.editing .tile:not(.empty){cursor:pointer}
+.grid.editing .tile:hover{transform:translateY(-1px);border-color:var(--gold-hi)}
+.grid{transition:border-color .15s,box-shadow .15s}
+.grid.editing{border-color:var(--gold-dim);box-shadow:0 0 0 1px rgba(201,169,92,.35),0 0 12px rgba(201,169,92,.15)}
+/* edit toggle + disabled buttons */
+.edit-btn.on{color:#1b1608;background:linear-gradient(180deg,var(--gold-hi),var(--gold));border-color:var(--gold-hi)}
+.edit-btn.on:hover{color:#1b1608;filter:brightness(1.08)}
+.filter-btn:disabled{opacity:.4;cursor:default;border-color:#4a4434;color:var(--muted)}
+#hint b{color:var(--gold-hi);font-weight:600}
 .tile:not(.caught):hover .ic,.tile:not(.caught):hover svg{filter:grayscale(.4) brightness(.8)}
 .tile.caught{border-color:var(--gold)}
 .tile.caught svg,.tile.caught .ic{filter:none}
@@ -165,8 +183,21 @@ body{
 @media (max-width:520px){
   .grid{gap:3px;padding:6px}
   .toolbar{flex-wrap:wrap}
-  .search{flex:1 1 140px}
-  #importBtn .label{display:none}
-  #importBtn{padding:0 9px}
+  .pages{flex-basis:100%} /* page numbers get their own row; search, Edit, Import, Filter always share the next */
+  .search{flex:1 1 90px;min-width:0}
+  .toolbar{gap:8px}
+  #importBtn .label,#editBtn .label,#filterBtn .label{display:none}
+  #importBtn,#editBtn{padding:0 9px}
+  #filterBtn{padding:0 9px;gap:4px}
   .tile.caught::after{width:6px;height:6px}
+}
+
+/* very narrow phones (≤360px): tighter page buttons, smaller title */
+@media (max-width:360px){
+  .pages{gap:3px}
+  .pg{min-width:26px;padding:0 4px}
+  .pg.arrow{min-width:22px}
+  .pages .gap{min-width:26px}
+  .titlebar h1{font-size:17px;letter-spacing:.03em}
+  .progress{font-size:12px}
 }
