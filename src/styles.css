@@ -108,6 +108,7 @@ body{
 .tile .ic{display:block;width:100%;height:100%;border-radius:5px;background-repeat:no-repeat; /* game icons carry their own square backdrop */
   opacity:0;transition:filter .12s,opacity .4s ease} /* fade in once the sheet/image has loaded (.ready) */
 .tile .ic.ready{opacity:1}
+.tile .ic.instant{transition:filter .12s} /* sheet was already loaded or arrived quickly: no fade */
 .tile:has(.ic){overflow:hidden;padding:0}
 .tile:not(.empty){cursor:default}
 .grid.editing .tile:not(.empty){cursor:pointer}

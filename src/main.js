@@ -1,5 +1,5 @@
 import { loadFish, CATEGORIES, OCEAN_FISHING } from "./data.js";
-import { fishIcon, fishPlaceholder, loadIcons } from "./icons.js";
+import { fishIcon, fishPlaceholder, loadIcons, prefetchSheets, sheetsFor, sheetsReady, sheetCount } from "./icons.js";
 import { loadCaught, saveCaught } from "./storage.js";
 
 const PER_PAGE = 100; // 10x10 grid
@@ -94,6 +94,10 @@ function render() {
   const fc = $("#filterCount");
   fc.textContent = active;
   fc.classList.toggle("on", active > 0);
+
+  // Once this page's icons are in, get the next and previous pages' sheets ready before they're needed.
+  const near = [...list.slice((page + 1) * PER_PAGE, (page + 2) * PER_PAGE), ...(page ? list.slice((page - 1) * PER_PAGE, page * PER_PAGE) : [])];
+  sheetsReady(sheetsFor(slice)).then(() => prefetchSheets(sheetsFor(near), { urgent: true }));
 }
 
 function showTip(t) {
@@ -311,3 +315,11 @@ $("#resetFilters").addEventListener("click", () => {
 });
 
 render();
+
+// Then, once the first page is showing, quietly load the remaining sheets (≈1.5 MB in all) so every page
+// switch is instant. Skipped when the browser asks to save data; neighbours are still prefetched.
+if (!navigator.connection?.saveData) {
+  const all = () => prefetchSheets(Array.from({ length: sheetCount() }, (_, i) => i));
+  sheetsReady(sheetsFor(visible().slice(page * PER_PAGE, (page + 1) * PER_PAGE))).then(() =>
+    "requestIdleCallback" in window ? requestIdleCallback(all, { timeout: 2000 }) : setTimeout(all, 500));
+}

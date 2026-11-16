@@ -6,6 +6,7 @@
 // so the default first page of the grid only needs the first sheet.
 //
 // Source: XIVAPI v2 asset endpoint, high-resolution (_hr1, 80×80) icons; falls back to the 40×40 icon, upscaled.
+// Writes PNG sheets; `npm run fetch-icons` then runs webp-sheets.mjs to convert them to WebP (much smaller).
 // Requires Node 18+ and network access to v2.xivapi.com. Usage: npm run fetch-icons
 import { readFile, writeFile, mkdir, readdir, unlink } from "node:fs/promises";
 import { decodePng, encodePng } from "./png.mjs";
@@ -72,7 +73,7 @@ const missing = ids.filter((_, i) => !results[i]);
 const lowRes = found.filter(([, r]) => !r.hr).map(([id]) => id);
 
 await mkdir(outDir, { recursive: true });
-for (const f of await readdir(outDir)) if (/^sheet-\d+\.png$/.test(f)) await unlink(new URL(f, outDir));
+for (const f of await readdir(outDir)) if (/^sheet-\d+\.(png|webp)$/.test(f)) await unlink(new URL(f, outDir));
 
 const sheets = [], icons = {};
 for (let s = 0; s * PER_SHEET < found.length; s++) {

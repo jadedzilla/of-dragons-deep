@@ -7,7 +7,7 @@
 //
 // Bundling is deliberately simple: modules are concatenated in dependency order with their
 // `import` lines and `export` keywords stripped. Keep imports on a single line each.
-import { readFile, writeFile, mkdir, copyFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir, copyFile, rm } from "node:fs/promises";
 
 const root = new URL("..", import.meta.url);
 const read = p => readFile(new URL(p, root), "utf8");
@@ -22,12 +22,13 @@ const externalIcons = process.argv.includes("--external-icons");
 const icons = JSON.parse(await read("data/icons.json"));
 await mkdir(new URL("dist/", root), { recursive: true });
 if (externalIcons) {
+  await rm(new URL("dist/icons/", root), { recursive: true, force: true }); // drop sheets from older builds
   await mkdir(new URL("dist/icons/", root), { recursive: true });
   for (const s of icons.sheets) await copyFile(new URL(`data/icons/${s}`, root), new URL(`dist/icons/${s}`, root));
   icons.sheets = icons.sheets.map(s => `icons/${s}`);
 } else {
   icons.sheets = await Promise.all(icons.sheets.map(async s =>
-    "data:image/png;base64," + (await readFile(new URL(`data/icons/${s}`, root))).toString("base64")));
+    `data:image/${s.endsWith(".webp") ? "webp" : "png"};base64,` + (await readFile(new URL(`data/icons/${s}`, root))).toString("base64")));
 }
 let html = await read("index.html");
 

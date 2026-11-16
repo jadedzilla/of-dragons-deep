@@ -8,12 +8,12 @@ Track the fish you've caught in Final Fantasy XIV and work toward the big fishin
 
 ## Run it
 
-Requires [Node.js](https://nodejs.org) 18 or newer. No `npm install` needed — there are no dependencies.
+Requires [Node.js](https://nodejs.org) 18 or newer. No `npm install` needed to run or build — the app has no dependencies. (Only `npm run fetch-icons` uses a dev tool, Playwright.)
 
 ```sh
 npm run dev          # open http://localhost:5173
 npm run fetch-data   # refresh the offline fallback data/fish.json from XIVAPI
-npm run fetch-icons  # refresh fish icons (data/icons/) from XIVAPI
+npm run fetch-icons  # refresh fish icons (data/icons/) from XIVAPI — needs `npm install` first (Playwright, for WebP)
 npm run build        # single-file build at dist/index.html
 ```
 

@@ -8,7 +8,7 @@ Currently a proof of concept: plain HTML/CSS/ES modules, **no dependencies and n
 
 - `npm run dev` — serve at http://localhost:5173 (ES modules + `fetch` need a server; opening index.html from disk won't work)
 - `npm run fetch-data` — refresh the fallback snapshot `data/fish.json` from XIVAPI (needs network access to v2.xivapi.com; behind a proxy on Node ≥ 22.21 run with `NODE_USE_ENV_PROXY=1`)
-- `npm run fetch-icons` — download fish icons from XIVAPI into `data/icons/` sprite sheets (needs network access to v2.xivapi.com; behind a proxy on Node ≥ 22.21 run with `NODE_USE_ENV_PROXY=1`)
+- `npm run fetch-icons` — download fish icons from XIVAPI into `data/icons/` sprite sheets, then convert them to WebP (needs network access to v2.xivapi.com; behind a proxy on Node ≥ 22.21 run with `NODE_USE_ENV_PROXY=1`). The WebP step needs the dev-only Playwright dependency: `npm install && npx playwright install chromium` once. The app itself still has no dependencies.
 - `npm run build` — single self-contained file at `dist/index.html` (~11 MB, icons inlined); `node scripts/build.mjs --external-icons` keeps the sheets as `dist/icons/*.png` instead
 
 Deploy: `.github/workflows/pages.yml` runs `node scripts/build.mjs --external-icons` on every push to `main` and publishes `dist/` to GitHub Pages at https://jadedzilla.github.io/of-dragons-deep/ (a sub-path, so keep every URL in the app relative — no leading `/`).
@@ -27,10 +27,10 @@ There are no tests yet. After changes, run the dev server and check the page in 
 - `src/storage.js` — caught set in localStorage (key `odd-caught-v2`, game fish ids)
 - `src/styles.css` — all styles; theme colours are CSS variables in `:root`
 - `scripts/fetch-fish-data.mjs` — refreshes the fallback snapshot using `src/fishsource.js`
-- `scripts/fetch-icons.mjs` — icon downloader; `scripts/png.mjs` — tiny PNG decode/encode used to pack sheets
+- `scripts/fetch-icons.mjs` — icon downloader (writes PNG sheets); `scripts/webp-sheets.mjs` — converts them to WebP via headless Chromium; `scripts/png.mjs` — tiny PNG decode/encode used to pack sheets
 - `scripts/build.mjs`, `scripts/serve.mjs` — build and dev server
 - `data/fish.json` — committed fallback snapshot, used when the live fetch fails
-- `data/icons.json` + `data/icons/sheet-NN.png` — committed icon snapshot (1,078 unique icons, 80×80, 10×10 per sheet)
+- `data/icons.json` + `data/icons/sheet-NN.webp` — committed icon snapshot (1,078 unique icons, 80×80, 10×10 per sheet; WebP q0.82, ≈1.5 MB for all 11 vs 8.1 MB as PNG)
 
 ## Data
 
@@ -53,7 +53,8 @@ Rules in `src/fishsource.js` / `src/data.js`:
 From XIVAPI v2: `https://v2.xivapi.com/api/asset?path=ui/icon/029000/029063_hr1.tex&format=png` (`_hr1` = 80px; plain = 40px fallback).
 Icons are packed into 800×800 sheets (bundling ~1,000 files individually is impractical); `icons.json` maps game icon id → index, sheet = index / 100.
 Sheets are ordered by first appearance in `fish.json`, so the first grid page needs only one. Each sheet gets a CSS class (`.ic.sN`) injected at load; tiles set `background-position`.
-Game icons include their own square backdrop, so they fill the tile. Icons fade in: `.ic` starts at opacity 0 and gets `.ready` when its sheet has loaded (`requestSheet` in `src/icons.js` loads each sheet once, on first use) or, for XIVAPI fallback `<img>`s, on their load event.
+Game icons include their own square backdrop, so they fill the tile.
+**Loading:** `.ic` starts at opacity 0 and gets `.ready` when its sheet has loaded (`requestSheet` in `src/icons.js`; XIVAPI fallback `<img>`s on their load event). Sheets that load in under 100 ms (or were already loaded) show at once (`.instant`); slower ones fade in. After a page's own sheets load, the next/previous pages' sheets are prefetched (`prefetchSheets`, urgent), and once the first page is up all remaining sheets load in the background one at a time (skipped when `navigator.connection.saveData`), so page switches are instant.
 
 ## UI requirements (from the project owner)
 
