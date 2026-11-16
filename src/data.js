@@ -33,9 +33,8 @@ async function loadSnapshot() {
 // order (left to right, top to bottom, 100 per page), so never sort these rows.
 function decode({ tables: T, rows }) {
   const oceanRegion = T.reg.indexOf("The High Seas");
-  return rows.map(([id, name, icon, lvl, exp, water, region, zone, big, collectable, rarity], i) => ({
+  return rows.map(([id, name, icon, lvl, exp, water, region, zone, big, collectable, rarity]) => ({
     id,
-    no: i + 1,                                 // position in the tracker's Fish Guide (page = ceil(no / 100))
     name: name.trim(),
     icon,                                      // game icon id, e.g. 29063 → icon 029063
     lvl,
