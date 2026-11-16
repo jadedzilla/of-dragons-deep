@@ -3,11 +3,13 @@
 // fish data is still fetched live at runtime when the source is reachable).
 // Handy for hosting anywhere static or sharing as a single file. Usage: npm run build
 //   --external-icons  keep the icon sprite sheets as separate files in dist/icons/ instead of inlining them
-//                     (smaller HTML that renders sooner; sheets load only when needed)
+//                     (smaller HTML that renders sooner; sheets load only when needed). Their URLs carry a
+//                     content hash (?v=…), so browsers never reuse a stale cached sheet after a deploy.
 //
 // Bundling is deliberately simple: modules are concatenated in dependency order with their
 // `import` lines and `export` keywords stripped. Keep imports on a single line each.
 import { readFile, writeFile, mkdir, copyFile, rm } from "node:fs/promises";
+import { createHash } from "node:crypto";
 
 const root = new URL("..", import.meta.url);
 const read = p => readFile(new URL(p, root), "utf8");
@@ -25,7 +27,9 @@ if (externalIcons) {
   await rm(new URL("dist/icons/", root), { recursive: true, force: true }); // drop sheets from older builds
   await mkdir(new URL("dist/icons/", root), { recursive: true });
   for (const s of icons.sheets) await copyFile(new URL(`data/icons/${s}`, root), new URL(`dist/icons/${s}`, root));
-  icons.sheets = icons.sheets.map(s => `icons/${s}`);
+  // Same file name, new content (e.g. a sheet gaining icons) must not be served from a browser's cache.
+  const version = async s => createHash("sha1").update(await readFile(new URL(`data/icons/${s}`, root))).digest("hex").slice(0, 10);
+  icons.sheets = await Promise.all(icons.sheets.map(async s => `icons/${s}?v=${await version(s)}`));
 } else {
   icons.sheets = await Promise.all(icons.sheets.map(async s =>
     `data:image/${s.endsWith(".webp") ? "webp" : "png"};base64,` + (await readFile(new URL(`data/icons/${s}`, root))).toString("base64")));

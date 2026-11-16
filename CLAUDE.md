@@ -53,7 +53,7 @@ Rules in `src/fishsource.js` / `src/data.js`:
 
 From XIVAPI v2: `https://v2.xivapi.com/api/asset?path=ui/icon/029000/029063_hr1.tex&format=png` (`_hr1` = 80px; plain = 40px fallback).
 Icons are packed into 800×800 sheets (bundling ~1,000 files individually is impractical); `icons.json` maps game icon id → index, sheet = index / 100.
-Sheets are ordered by first appearance in `fish.json`, so the first grid page needs only one. Each sheet gets a CSS class (`.ic.sN`) injected at load; tiles set `background-position`.
+In the Pages build (`--external-icons`) each sheet URL carries a content hash (`icons/sheet-NN.webp?v=…`): sheet files keep their names when their content changes (e.g. sheet 10 gaining spearfish icons), and without the hash browsers would reuse a stale cached copy for up to 10 minutes after a deploy, showing blank tiles. Sheets are ordered by first appearance in `fish.json`, so the first grid page needs only one. Each sheet gets a CSS class (`.ic.sN`) injected at load; tiles set `background-position`.
 Game icons include their own square backdrop, so they fill the tile.
 **Loading:** `.ic` starts at opacity 0 and gets `.ready` when its sheet has loaded (`requestSheet` in `src/icons.js`; XIVAPI fallback `<img>`s on their load event). Sheets that load in under 100 ms (or were already loaded) show at once (`.instant`); slower ones fade in. After a page's own sheets load, the next/previous pages' sheets are prefetched (`prefetchSheets`, urgent), and once the first page is up all remaining sheets load in the background one at a time (skipped when `navigator.connection.saveData`), so page switches are instant.
 
