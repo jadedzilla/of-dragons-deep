@@ -23,6 +23,7 @@ There are no tests yet. After changes, run the dev server and check the page in 
 - `src/main.js` — app: filtering, paging, rendering, events
 - `src/data.js` — loads fish (live, else snapshot) and decodes rows; defines categories
 - `src/teamcraft.js` — FFXIV Teamcraft fishing data (bait, catch windows), XIVAPI row helper, bait chain grouping
+- `src/achievements.js` — Achievements page: loads Fisher achievements + ocean spots from XIVAPI, works out progress from caught fish, manual marks for the rest
 - `src/timers.js` — Fish Timers page: loads catch windows + zone weather, forecasts weather, computes each fish's current/next window, renders the list
 - `src/fishsource.js` — loads the Fish Guide from XIVAPI and builds the compact dataset; shared by the browser and `fetch-fish-data.mjs`
 - `src/icons.js` — loads the icon manifest and renders sprite-sheet icons (SVG placeholder if an icon is missing)
@@ -56,9 +57,16 @@ Rules in `src/fishsource.js` / `src/data.js`:
 - Big fish = `rarity >= 2` (`Item.Rarity`; covers big fish and ocean-fishing rares).
 - Ocean fishing fish have level 1 in the source; don't show it.
 
+## Achievements
+
+**Page:** third nav link (`#achievements`). Lists every Fisher achievement (XIVAPI `search?sheets=Achievement&query=AchievementCategory=34`, 133 today) in sections: Fish log, Big fish, Ocean fishing log, Fishing milestones, Ocean fishing voyages, Other; each with icon, points, the game's requirement text and progress. Loaded when the page is first opened (error + Try again like Timers). Summary: obtained count and points; "Hide obtained" filter.
+**Requirements** come from the row: `Type` 1 = counter `Key` reaches `Data[0]`; 2 = all of `Key` + `Data[]` achievements; 27 = every fish at an ocean stop.
+**Worked out from caught fish:** counter 202 = unique fish (Fish Guide + spearfishing log); big-fish counters 267 = ARR+HW+SB (204), 826 = ShB (45), 1000 = EW (40), 1145 = DT (46) — `f.big` by category, and the top tiers equal those totals exactly. Type 27 (Denizens/Specters): the stop is the `IKDSpot` row whose name appears in the description (longest match; all 26 map to distinct stop/current pairs); "spectral current is present" → `SpotSub` fish, else `SpotMain` (10 fish each, all in the guide), shown as clickable icons. Meta (Type 2) achievements are obtained when all their parts are.
+**Manual:** everything else (casts, large fish, points, voyages, bonuses, Ishgard, cosmic) has an "Obtained" checkbox, saved in localStorage `odd-achievements-v1`.
+
 ## Fish Timers
 
-**Pages:** a navigation bar above the window switches between **Fish Guide** (default) and **Fish Timers** (`#timers` in the URL, so Back/Forward and bookmarks work). Timers hides the guide toolbar/grid/footer, the Fishing/Spearfishing tabs and the caught count. Its data loads only when the page is first opened.
+**Pages:** a navigation bar above the window switches between **Fish Guide** (default), **Fish Timers** (`#timers` in the URL, so Back/Forward and bookmarks work) and **Achievements** (`#achievements`). Timers hides the guide toolbar/grid/footer, the Fishing/Spearfishing tabs and the caught count. Its data loads only when the page is first opened.
 **Catch windows** come from FFXIV Teamcraft (`fishing-sources.json` / `spearfishing-sources.json` from raw.githubusercontent.com, `staging` branch; CORS `*`, ~30 KB gzipped): the first spot entry with `spawn` (Eorzea hour) + `duration`, `weathers` and/or `weathersFrom` (previous weather). The end hour is snapped to the ET minute (Teamcraft rounds durations to 2 decimals). Ocean-fishing entries (`oceanFishingTime`) are skipped. 443 fish today (442 fishing + 1 spearfish), all in our lists. Compared with the FFXIV Fish Tracker it replaced: 433 identical; 7 differ in hours (e.g. 12742 ET 16–19 vs the tracker's 16–18:15); 3 the tracker had are untimed in Teamcraft (23055, 23056, 24203) and 2 are new (8775, 40549). Credited on the page.
 **Weather** odds come from XIVAPI (`FishingSpot?rows=…` / a `search` of `SpearfishingItem` by item → `SpearfishingNotebook`, then `TerritoryType.WeatherRate.Weather[]`/`Rate`; identical to the tracker's tables when checked); weather names/icons from the same response (icon falls back to the name if it can't load). Forecast: the game's formula (`forecastTarget`, as in SaintCoinach): weather periods are 8 Eorzea hours = 1400 s; 1 Eorzea hour = 175 s.
 **Windows:** `nextWindow(fish, from)` walks weather periods (previous + current weather must match), intersects the fish's Eorzea hours (which may wrap midnight or be fractional), merges across period boundaries, and looks ≈39 Earth days ahead. Verified against an independent per-5-second brute force: 2,587 windows, 0 mismatches.

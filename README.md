@@ -4,7 +4,7 @@
 
 **Use it:** https://jadedzilla.github.io/of-dragons-deep/
 
-Track the fish you've caught in Final Fantasy XIV and work toward the big fishing achievements. Covers the Fish Guide and, on its own tab, the spearfishing log, plus a Fish Timers page showing which fish are up now and when the rest are next catchable.
+Track the fish you've caught in Final Fantasy XIV and work toward the big fishing achievements. Covers the Fish Guide and, on its own tab, the spearfishing log, plus a Fish Timers page showing which fish are up now and when the rest are next catchable, and an Achievements page listing every fishing achievement with your progress.
 
 ## Run it
 

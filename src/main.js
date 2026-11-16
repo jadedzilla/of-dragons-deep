@@ -1,8 +1,9 @@
 import { loadFish, CATEGORIES, OCEAN_FISHING } from "./data.js";
 import { fishIcon, fishPlaceholder, loadIcons, prefetchSheets, sheetsFor, sheetsReady, sheetCount } from "./icons.js";
-import { loadCaught, saveCaught, loadTab, saveTab } from "./storage.js";
+import { loadCaught, saveCaught, loadTab, saveTab, loadMarks, saveMarks } from "./storage.js";
 import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
 import { createTimers } from "./timers.js";
+import { createAchievements } from "./achievements.js";
 import { baitChains, hooksetAndTug, loadTeamcraft, xivAsset, xivRows } from "./teamcraft.js";
 
 const PER_PAGE = 100; // 10x10 grid
@@ -486,13 +487,15 @@ if (linkParams.has("import")) {
   }
 }
 
-/* ---------- Pages: Fish Guide / Fish Timers (navigation bar, #timers in the URL) ---------- */
-let timers = null; // created the first time the Timers page is opened
+/* ---------- Pages: Fish Guide / Fish Timers / Achievements (navigation bar, #timers / #achievements in the URL) ---------- */
+let timers = null, achievements = null; // created the first time their page is opened
+const VIEWS = { "#timers": "timers", "#achievements": "achievements" };
 function route() {
-  const view = location.hash === "#timers" ? "timers" : "guide";
+  const view = VIEWS[location.hash] ?? "guide";
   document.body.dataset.view = view;
   $("#guideView").hidden = view !== "guide";
   $("#timersView").hidden = view !== "timers";
+  $("#achievementsView").hidden = view !== "achievements";
   $("#tabs").hidden = view !== "guide" || !SPEAR_LIST.length;
   $(".progress").hidden = view !== "guide";
   document.querySelectorAll("#topnav a").forEach(a => a.toggleAttribute("aria-current", a.dataset.view === view));
@@ -500,10 +503,13 @@ function route() {
   if (view === "timers") {
     timers ??= createTimers($("#timersView"), { byId: BY_ID, isCaught: id => caught.has(id), fishIcon, onOpen: openFishView, esc });
     timers.show();
-  } else {
-    timers?.hide();
-    render();
+  } else timers?.hide();
+  if (view === "achievements") {
+    achievements ??= createAchievements($("#achievementsView"), { allFish: [...FISH_LIST, ...SPEAR_LIST], byId: BY_ID,
+      isCaught: id => caught.has(id), fishIcon, onOpen: openFishView, esc, marks: loadMarks(), saveMarks });
+    achievements.show();
   }
+  if (view === "guide") render();
 }
 window.addEventListener("hashchange", route);
 
