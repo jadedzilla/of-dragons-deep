@@ -9,7 +9,20 @@ const steps = p => p.$$eval(".lr-step", ss => ss.map(s => ({
   fish: [...s.querySelectorAll(".lr-f")].map(f => ({ id: +f.querySelector("[data-mark]").dataset.mark, bait: f.querySelector(".lr-bait").textContent.replace(/\s+/g, " ").trim() })) })));
 
 export default async function (t) {
-  const p = await t.page({ clock: T0, path: "#route" });
+  // default: timed fish left out
+  const d = await t.page({ clock: T0, path: "#route" });
+  await d.waitForSelector(".lr-step");
+  const ds = await steps(d);
+  t.check("Include timed fish is off by default: no timed steps, a note says how many were left out", !(await d.isChecked("#lrTimed"))
+    && ds.every(x => x.kind !== "timed") && /^\d{3} timed fish not in the route — tick Include timed fish to add them\.$/.test(await text(d, ".lr-leftout")), await text(d, "#lrSummary"));
+  await d.check("#lrTimed");
+  await d.waitForFunction(() => document.querySelector(".lr-step")?.classList.contains("timed"));
+  t.check("ticking it adds timed fish (route re-planned) and drops the note", !(await d.$(".lr-leftout")));
+  await d.reload(); await d.waitForSelector(".lr-step");
+  t.check("the choice is remembered", await d.isChecked("#lrTimed") && (await steps(d))[0].kind === "timed");
+  t.noErrors(d, "default");
+
+  const p = await t.page({ clock: T0, path: "#route", storage: { "odd-route-timed": "1" } });
   await p.waitForSelector(".lr-step");
   t.check("summary: fish left, steps, hours", /^1,517 fish left \(0 \/ 1,517 caught\) · \d+ steps · land fishing ≈ \d+ h$/.test(await text(p, "#lrSummary")), await text(p, "#lrSummary"));
   let s = await steps(p);

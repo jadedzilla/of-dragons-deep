@@ -64,6 +64,11 @@ export default async function (t) {
   const stops = plan.steps.filter(s => s.kind === "stop");
   t.check("spot stops group several fish (≥ 3 per stop on average)", stops.reduce((n, s) => n + s.fish.length, 0) / stops.length >= 3);
   t.check("every stop's fish can be caught at that spot", stops.every(s => s.fish.every(f => sources[f.id].some(e => e.spot === s.spot))));
+  const noTimed = planLogRoute({ fish, sources, windows: new Map(td.fish.map(f => [f.id, f])), ocean, oceanCategory: 6, now: T0,
+    spotZone: new Map(spots.map(s => [s.id, s.zoneId])), includeTimed: false });
+  const noTimedIds = noTimed.steps.flatMap(s => s.fish ?? [s.f]).map(f => f.id);
+  t.check("route without timed fish: none planned, the rest exactly once, count reported", noTimed.steps.every(s => s.kind !== "timed" && s.kind !== "nowindow")
+    && noTimedIds.length + noTimed.leftOut === 1517 && new Set(noTimedIds).size === noTimedIds.length && noTimed.leftOut > 400, noTimed.leftOut);
   const firstOcean = plan.steps.findIndex(s => s.kind === "ocean");
   t.check("ocean fishing comes after all land steps", firstOcean > 0 && plan.steps.slice(firstOcean).every(s => s.kind === "ocean" || s.kind === "nowindow"));
 

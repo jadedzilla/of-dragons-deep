@@ -48,18 +48,19 @@ const lrTimed = e => e.spawn !== undefined || e.weathers?.length || e.weathersFr
 
 /**
  * Plan the route (spotZone: Map(spot → zone id), from Teamcraft's fishing-spots.json, so stops group by the spot's own
- * zone — a fish's other spots can be in another zone). Returns { steps, left, minutes } where each step is
+ * zone — a fish's other spots can be in another zone; includeTimed: false leaves time/weather-limited fish out).
+ * Returns { steps, left, leftOut (timed fish left out), minutes } where each step is
  *   { kind: "stop", at, spot, fish: [f…] } | { kind: "timed", at, f, e, w } | { kind: "ocean", stop, fish: [f…] }
  *   | { kind: "nowindow", fish } | { kind: "nodata", fish }   (at = planned start, Unix seconds).
  */
-export function planLogRoute({ fish, sources, windows, ocean, oceanCategory, now, spotZone = new Map() }) {
+export function planLogRoute({ fish, sources, windows, ocean, oceanCategory, now, spotZone = new Map(), includeTimed = true }) {
   const index = new Map(fish.map((f, i) => [f.id, i]));
-  const timed = [], untimed = [], oceanFish = [], noData = [], noWindow = [];
+  const timed = [], untimed = [], oceanFish = [], noData = [], noWindow = [], leftOut = [];
   for (const f of fish) {
     const es = sources[f.id];
     if (f.cat === oceanCategory) oceanFish.push(f);
     else if (!es?.length) noData.push(f);
-    else if (windows.has(f.id)) timed.push(f);
+    else if (windows.has(f.id)) (includeTimed ? timed : leftOut).push(f);
     else untimed.push(f);
   }
 
@@ -154,7 +155,7 @@ export function planLogRoute({ fish, sources, windows, ocean, oceanCategory, now
   steps.push(...[...byStop.values()].sort((a, b) => (a.stop?.id ?? 99) - (b.stop?.id ?? 99)));
   if (noWindow.length) steps.push({ kind: "nowindow", fish: noWindow });
   if (noData.length) steps.push({ kind: "nodata", fish: noData });
-  return { steps, left: fish.length, minutes: Math.round((clock - now) / 60) };
+  return { steps, left: fish.length, leftOut: leftOut.length, minutes: Math.round((clock - now) / 60) };
 }
 
 /**
@@ -165,10 +166,14 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
   root.innerHTML = `
     <div class="lr-head">
       <div class="lr-summary" id="lrSummary"></div>
-      <button type="button" class="btn small" id="lrRecalc" title="Plan again from the current time">↻ Re-plan from now</button>
+      <div class="lr-tools">
+        <label class="tm-opt" title="Fish that can only be caught at certain Eorzea times or weather"><input type="checkbox" id="lrTimed"> Include timed fish</label>
+        <button type="button" class="btn small" id="lrRecalc" title="Plan again from the current time">↻ Re-plan from now</button>
+      </div>
     </div>
     <div class="ns-intro">Your remaining Fish Guide fish in the order to catch them, planned from now: fish with no time or weather
-      limit are grouped into as few fishing spots as possible, and fish with a catch window are slotted in when their window opens.
+      limit are grouped into as few fishing spots as possible; with <b>Include timed fish</b> ticked, fish with a catch window are
+      slotted in when their window opens.
       Times are estimates. Ocean fishing comes last, grouped by voyage stop.</div>
     <div class="ns-list" id="lrList"><div class="empty-msg">Planning your route…</div></div>
     <div class="tm-credit">Places, weather and voyages from XIVAPI game data; spots, bait, hooksets, tugs, intuition and catch windows from
@@ -298,7 +303,7 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
   function replan() {
     const now = Date.now() / 1000;
     plan = { ...planLogRoute({ fish: fishList.filter(f => !isCaught(f.id)), sources: base.sources, windows: base.windows,
-      ocean: base.ocean, oceanCategory, now, spotZone: base.spotZone }), missed: 0 };
+      ocean: base.ocean, oceanCategory, now, spotZone: base.spotZone, includeTimed: timedBox.checked }), missed: 0 };
   }
 
   // Every second while shown: timed steps' countdowns tick, a step turns "up now" when its window opens, and a step
@@ -332,6 +337,7 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
     stepsById = new Map(visible.map(s => [stepId(s), s]));
     summary.innerHTML = plan.left
       ? `<b>${plan.left.toLocaleString("en-US")}</b> fish left (${caught.toLocaleString("en-US")} / ${fishList.length.toLocaleString("en-US")} caught) · ${steps.length} steps · land fishing ≈ <b>${hours >= 1 ? `${Math.round(hours)} h` : `${plan.minutes} min`}</b>`
+        + (plan.leftOut ? `<div class="lr-leftout">${plan.leftOut.toLocaleString("en-US")} timed fish not in the route — tick <b>Include timed fish</b> to add them.</div>` : "")
         + (plan.missed ? `<div class="lr-missed">${plan.missed} timed fish missed ${plan.missed === 1 ? "its" : "their"} window — <b>Re-plan</b> to fit ${plan.missed === 1 ? "it" : "them"} back in.</div>` : "")
       : `Fish Guide complete! 🎉`;
     list.innerHTML = plan.left ? `<ol class="lr-steps">${visible.map((s, i) => `<li class="lr-step ${s.kind}${s.kind === "timed" && s.w.start <= now ? " up" : ""}" data-step="${stepId(s)}">
@@ -367,6 +373,13 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
     } else if (t.id === "lrMore") { shown += STEP_PAGE; render(); }
   });
   root.querySelector("#lrRecalc").addEventListener("click", () => { if (base) { replan(); shown = STEP_PAGE; render(); } });
+  // Timed fish are left out unless ticked (off by default); the choice is remembered in this browser.
+  const TIMED_KEY = "odd-route-timed", timedBox = root.querySelector("#lrTimed");
+  try { timedBox.checked = localStorage.getItem(TIMED_KEY) === "1"; } catch { /* storage unavailable */ }
+  timedBox.addEventListener("change", () => {
+    try { localStorage.setItem(TIMED_KEY, timedBox.checked ? "1" : "0"); } catch { /* storage unavailable */ }
+    if (base) { replan(); shown = STEP_PAGE; render(); }
+  });
 
   return {
     show() {
