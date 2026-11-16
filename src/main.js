@@ -97,7 +97,6 @@ function showTip(t) {
     <div class="m">${esc(f.zone)}${f.zone !== f.region ? ", " + esc(f.region) : ""}</div>
     <div class="m">${esc(f.water)}${f.cat !== OCEAN_FISHING ? " · Lv. " + f.lvl : ""} · ${CATEGORIES[f.cat]}</div>
     ${tags ? `<div class="t">${tags}</div>` : ""}
-    <div class="m">Fish Guide #${f.no} · page ${Math.ceil(f.no / PER_PAGE)}</div>
     <div class="m">${caught.has(f.id) ? "✔ Caught" : "Not yet caught"}</div>`;
   const r = t.getBoundingClientRect();
   tip.style.display = "block";
