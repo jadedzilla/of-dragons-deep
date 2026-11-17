@@ -23,8 +23,10 @@ const [{ fish: FISH_LIST, spear: SPEAR_LIST, live, fetched, patch, error }] = aw
 const LISTS = { fish: FISH_LIST, spear: SPEAR_LIST };
 let mode = loadTab() === "spear" && SPEAR_LIST.length ? "spear" : "fish";
 let FISH = LISTS[mode]; // the list currently shown
-const BY_ID = new Map([...FISH_LIST, ...SPEAR_LIST].map(f => [f.id, f]));
+const ALL_FISH = [...FISH_LIST, ...SPEAR_LIST];
+const BY_ID = new Map(ALL_FISH.map(f => [f.id, f]));
 const caught = loadCaught(new Set(BY_ID.keys()));
+const isCaught = id => caught.has(id);
 const countCaught = list => list.reduce((n, f) => n + caught.has(f.id), 0);
 
 const allCats = () => new Set(CATEGORIES.map((_, i) => i));
@@ -166,6 +168,8 @@ function showTip(t) {
   tip.style.top = (r.top - tip.offsetHeight - 6 < 0 ? r.bottom + 6 : r.top - tip.offsetHeight - 6) + "px";
 }
 const hideTip = () => { tip.style.display = "none"; };
+// Dialogs close on a click on their backdrop (the dialog element itself, outside its content).
+const closeOnBackdrop = d => d.addEventListener("click", e => { if (e.target === d) d.close(); });
 
 /* ---------- Fish detail view ---------- */
 // Clicking/tapping a fish while Edit is off opens this view. The in-game item description is fetched from XIVAPI
@@ -295,7 +299,7 @@ function openFishView(f) {
 }
 fishDialog.addEventListener("close", () => { viewing = null; });
 $("#fvClose").addEventListener("click", () => fishDialog.close());
-fishDialog.addEventListener("click", e => { if (e.target === fishDialog) fishDialog.close(); }); // click on backdrop
+closeOnBackdrop(fishDialog);
 
 /* ---------- Edit mode and the grid ---------- */
 // Edit mode: clicking a fish only toggles caught while it's on (Import works either way). Always off on page load.
@@ -344,7 +348,7 @@ bulkDialog.addEventListener("close", () => {
   bulkAction = null;
   bulkDialog.returnValue = "";
 });
-bulkDialog.addEventListener("click", e => { if (e.target === bulkDialog) bulkDialog.close(); }); // click on backdrop
+closeOnBackdrop(bulkDialog);
 $("#markAllBtn").addEventListener("click", () => askBulk(true));
 $("#unmarkAllBtn").addEventListener("click", () => askBulk(false));
 
@@ -443,7 +447,7 @@ function openImportDialog() {
 }
 $("#importBtn").addEventListener("click", openImportDialog);
 $("#importCancel").addEventListener("click", () => dlg.close());
-dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); }); // click on backdrop
+closeOnBackdrop(dlg);
 importText.addEventListener("input", resetImportState);
 dlg.querySelectorAll("input[name=importMode]").forEach(r => r.addEventListener("change", resetImportState));
 $("#importForm").addEventListener("submit", e => {
@@ -582,39 +586,35 @@ if (linkParams.has("import")) {
   }
 }
 
-/* ---------- Pages: Fish Guide / Fish Timers / Achievements / Log Route (navigation bar; #timers, #achievements, #route) ---------- */
+/* ---------- Pages: Fish Guide / Fish Timers / Achievements / Log Route / Share (navigation bar; #timers, #achievements, #route, #share) ---------- */
 let timers = null, achievements = null, logRoute = null, share = null; // created the first time their page is opened
 const VIEWS = { "#timers": "timers", "#achievements": "achievements", "#route": "route", "#share": "share" };
 function route() {
   const view = VIEWS[location.hash] ?? "guide";
   document.body.dataset.view = view;
-  $("#guideView").hidden = view !== "guide";
-  $("#timersView").hidden = view !== "timers";
-  $("#achievementsView").hidden = view !== "achievements";
-  $("#routeView").hidden = view !== "route";
-  $("#shareView").hidden = view !== "share";
+  for (const v of ["guide", "timers", "achievements", "route", "share"]) $(`#${v}View`).hidden = view !== v;
   $("#tabs").hidden = view !== "guide" || !SPEAR_LIST.length;
   $(".progress").hidden = view !== "guide";
   document.querySelectorAll("#topnav a").forEach(a => a.toggleAttribute("aria-current", a.dataset.view === view));
   hideTip(); closePanel();
   if (view === "timers") {
-    timers ??= createTimers($("#timersView"), { byId: BY_ID, isCaught: id => caught.has(id), fishIcon, onOpen: openFishView, esc });
+    timers ??= createTimers($("#timersView"), { byId: BY_ID, isCaught, fishIcon, onOpen: openFishView, esc });
     timers.show();
   } else timers?.hide();
   if (view === "achievements") {
-    achievements ??= createAchievements($("#achievementsView"), { allFish: [...FISH_LIST, ...SPEAR_LIST], byId: BY_ID,
-      isCaught: id => caught.has(id), fishIcon, onOpen: openFishView, esc, marks: loadMarks(), saveMarks,
+    achievements ??= createAchievements($("#achievementsView"), { allFish: ALL_FISH, byId: BY_ID,
+      isCaught, fishIcon, onOpen: openFishView, esc, marks: loadMarks(), saveMarks,
       progress: loadAchievementProgress(), openImport: openImportDialog });
     achievements.show();
   }
   if (view === "route") {
-    logRoute ??= createLogRoute($("#routeView"), { fishList: FISH_LIST, byId: BY_ID, isCaught: id => caught.has(id),
+    logRoute ??= createLogRoute($("#routeView"), { fishList: FISH_LIST, byId: BY_ID, isCaught,
       markCaught: id => { caught.add(id); saveCaught(caught); }, fishIcon, onOpen: openFishView, esc, oceanCategory: OCEAN_FISHING });
     logRoute.show();
   } else logRoute?.hide();
   if (view === "share") {
-    share ??= createShare($("#shareView"), { fishList: FISH_LIST, spearList: SPEAR_LIST, allFish: [...FISH_LIST, ...SPEAR_LIST], byId: BY_ID,
-      isCaught: id => caught.has(id), categories: CATEGORIES, oceanCategory: OCEAN_FISHING });
+    share ??= createShare($("#shareView"), { fishList: FISH_LIST, spearList: SPEAR_LIST, allFish: ALL_FISH, byId: BY_ID,
+      isCaught, categories: CATEGORIES, oceanCategory: OCEAN_FISHING });
     share.show();
   }
   if (view === "guide") render();
@@ -626,8 +626,7 @@ const gacha = createGacha({ fishIcon, esc }); // gacha-style reveal of new fish 
 
 /* ---------- Start ---------- */
 setMode(mode);
-render();
-route();
+route(); // shows the page in the address (and draws the grid when it's the Fish Guide)
 
 // Then, once the first page is showing, quietly load the remaining sheets (≈1.7 MB in all) so every page
 // switch is instant. Skipped when the browser asks to save data; neighbours are still prefetched.

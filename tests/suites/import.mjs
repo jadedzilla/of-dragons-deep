@@ -96,6 +96,19 @@ export default async function (t) {
   await p.click("#gcClose");
   await p.waitForSelector("#toast.show");
   t.check("Close ends it and shows the notice", !(await p.$eval("#gachaDialog", d => d.open)) && new RegExp(`^Marked ${fresh} new fish`).test(await text(p, "#toast")), await text(p, "#toast"));
+
+  // reduced motion: no animation, the end screen straight away, with the cards and their marks showing
+  await p.emulateMedia({ reducedMotion: "reduce" });
+  await p.click("#importBtn");
+  await p.check("input[name=importMode][value=add]");
+  await p.fill("#importText", pluginExport([7905, 20788])); // a big fish and a collectable
+  await p.click("#importGo");
+  await p.waitForSelector("#gachaDialog.done");
+  const rm = await p.evaluate(() => [...document.querySelectorAll("#gachaDialog .gc-card")].map(c =>
+    [+getComputedStyle(c).opacity, +getComputedStyle(c.querySelector(".gc-mark b")).opacity, c.classList.contains("flipped")]));
+  t.check("reduced motion: end screen at once, cards and their marks visible", rm.length === 2 && rm.every(([c, m, f]) => c === 1 && m === 1 && f), rm);
+  await closeGacha(p);
+  await p.emulateMedia({ reducedMotion: "no-preference" });
   msg = await run(pluginExport([12713]), "add"); // a collectable
   t.check("a collectable caught: !!", reveal?.bang === "t2:2", reveal);
   msg = await run(pluginExport([7678, 12713, 4870]), "add"); // a big fish (the rest already caught)

@@ -211,7 +211,7 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
 
   // ---------- route text ----------
   const entryAt = (id, spot) => (base.sources[id] ?? []).find(x => x.spot === spot) ?? (base.sources[id] ?? [])[0];
-  const chainsAt = (id, spot) => (baitChains(base.sources, id).find(g => g.spots.includes(spot)) ?? baitChains(base.sources, id)[0])?.chains ?? [];
+  const chainsAt = (id, spot) => { const groups = baitChains(base.sources, id); return (groups.find(g => g.spots.includes(spot)) ?? groups[0])?.chains ?? []; };
   const itemName = id => byId.get(id)?.name ?? names.item.get(id)?.name ?? `Item ${id}`;
   const itemHtml = id => {
     const icon = names.item.get(id)?.icon;
@@ -220,7 +220,8 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
     return byId.has(id) ? `<span class="ns-item">${inner}</span>`
       : `<button type="button" class="ns-item bait-link" data-bait="${id}" title="Where to get ${esc(itemName(id))}">${inner}</button>`;
   };
-  const hookTug = e => e ? [LR_HOOKSETS[e.hookset] && `${LR_HOOKSETS[e.hookset]}`, LR_TUGS[e.tug]].filter(Boolean).join(", ") : "";
+  const hookTug = e => e ? [LR_HOOKSETS[e.hookset], LR_TUGS[e.tug]].filter(Boolean).join(", ") : "";
+  const hookTugHtml = e => { const t = hookTug(e); return t ? ` <span class="ns-alt">(${t})</span>` : ""; };
   const spotHtml = (spot, f) => {
     const n = names.spot.get(spot)?.name, zone = names.spot.get(spot)?.zone ?? f.zone;
     return `<b>${esc(n ?? zone)}</b>${n && n !== zone ? `, ${esc(zone)}` : ""}`;
@@ -240,10 +241,10 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
     if (e?.mLure > 0) parts.push(`<b>Modest Lure</b> ${e.mLure}×`);
     if (e?.minGathering > 0) parts.push(`needs <b>${e.minGathering}</b> Gathering`);
     const [chain, ...alts] = chainsAt(f.id, spot);
-    const bait = chain ? chain.map((id, i) => i === 0 ? itemHtml(id) : `${itemHtml(id)}${hookTug(entryAt(id, spot)) ? ` <span class="ns-alt">(${hookTug(entryAt(id, spot))})</span>` : ""}`).join(` <span class="tm-arrow">→</span> `)
+    const bait = chain ? chain.map((id, i) => i === 0 ? itemHtml(id) : itemHtml(id) + hookTugHtml(entryAt(id, spot))).join(` <span class="tm-arrow">→</span> `)
       + (alts.length ? ` <span class="ns-alt">or ${alts.map(c => itemHtml(c[0])).join(" or ")}${alts.some(c => c.length > 1) ? " (mooch)" : ""}</span>` : "")
       : `<span class="ns-alt">bait unknown</span>`;
-    return `<div class="lr-bait">${bait} <span class="tm-arrow">→</span> <b>${esc(f.name)}</b>${hookTug(e) ? ` <span class="ns-alt">(${hookTug(e)})</span>` : ""}</div>`
+    return `<div class="lr-bait">${bait} <span class="tm-arrow">→</span> <b>${esc(f.name)}</b>${hookTugHtml(e)}</div>`
       + (parts.length ? `<div class="lr-notes">${parts.join(" · ")}</div>` : "");
   }
 

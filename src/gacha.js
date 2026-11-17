@@ -1,8 +1,9 @@
-// Gacha-style reveal of newly caught fish after an import: a fishing bobber is cast out, gets a bite and is reeled
-// in, rays burst out of it and white floods the screen, then fades to the cards; then the new fish flip in as
-// cards (big fish first, gold; collectables blue; others silver). Up to CARDS fish get a card; the rest show as a
-// strip of small icons with a "+N more" count. Tap anywhere to jump to the end; Close / Esc / tap to
-// close. With prefers-reduced-motion the final screen shows straight away.
+// Gacha-style reveal of newly caught fish after an import: a bobber is cast out on a swinging line, a fish's shadow
+// swims up and strikes the hook beneath it (a ! / !! / !!! bite mark pops out), the bobber is yanked in as rays burst
+// out of it and white floods the screen, big out-of-focus bubbles float up over the cards as the white fades, then the
+// new fish flip over as cards (big fish first, gold; collectables blue; others silver). Up to CARDS fish get a card;
+// the rest show as a strip of small icons with a "+N more" count. Tap anywhere to jump to the end; Close / Esc / tap
+// outside the cards to close. With prefers-reduced-motion the final screen shows straight away.
 
 // Each card starts to flip when the one before is halfway over (edge-on): with the flip's 1.05s cubic-bezier(.3,1.3,.5,1)
 // (.gc-inner in styles.css) the rotation passes 90° at 13.5% of the time, so ≈ 140 ms after it started.
@@ -79,6 +80,7 @@ const rings = side => `<i class="gc-splash ${side}"></i>${[0, 1, 2].map(k => `<i
 /** Exclamation marks like the game's tugs, by kind of fish: !!! big fish, !! collectable, ! otherwise — on the bobber at
  *  the bite (for the best fish caught) and on each card's corner. */
 const tierOf = f => f.big ? 3 : f.collectable ? 2 : 1;
+const KIND = ["", "std", "coll", "big"]; // card colour class by tier: silver, blue, gold
 // drawn like the in-game ones: a chunky upright bar (rounded top, narrowing down) over a round dot, with a pale glowing
 // core and a glossy highlight; colours per tier come from CSS (--lo edge, --hi core)
 const BANG = `<svg viewBox="0 0 40 100" aria-hidden="true">`
@@ -94,6 +96,14 @@ const bangs = n => Array.from({ length: n }, (_, j) => {
 
 /** Rank for the reveal: big fish, then collectables, then by level (higher first). */
 const rank = f => (f.big ? 2 : 0) + (f.collectable ? 1 : 0);
+
+// The fish's shadow (head / body / tail, so CSS can bend it in a wave) and the shadow of the line and hook under the
+// bobber; both blurred in CSS.
+const FISH_SHADOW = `<svg viewBox="0 0 60 150"><g class="f-head"><path d="M30 2C44 4 50 26 49 50C48.6 60 47 68 45 76H15C13 68 11.4 60 11 50C10 26 16 4 30 2Z"/>`
+  + `<path d="M13 46C4 50 0 60 1 68C7 62 11 58 14 56ZM47 46C56 50 60 60 59 68C53 62 49 58 46 56Z"/></g>`
+  + `<g class="f-body"><path d="M45.5 70C43.5 86 39.5 98 34.5 110H25.5C20.5 98 16.5 86 14.5 70Z"/>`
+  + `<g class="f-tail"><path d="M35 106L45 140C38 138 33 132 30 126C27 132 22 138 15 140L25 106Z"/></g></g></svg>`;
+const TACKLE = `<svg class="gc-tackle" viewBox="0 0 24 56"><path class="ln" d="M12 0V40"/><path class="hk" d="M12 38v8c0 6-8 6-8 0M4 46l2.5-3"/></svg>`;
 
 /** The fishing line as a rope (Verlet points with gravity and fixed-length links) from the rod tip, above the top of
  *  the screen, to the bobber's stick, drawn each frame into the dialog's .gc-line SVG until the reveal is done. It
@@ -145,14 +155,16 @@ export function createGacha({ fishIcon, esc }) {
   let finish = null, resolveClose = null, timers = [];
 
   const later = (ms, fn) => timers.push(setTimeout(fn, ms));
+  const stopTimers = () => { timers.forEach(clearTimeout); timers = []; };
+  const isDone = () => dialog.classList.contains("done");
   function close() {
-    timers.forEach(clearTimeout); timers = [];
+    stopTimers();
     if (dialog.open) dialog.close();
   }
-  dialog.addEventListener("close", () => { timers.forEach(clearTimeout); timers = []; resolveClose?.(); resolveClose = null; });
+  dialog.addEventListener("close", () => { stopTimers(); resolveClose?.(); resolveClose = null; });
   dialog.addEventListener("click", e => {
     if (e.target.closest("#gcClose")) return close();
-    if (!dialog.classList.contains("done")) finish?.(); // first tap skips to the end
+    if (!isDone()) finish?.(); // first tap skips to the end
     else if (!e.target.closest(".gc-card, .gc-strip")) close();
   });
 
@@ -160,7 +172,6 @@ export function createGacha({ fishIcon, esc }) {
     if (!fish.length) return Promise.resolve();
     const sorted = [...fish].sort((a, b) => rank(b) - rank(a) || b.lvl - a.lvl);
     const cards = sorted.slice(0, CARDS), rest = sorted.slice(CARDS);
-    const kind = f => f.big ? "big" : f.collectable ? "coll" : "std";
     // the bite mark that pops out of the bobber, by the best fish caught (like the game's tugs): !!! big fish, !! collectable, ! otherwise
     const tier = Math.max(...fish.map(tierOf));
     const strip = matchMedia("(max-width: 520px)").matches ? STRIP / 2 : STRIP; // small icons shown before "+N more"
@@ -168,12 +179,12 @@ export function createGacha({ fishIcon, esc }) {
       <div class="gc-stage">
         <svg class="gc-line" aria-hidden="true"><defs><linearGradient id="gcLineFade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stop-color="#e8e2d0" stop-opacity="0"/><stop offset=".35" stop-color="#e8e2d0" stop-opacity=".6"/></linearGradient></defs><path stroke="url(#gcLineFade)"/></svg>
-        <div class="gc-bob" aria-hidden="true"><span class="gc-fish"><svg viewBox="0 0 60 150"><g class="f-head"><path d="M30 2C44 4 50 26 49 50C48.6 60 47 68 45 76H15C13 68 11.4 60 11 50C10 26 16 4 30 2Z"/><path d="M13 46C4 50 0 60 1 68C7 62 11 58 14 56ZM47 46C56 50 60 60 59 68C53 62 49 58 46 56Z"/></g><g class="f-body"><path d="M45.5 70C43.5 86 39.5 98 34.5 110H25.5C20.5 98 16.5 86 14.5 70Z"/><g class="f-tail"><path d="M35 106L45 140C38 138 33 132 30 126C27 132 22 138 15 140L25 106Z"/></g></g></svg></span>${rings("back")}<span class="gc-float"><span class="gc-stick"></span><svg class="gc-tackle" viewBox="0 0 24 56"><path class="ln" d="M12 0V40"/><path class="hk" d="M12 38v8c0 6-8 6-8 0M4 46l2.5-3"/></svg></span>${rings("front")}<span class="gc-bang t${tier}">${bangs(tier)}</span></div>
+        <div class="gc-bob" aria-hidden="true"><span class="gc-fish">${FISH_SHADOW}</span>${rings("back")}<span class="gc-float"><span class="gc-stick"></span>${TACKLE}</span>${rings("front")}<span class="gc-bang t${tier}">${bangs(tier)}</span></div>
         <canvas class="gc-boom" aria-hidden="true"></canvas>
         <div class="gc-bubbles" aria-hidden="true">${bubbles()}</div>
         <h2 class="gc-title">You caught <b id="gcCount">0</b> new fish!</h2>
         <div class="gc-cards">${cards.map((f, i) => `
-          <div class="gc-card ${kind(f)}" style="--i:${i}" data-id="${f.id}">
+          <div class="gc-card ${KIND[tierOf(f)]}" style="--i:${i}" data-id="${f.id}">
             <div class="gc-inner">
               <div class="gc-back" aria-hidden="true"></div>
               <div class="gc-front">
@@ -191,17 +202,21 @@ export function createGacha({ fishIcon, esc }) {
       </div>`;
     dialog.className = "gacha-dialog";
     const count = dialog.querySelector("#gcCount"), total = fish.length;
-    const countTo = (ms) => { // counter ticks up to the total over `ms`
+    const setCount = n => { count.textContent = n.toLocaleString("en-US"); };
+    const countTo = ms => { // the counter ticks up to the total over `ms` (skipping to the end shows the total)
       const start = performance.now();
-      const step = () => { const t = Math.min(1, (performance.now() - start) / ms); count.textContent = Math.round(total * t).toLocaleString("en-US");
-        if (t < 1 && !dialog.classList.contains("done")) requestAnimationFrame(step); else if (dialog.classList.contains("done")) count.textContent = total.toLocaleString("en-US"); };
+      const step = () => {
+        const t = Math.min(1, (performance.now() - start) / ms);
+        setCount(isDone() ? total : Math.round(total * t));
+        if (t < 1 && !isDone()) requestAnimationFrame(step);
+      };
       requestAnimationFrame(step);
     };
     finish = () => { // jump to the end state
-      timers.forEach(clearTimeout); timers = [];
+      stopTimers();
       dialog.classList.add("reel", "dealt", "done");
       dialog.querySelectorAll(".gc-card").forEach(c => c.classList.add("flipped"));
-      count.textContent = total.toLocaleString("en-US");
+      setCount(total);
       finish = null;
     };
     const closed = new Promise(r => { resolveClose = r; });
@@ -209,11 +224,12 @@ export function createGacha({ fishIcon, esc }) {
     dialog.scrollTop = 0; // showModal focuses Close (at the bottom); start at the top on short screens
     if (reduced()) { finish(); return closed; }
     swingLine(dialog);
-    // sequence: the bobber is cast out and lands with a splash → floats → a fish's shadow swims up and bites it (dips twice; ! / !! / !!! pops out) → yanked in as rays burst
-    // out of it and the screen floods white → the white fades to the cards (dealt face down) → they flip one by one →
-    // strip + count → done
+    // sequence: the bobber is cast out and lands with a splash → floats → a fish's shadow swims up and strikes the hook
+    // twice, pulling the bobber under (! / !! / !!! pops out) → yanked in as rays burst out of it and the screen floods
+    // white → the white fades to the cards (dealt face down) under rising bubbles → once they've cleared, the cards flip
+    // one by one → strip + count → done
     later(1250, () => dialog.classList.add("rise")); // a fish's shadow swims up from the deep…
-    later(2250, () => dialog.classList.add("bite")); // …and bites the bobber
+    later(2250, () => dialog.classList.add("bite")); // …and strikes the hook
     later(3250, () => { // one swift yank, and the explosion bursts from the bobber at the same moment
       const r = dialog.querySelector(".gc-float").getBoundingClientRect();
       dialog.classList.add("reel", "boom");
