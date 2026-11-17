@@ -1,6 +1,8 @@
 // Log Route page at a fixed moment: the plan in the browser (the planner itself is covered in unit.mjs).
 import { readFile } from "node:fs/promises";
+import { gunzipSync } from "node:zlib";
 import { text, noOverflow, T0 } from "../lib/app.mjs";
+import { NET } from "../lib/network.mjs";
 
 const steps = p => p.$$eval(".lr-step", ss => ss.map(s => ({
   kind: ["stop", "timed", "ocean", "nowindow", "nodata"].find(k => s.classList.contains(k)), up: s.classList.contains("up"),
@@ -80,6 +82,31 @@ export default async function (t) {
   await p.waitForFunction(() => document.querySelector("#fishDialog").open);
   t.check("a fish icon opens its details", true);
   t.noErrors(p);
+
+  // GatherBuddy Reborn: each land step copies an auto-gather list in its clipboard format
+  const g = await t.page({ clock: T0, path: null });
+  await g.addInitScript(() => { window.__copied = []; Object.defineProperty(navigator, "clipboard", { value: { writeText: async x => { window.__copied.push(x); } } }); });
+  await g.goto(t.url + "#route");
+  await g.waitForSelector(".lr-step.stop [data-gbr]");
+  t.check("GatherBuddy button on land steps, not on ocean steps", await g.$$eval(".lr-step.stop, .lr-step.timed", ss => ss.every(x => x.querySelector("[data-gbr]")))
+    && await g.$$eval(".lr-step.ocean [data-gbr]", b => b.length === 0));
+  const stopEl = await g.$(".lr-step.stop");
+  const stopFish = await stopEl.$$eval(".lr-f [data-mark]", b => b.map(x => +x.dataset.mark));
+  const stopNo = await stopEl.$eval(".ns-rank", e => +e.textContent);
+  await (await stopEl.$("[data-gbr]")).click();
+  await g.waitForFunction(() => window.__copied.length === 1);
+  t.check("button confirms the copy", /^Copied/.test(await stopEl.$eval("[data-gbr]", b => b.textContent)));
+  const raw = Buffer.from(await g.evaluate(() => window.__copied[0]), "base64");
+  const bytes = gunzipSync(raw), cfg = JSON.parse(bytes.subarray(1).toString("utf8"));
+  t.check("format: base64 of gzip, version byte 6, then JSON (GatherBuddy's AutoGatherList.Config)", raw[0] === 0x1f && raw[1] === 0x8b && bytes[0] === 6);
+  t.check("fields GatherBuddy requires are present", Array.isArray(cfg.ItemIds) && typeof cfg.Name === "string" && typeof cfg.Description === "string"
+    && cfg.Quantities && cfg.PrefferedLocations && cfg.EnabledItems && cfg.Enabled === false, Object.keys(cfg));
+  const spots = Object.values(cfg.PrefferedLocations);
+  t.check("the step's fish, 1 each, pinned to the step's fishing spot", JSON.stringify(cfg.ItemIds) === JSON.stringify(stopFish)
+    && cfg.ItemIds.every(id => cfg.Quantities[id] === 1 && cfg.EnabledItems[id] === true) && spots.length === stopFish.length && new Set(spots).size === 1
+    && NET.exact[Object.keys(NET.exact).find(k => k.includes("fishing-sources.json"))][stopFish[0]].some(e => e.spot === spots[0]), cfg);
+  t.check("list named after the step; description has the fish and bait", cfg.Name.startsWith(`Of Dragons Deep · Step ${stopNo}: `) && /Bait: /.test(cfg.Description), [cfg.Name, cfg.Description]);
+  t.noErrors(g, "gatherbuddy");
 
   // only ocean fish left: one step per voyage stop, with port, spectral-current split and time-of-day voyages
   const data = JSON.parse(await readFile(new URL("../../data/fish.json", import.meta.url), "utf8")), sea = data.tables.reg.indexOf("The High Seas");

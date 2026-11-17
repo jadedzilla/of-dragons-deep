@@ -27,6 +27,31 @@ const MIN = 60, PER_FISH = 2 * MIN, PER_MOOCH = MIN, PER_TIMED = 6 * MIN, TRAVEL
 const RARE = 3 * 3600; // a window whose next chance is over 3 h away is "rare": go when it opens; others are caught when nearby
 const STEP_PAGE = 15;
 
+/**
+ * A GatherBuddy Reborn auto-gather list in its clipboard format (AutoGatherList.Config.ToBase64, version 6):
+ * base64 of gzip([6] + UTF-8 JSON). Fish are pinned to the route's fishing spot (PrefferedLocations — their spelling;
+ * GatherBuddy's location id for line fishing is the FishingSpot row id) and asked for once each. The list is imported
+ * disabled, so several steps can be imported without all running at once.
+ */
+export async function gatherBuddyList({ name, description = "", fish }) {
+  const cfg = {
+    ItemIds: fish.map(f => f.id),
+    Quantities: Object.fromEntries(fish.map(f => [f.id, 1])),
+    PrefferedLocations: Object.fromEntries(fish.filter(f => f.spot).map(f => [f.id, f.spot])),
+    EnabledItems: Object.fromEntries(fish.map(f => [f.id, true])),
+    Name: name, Description: description, FolderPath: "Of Dragons Deep", Order: 0,
+    Enabled: false, Fallback: false, RemoveCompletedItems: false,
+  };
+  const json = new TextEncoder().encode(JSON.stringify(cfg));
+  const bytes = new Uint8Array(json.length + 1);
+  bytes[0] = 6; // AutoGatherList.Config.CurrentVersion
+  bytes.set(json, 1);
+  const gz = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer());
+  let bin = "";
+  for (let i = 0; i < gz.length; i += 0x8000) bin += String.fromCharCode(...gz.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
 let oceanRoutesPromise = null;
 /** Ocean fishing: { spots: [{ id, name, main, sub }] (FishingSpot ids), routes: [{ stops: [[ikdSpot, timeOfDay]…] }] }. */
 export function loadOceanRoutes() {
@@ -275,6 +300,30 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
     return `<div class="lr-where">No route data yet · ${step.fish.length} fish</div><div class="lr-notes">${step.fish.map(f => esc(f.name)).join(", ")}</div>`;
   }
 
+  // ---------- GatherBuddy Reborn: copy a step as an auto-gather list ----------
+  // Land steps only (ocean fishing runs on voyages, which auto-gather doesn't do).
+  const gbrButton = s => s.kind === "stop" || s.kind === "timed"
+    ? `<div class="lr-gbr"><button type="button" class="btn small" data-gbr="${stepId(s)}" title="Copy this step as a GatherBuddy Reborn auto-gather list (Import from clipboard)">Copy for GatherBuddy</button></div>` : "";
+  function gbrStep(step) {
+    const n = plan.steps.indexOf(step) + 1, spot = step.kind === "stop" ? step.spot : step.e.spot;
+    const fish = step.kind === "stop" ? step.fish : [step.f];
+    const place = names.spot.get(spot)?.name ?? fish[0].zone;
+    const baits = [...new Set(fish.map(f => chainsAt(f.id, spot)[0]?.[0]).filter(Boolean))].map(itemName);
+    return gatherBuddyList({ name: `Of Dragons Deep · Step ${n}: ${place}`,
+      description: `${fish.map(f => f.name).join(", ")} at ${place}${baits.length ? `. Bait: ${baits.join(", ")}` : ""}.`,
+      fish: fish.map(f => ({ id: f.id, spot })) });
+  }
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch { /* no clipboard API here */ }
+    const ta = document.createElement("textarea"); // fallback for browsers/iframes without clipboard access
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch { /* ignore */ }
+    ta.remove();
+    return ok;
+  }
+
   // ---------- names for what's on screen ----------
   async function ensureNames(steps) {
     const items = new Set(), spots = new Set(), weathers = new Set();
@@ -345,7 +394,7 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
         + (plan.missed ? `<div class="lr-missed">${plan.missed} timed fish missed ${plan.missed === 1 ? "its" : "their"} window — <b>Re-plan</b> to fit ${plan.missed === 1 ? "it" : "them"} back in.</div>` : "")
       : `Fish Guide complete! 🎉`;
     list.innerHTML = plan.left ? `<ol class="lr-steps">${visible.map((s, i) => `<li class="lr-step ${s.kind}${s.kind === "timed" && s.w.start <= now ? " up" : ""}" data-step="${stepId(s)}">
-        <span class="ns-rank">${i + 1}</span><div class="lr-body">${i === 0 ? `<div class="lr-when">Next</div>` : ""}${stepHtml(s, i + 1, now)}</div></li>`).join("")}</ol>`
+        <span class="ns-rank">${i + 1}</span><div class="lr-body">${i === 0 ? `<div class="lr-when">Next</div>` : ""}${stepHtml(s, i + 1, now)}${gbrButton(s)}</div></li>`).join("")}</ol>`
       + (steps.length > shown ? `<button type="button" class="btn ns-more-ach" id="lrMore">Show ${Math.min(STEP_PAGE, steps.length - shown)} more steps (${steps.length - shown} left)</button>` : "")
       : `<div class="empty-msg">Every Fish Guide fish is caught. 🎉</div>`;
   }
@@ -374,6 +423,14 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
         .filter(s => !(s.fish && !s.fish.length) && !(s.kind === "timed" && s.f.id === id));
       plan.left--;
       render();
+    } else if (t.dataset.gbr) {
+      const step = stepsById.get(t.dataset.gbr);
+      if (!step) return;
+      gbrStep(step).then(copyText).then(ok => {
+        t.textContent = ok ? "Copied — import it in GatherBuddy" : "Couldn't copy here";
+        t.classList.toggle("done", ok);
+        setTimeout(() => { if (t.isConnected) { t.textContent = "Copy for GatherBuddy"; t.classList.remove("done"); } }, 2500);
+      });
     } else if (t.id === "lrMore") { shown += STEP_PAGE; render(); }
   });
   root.querySelector("#lrRecalc").addEventListener("click", () => { if (base) { replan(); shown = STEP_PAGE; render(); } });
