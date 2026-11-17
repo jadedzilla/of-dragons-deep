@@ -28,7 +28,7 @@ export default async function (t) {
   /** The new-fish reveal after an import (null if none): its cards (fish ids), "+N more" strip. */
   const gachaState = pg => pg.evaluate(() => { const d = document.querySelector("#gachaDialog"); return d.open ? {
     cards: [...d.querySelectorAll(".gc-card")].map(c => +c.dataset.id), mini: d.querySelectorAll(".gc-mini").length,
-    more: d.querySelector(".gc-more")?.textContent ?? "" } : null; });
+    more: d.querySelector(".gc-more")?.textContent ?? "", bang: d.querySelector(".gc-bang").className.slice(8) + ":" + d.querySelectorAll(".gc-bang b").length } : null; });
   let reveal;
 
   // dialog
@@ -84,9 +84,11 @@ export default async function (t) {
   await p.waitForFunction(() => document.querySelector("#gachaDialog").open);
   t.check("reveal starts with the orb: nothing flipped yet, notice held back", await p.evaluate(() => !document.querySelector("#gachaDialog.done")
     && !document.querySelector(".gc-card.flipped") && !document.querySelector("#toast.show")));
-  await p.waitForSelector(".gc-card.flipped"); // cards turn over one by one
+  await p.waitForSelector(".gc-card.flipped", { timeout: 20000 }); // cards turn over one by one (5–7 s into the reveal)
   await p.click("#gachaDialog .gc-title"); // tap: skip to the end
   reveal = await gachaState(p);
+  const bang = await p.$eval(".gc-bang", e => [e.className, e.querySelectorAll("b").length]);
+  t.check("bite mark by the best fish caught (only normal fish here): !", bang[0] === "gc-bang t1" && bang[1] === 1, bang);
   t.check("tap skips to the end: 10 cards face up, the rest as a strip, full count", await p.evaluate(() => document.querySelector("#gachaDialog").classList.contains("done")
     && document.querySelectorAll(".gc-card.flipped").length === 10) && reveal.cards.length === 10 && reveal.mini === fresh - 10
     && reveal.more === "" &&await text(p, "#gcCount") === String(fresh), reveal);
@@ -94,6 +96,10 @@ export default async function (t) {
   await p.click("#gcClose");
   await p.waitForSelector("#toast.show");
   t.check("Close ends it and shows the notice", !(await p.$eval("#gachaDialog", d => d.open)) && new RegExp(`^Marked ${fresh} new fish`).test(await text(p, "#toast")), await text(p, "#toast"));
+  msg = await run(pluginExport([12713]), "add"); // a collectable
+  t.check("a collectable caught: !!", reveal?.bang === "t2:2", reveal);
+  msg = await run(pluginExport([7678, 12713, 4870]), "add"); // a big fish (the rest already caught)
+  t.check("a big fish caught: !!!", reveal?.bang === "t3:3", reveal);
 
   // the Achievements page's Import opens the same dialog
   await goTo(p, "achievements");

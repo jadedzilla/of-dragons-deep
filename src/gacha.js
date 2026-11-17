@@ -4,7 +4,10 @@
 // strip of small icons with a "+N more" count. Tap anywhere to jump to the end; Close / Esc / tap to
 // close. With prefers-reduced-motion the final screen shows straight away.
 
-const CARDS = 10, STRIP = 60, FLIP_GAP = 300; // ms between cards
+// Each card starts to flip when the one before is halfway over (edge-on): with the flip's 1.05s cubic-bezier(.3,1.3,.5,1)
+// (.gc-inner in styles.css) the rotation passes 90° at 13.5% of the time, so ≈ 140 ms after it started.
+const FLIP_MS = 1050, FLIP_HALF = .135;
+const CARDS = 10, STRIP = 60, FLIP_GAP = Math.round(FLIP_MS * FLIP_HALF); // ms between cards
 
 /** The explosion, drawn on one screen-sized canvas (.gc-boom) — big CSS/SVG layers scaled past the screen glitch on
  *  phones. Two layers of light rays (freshly randomised wedges at irregular angles, of varying width and length, with
@@ -61,6 +64,33 @@ function burst(dialog, cx, cy) {
   };
   requestAnimationFrame(frame);
 }
+
+/** Bubbles that float up the screen as the cards appear: random column, size, sway, speed and start. */
+const BUBBLE_DELAY = .3, BUBBLE_RISE = [.55, .95]; // s: latest start, rise time range — the cards flip once they've all gone
+function bubbles(n = 46) {
+  const rnd = (a, b) => (a + Math.random() * (b - a)).toFixed(2);
+  return Array.from({ length: n }, () => `<i style="left:${rnd(0, 100)}%;bottom:${rnd(5, 70)}vh;--s:${rnd(70, 240)}px;--d:${rnd(0, BUBBLE_DELAY)}s;--t:${rnd(...BUBBLE_RISE)}s;--x:${rnd(-30, 30)}px"><b></b></i>`).join("");
+}
+
+/** The splash and ripple rings around the bobber, as one half each: the back halves go behind the bobber and the front
+ *  halves in front of it, so it sits inside the rings on the water instead of on top of them. */
+const rings = side => `<i class="gc-splash ${side}"></i>${[0, 1, 2].map(k => `<i class="gc-ripple ${side}" style="--k:${k}"></i>`).join("")}`;
+
+/** Exclamation marks like the game's tugs, by kind of fish: !!! big fish, !! collectable, ! otherwise — on the bobber at
+ *  the bite (for the best fish caught) and on each card's corner. */
+const tierOf = f => f.big ? 3 : f.collectable ? 2 : 1;
+// drawn like the in-game ones: a chunky upright bar (rounded top, narrowing down) over a round dot, with a pale glowing
+// core and a glossy highlight; colours per tier come from CSS (--lo edge, --hi core)
+const BANG = `<svg viewBox="0 0 40 100" aria-hidden="true">`
+  + `<path class="o" d="M20 2C31 2 37.5 9 36.5 20L27.5 61C26.5 68 13.5 68 12.5 61L3.5 20C2.5 9 9 2 20 2Z"/><circle class="o" cx="20" cy="85" r="10"/>`
+  + `<path class="i" d="M20 9C27 9 30.5 14 30 21L23.6 56C23 60 17 60 16.4 56L10 21C9.5 14 13 9 20 9Z"/><circle class="i" cx="20" cy="85" r="6"/>`
+  + `<ellipse class="g" cx="14.5" cy="17" rx="3.2" ry="7" transform="rotate(-12 14.5 17)"/><circle class="g" cx="16.5" cy="81.5" r="2.4"/></svg>`;
+// fanned out along a slight curve, for a bit of whimsy: each mark leans a little further right than the one before
+// and the outer ones sit a touch lower (a lone ! just leans a little)
+const bangs = n => Array.from({ length: n }, (_, j) => {
+  const k = n === 1 ? .5 : j - (n - 1) / 2;
+  return `<b style="--j:${j};rotate:${(k * 12 + 3).toFixed(1)}deg;translate:0 ${(k * k * 3).toFixed(1)}px">${BANG}</b>`;
+}).join("");
 
 /** Rank for the reveal: big fish, then collectables, then by level (higher first). */
 const rank = f => (f.big ? 2 : 0) + (f.collectable ? 1 : 0);
@@ -131,19 +161,23 @@ export function createGacha({ fishIcon, esc }) {
     const sorted = [...fish].sort((a, b) => rank(b) - rank(a) || b.lvl - a.lvl);
     const cards = sorted.slice(0, CARDS), rest = sorted.slice(CARDS);
     const kind = f => f.big ? "big" : f.collectable ? "coll" : "std";
+    // the bite mark that pops out of the bobber, by the best fish caught (like the game's tugs): !!! big fish, !! collectable, ! otherwise
+    const tier = Math.max(...fish.map(tierOf));
     const strip = matchMedia("(max-width: 520px)").matches ? STRIP / 2 : STRIP; // small icons shown before "+N more"
     dialog.innerHTML = `
       <div class="gc-stage">
         <svg class="gc-line" aria-hidden="true"><defs><linearGradient id="gcLineFade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stop-color="#e8e2d0" stop-opacity="0"/><stop offset=".35" stop-color="#e8e2d0" stop-opacity=".6"/></linearGradient></defs><path stroke="url(#gcLineFade)"/></svg>
-        <div class="gc-bob" aria-hidden="true"><i class="gc-ripple"></i><i class="gc-ripple"></i><i class="gc-ripple"></i><span class="gc-float"><span class="gc-stick"></span></span></div>
+        <div class="gc-bob" aria-hidden="true"><span class="gc-fish"><svg viewBox="0 0 60 150"><g class="f-head"><path d="M30 2C44 4 50 26 49 50C48.6 60 47 68 45 76H15C13 68 11.4 60 11 50C10 26 16 4 30 2Z"/><path d="M13 46C4 50 0 60 1 68C7 62 11 58 14 56ZM47 46C56 50 60 60 59 68C53 62 49 58 46 56Z"/></g><g class="f-body"><path d="M45.5 70C43.5 86 39.5 98 34.5 110H25.5C20.5 98 16.5 86 14.5 70Z"/><g class="f-tail"><path d="M35 106L45 140C38 138 33 132 30 126C27 132 22 138 15 140L25 106Z"/></g></g></svg></span>${rings("back")}<span class="gc-float"><span class="gc-stick"></span><svg class="gc-tackle" viewBox="0 0 24 56"><path class="ln" d="M12 0V40"/><path class="hk" d="M12 38v8c0 6-8 6-8 0M4 46l2.5-3"/></svg></span>${rings("front")}<span class="gc-bang t${tier}">${bangs(tier)}</span></div>
         <canvas class="gc-boom" aria-hidden="true"></canvas>
+        <div class="gc-bubbles" aria-hidden="true">${bubbles()}</div>
         <h2 class="gc-title">You caught <b id="gcCount">0</b> new fish!</h2>
         <div class="gc-cards">${cards.map((f, i) => `
           <div class="gc-card ${kind(f)}" style="--i:${i}" data-id="${f.id}">
             <div class="gc-inner">
               <div class="gc-back" aria-hidden="true"></div>
               <div class="gc-front">
+                <span class="gc-mark t${tierOf(f)}" aria-hidden="true">${bangs(tierOf(f))}</span>
                 <span class="gc-icon">${fishIcon(f)}</span>
                 <span class="gc-name">${f.big ? `<i class="tm-big"></i>` : ""}${esc(f.name)}</span>
                 <span class="gc-tag">${f.big ? "Big fish" : f.collectable ? "Collectable" : f.spear ? "Spearfish" : f.lvl > 1 ? `Lv ${f.lvl}` : "Ocean fishing"}</span>
@@ -175,18 +209,33 @@ export function createGacha({ fishIcon, esc }) {
     dialog.scrollTop = 0; // showModal focuses Close (at the bottom); start at the top on short screens
     if (reduced()) { finish(); return closed; }
     swingLine(dialog);
-    // sequence: the bobber is cast out and lands with a splash → floats → a bite (dips twice) → yanked in as rays burst
+    // sequence: the bobber is cast out and lands with a splash → floats → a fish's shadow swims up and bites it (dips twice; ! / !! / !!! pops out) → yanked in as rays burst
     // out of it and the screen floods white → the white fades to the cards (dealt face down) → they flip one by one →
     // strip + count → done
-    later(1900, () => dialog.classList.add("bite"));
-    later(2900, () => { // one swift yank, and the explosion bursts from the bobber at the same moment
+    later(1250, () => dialog.classList.add("rise")); // a fish's shadow swims up from the deep…
+    later(2250, () => dialog.classList.add("bite")); // …and bites the bobber
+    later(3250, () => { // one swift yank, and the explosion bursts from the bobber at the same moment
       const r = dialog.querySelector(".gc-float").getBoundingClientRect();
       dialog.classList.add("reel", "boom");
       burst(dialog, r.left + r.width / 2, r.top + r.height / 2);
     });
-    later(3700, () => { dialog.classList.add("dealt"); countTo(cards.length * FLIP_GAP + 1200); }); // under the white
-    cards.forEach((_, i) => later(4500 + i * FLIP_GAP, () => dialog.querySelectorAll(".gc-card")[i]?.classList.add("flipped")));
-    later(4500 + cards.length * FLIP_GAP + 700, () => finish?.());
+    const BUBBLES_AT = 4250, LAST_BUBBLE = BUBBLES_AT + (BUBBLE_DELAY + BUBBLE_RISE[1]) * 1000;
+    later(BUBBLES_AT, () => dialog.classList.add("bubbles")); // as the white fades: big bubbles float up over the cards
+    later(4050, () => { dialog.classList.add("dealt"); countTo(2000 + cards.length * FLIP_GAP); }); // under the white
+    const flips = () => { // the cards turn over one by one…
+      cards.forEach((_, i) => later(i * FLIP_GAP, () => dialog.querySelectorAll(".gc-card")[i]?.classList.add("flipped")));
+      later(cards.length * FLIP_GAP + 700, () => finish?.());
+    };
+    const waitForBubbles = () => { // …once no bubble is left over them (or the last one has finished)
+      const box = dialog.querySelector(".gc-cards").getBoundingClientRect();
+      const over = [...dialog.querySelectorAll(".gc-bubbles i")].some(b => {
+        const r = b.getBoundingClientRect();
+        return r.bottom > box.top && r.top < box.bottom && r.right > box.left && r.left < box.right && +getComputedStyle(b).opacity > .05;
+      });
+      if (over && performance.now() < bubblesDone) later(100, waitForBubbles); else flips();
+    };
+    const bubblesDone = performance.now() + LAST_BUBBLE;
+    later(BUBBLES_AT + 900, waitForBubbles);
     return closed;
   }
   return { show, close };
