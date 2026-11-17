@@ -76,11 +76,30 @@ export default async function (t) {
   // phone layout
   const ph = await t.page({ width: 375, height: 800 });
   await gridReady(ph);
-  const lay = await ph.evaluate(() => {
-    const r = s => document.querySelector(s).getBoundingClientRect(), row2 = ["#search", "#editBtn", "#importBtn", "#filterBtn"].map(s => Math.round(r(s).top));
-    return { pagesAlone: r("#pages").bottom <= Math.min(...row2), oneRow: new Set(row2).size === 1, filterRight: Math.abs(r("#filterBtn").right - r(".toolbar").right) < 1.5 };
+  // one row: page numbers (5 slots; 3 on very narrow screens), search icon, Edit, Import, Filter at the right; the arrows
+  // never move while paging; an open search gets its own row
+  const toolbar = pg => pg.evaluate(() => {
+    const r = s => document.querySelector(s).getBoundingClientRect();
+    return { rows: new Set(["#pages", "#search", "#editBtn", "#importBtn", "#filterBtn"].map(s => Math.round(r(s).top))).size,
+      filterRight: Math.abs(r("#filterBtn").right - r(".toolbar").right) < 1.5, next: Math.round(r("#pages .pg.arrow:last-child").left),
+      labels: [...document.querySelectorAll("#pages > *")].map(e => e.classList.contains("active") ? `[${e.textContent}]` : e.textContent).join(" ") };
   });
-  t.check("phone: pages on row 1; search/Edit/Import/Filter on row 2, Filter at the right", lay.pagesAlone && lay.oneRow && lay.filterRight, lay);
+  const narrow = await t.page({ width: 320, height: 700 });
+  await gridReady(narrow);
+  for (const [label, pg, expect] of [["phone 375px", ph, ["‹ [1] 2 3 … 16 ›", "‹ 1 … [7] … 16 ›", "‹ 1 … 14 15 [16] ›"]], ["phone 320px", narrow, ["‹ [1] … 16 ›", "‹ … [7] … ›", "‹ 1 … [16] ›"]]]) {
+    const seen = [await toolbar(pg)];
+    for (let i = 0; i < 15; i++) { await pg.click("#pages .pg.arrow:last-child"); seen.push(await toolbar(pg)); }
+    t.check(`${label}: page numbers, search, Edit, Import and Filter on one row, Filter at the right, on every page`, seen.every(x => x.rows === 1 && x.filterRight), seen.find(x => x.rows !== 1 || !x.filterRight));
+    t.check(`${label}: › arrow never moves`, new Set(seen.map(x => x.next)).size === 1, [...new Set(seen.map(x => x.next))]);
+    t.check(`${label}: fewer page numbers, the rest folded into …`, JSON.stringify([seen[0].labels, seen[6].labels, seen[15].labels]) === JSON.stringify(expect), [seen[0].labels, seen[6].labels, seen[15].labels]);
+    await pg.click("#pages .pg >> nth=1");
+  }
+  await ph.click("#search"); await ph.keyboard.type("bass");
+  const open = await ph.evaluate(() => { const r = s => document.querySelector(s).getBoundingClientRect();
+    return { below: r("#search").top >= r("#filterBtn").bottom, full: Math.abs(r("#search").width - r(".toolbar").width) < 1.5 }; });
+  t.check("phone: an open search gets its own full-width row", open.below && open.full, open);
+  await search(ph, ""); await ph.mouse.click(3, 3);
+  t.check("phone 320px: no horizontal overflow", await noOverflow(narrow));
   t.check("phone: no horizontal overflow", await noOverflow(ph));
   for (const [label, page] of [["desktop", p], ["phone", ph]]) {
     const c = await page.evaluate(() => { const r = s => document.querySelector(s).getBoundingClientRect(), f = r(".credit"), tabs = r("#tabs");

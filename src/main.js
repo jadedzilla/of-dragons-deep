@@ -74,16 +74,22 @@ function visible() {
 const pageOf = (list, n) => list.slice(n * PER_PAGE, (n + 1) * PER_PAGE);
 
 // ‹ first … current±2 … last ›
-// Always the same number of slots between the arrows (7 once there are more than 7 pages), and gaps are as
-// wide as buttons, so the arrows and the search box don't move when you change page.
-const SLOTS = 7;
+// Always the same number of slots between the arrows (7 on wide screens, 5 on phones, 3 on very narrow ones, once
+// there are more pages than that), and gaps are as wide as buttons, so the arrows don't move when you change page.
+const PHONE = matchMedia("(max-width:520px)"), NARROW = matchMedia("(max-width:350px)");
+const slotCount = () => (NARROW.matches ? 3 : PHONE.matches ? 5 : 7);
+PHONE.addEventListener("change", () => render());
+NARROW.addEventListener("change", () => render());
 function pageSlots(count) {
   const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
-  if (count <= SLOTS) return range(0, count - 1);
-  const last = count - 1;
-  if (page <= 3) return [...range(0, 4), null, last];                // 1 2 3 4 5 … N
-  if (page >= last - 3) return [0, null, ...range(last - 4, last)];  // 1 … N-4 N-3 N-2 N-1 N
-  return [0, null, page - 1, page, page + 1, null, last];           // 1 … p-1 p p+1 … N
+  const slots = slotCount(), last = count - 1;
+  if (count <= slots) return range(0, last);
+  if (slots === 3) return page === 0 || page === last ? [0, null, last] : [null, page, null]; // 1 … N  /  … p …
+  const edge = slots - 2;                                                  // pages shown together at either end
+  if (page < edge - 1) return [...range(0, edge - 1), null, last];         // 1 2 3 4 5 … N   (phones: 1 2 3 … N)
+  if (page > last - edge + 1) return [0, null, ...range(last - edge + 1, last)]; // 1 … N-4 … N
+  const mid = slots === 7 ? [page - 1, page, page + 1] : [page];
+  return [0, null, ...mid, null, last];                                    // 1 … p-1 p p+1 … N  (phones: 1 … p … N)
 }
 function pageButtons(count) {
   return [
