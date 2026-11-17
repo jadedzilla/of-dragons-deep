@@ -5,12 +5,12 @@
 import { achievementDone, achievementRequirement, getAchievements } from "./achievements.js";
 import { loadMarks, loadAchievementProgress, noteObtained } from "./storage.js";
 
-export const SHARE_LAYOUTS = { wide: { w: 1200, h: 675, rows: 3 }, tall: { w: 1080, h: 1350, rows: 6 } };
+export const CARD = { w: 1200, h: 675, rows: 3 }; // 16:9 — fits Discord, X and phones
 const SITE = "ofdragonsdeep.jadedzilla.com";
 const C = { bg1: "#0d1220", bg2: "#22304f", panel: "rgba(22,26,38,.92)", gold: "#c9a95c", goldDim: "#7d6a3e", goldHi: "#f1dca0",
   text: "#e8e2d0", muted: "#9a937f", track: "rgba(0,0,0,.45)", green: "#66d36e" };
 const SERIF = '"Cinzel", Georgia, serif', SANS = '"Noto Sans", system-ui, sans-serif';
-const NAME_KEY = "odd-share-name", LAYOUT_KEY = "odd-share-layout";
+const NAME_KEY = "odd-share-name";
 
 /** The numbers on the card: { fish, spear, big, ocean, expansions: [{ name, have, total }], ach } (ach null if unavailable). */
 export async function shareStats({ fishList, spearList, allFish, byId, isCaught, categories, oceanCategory }) {
@@ -70,8 +70,8 @@ function loadImage(src) {
 }
 
 /** Draw the card for these stats; resolves to the canvas. */
-export async function drawShareCard(stats, { layout = "wide", name = "", date = new Date() } = {}) {
-  const L = SHARE_LAYOUTS[layout] ?? SHARE_LAYOUTS.wide, { w: W, h: H } = L;
+export async function drawShareCard(stats, { name = "", date = new Date() } = {}) {
+  const L = CARD, { w: W, h: H } = L;
   const c = document.createElement("canvas");
   c.width = W; c.height = H;
   const g = c.getContext("2d");
@@ -114,10 +114,10 @@ export async function drawShareCard(stats, { layout = "wide", name = "", date = 
   text(sub, W - P, P + 30, { size: 20, color: C.muted, align: "right", max: W / 2 - P });
   g.fillStyle = "rgba(201,169,92,.45)"; g.fillRect(P, P + 56, W - 2 * P, 1);
 
-  // sections: wide = two columns, tall = stacked
-  const top = P + 92, wide = layout !== "tall", colGap = 48;
-  const fishBox = wide ? { x: P, y: top, w: (W - 2 * P - colGap) / 2 } : { x: P, y: top, w: W - 2 * P };
-  const achBox = wide ? { x: P + fishBox.w + colGap, y: top, w: fishBox.w } : { x: P, y: 0, w: W - 2 * P }; // tall: y set below the fish
+  // two columns: fish on the left, achievements on the right
+  const top = P + 92, colGap = 48;
+  const fishBox = { x: P, y: top, w: (W - 2 * P - colGap) / 2 };
+  const achBox = { x: P + fishBox.w + colGap, y: top, w: fishBox.w };
 
   // fish
   {
@@ -144,7 +144,6 @@ export async function drawShareCard(stats, { layout = "wide", name = "", date = 
       text(`${pct(e.have, e.total)}%`, cx + cw, cy, { size: 15, color: C.text, align: "right" });
       bar(cx, cy + 7, cw, 6, e.have / e.total, e.have === e.total);
     });
-    if (!wide) achBox.y = y + Math.ceil(stats.expansions.length / cols) * 40 + 50;
   }
 
   // achievements
@@ -202,10 +201,6 @@ export function createShare(root, deps) {
       <p class="ns-intro">A card of your progress to post anywhere — made from the fish you've marked caught and your achievements.</p>
       <div class="sh-controls">
         <input class="sh-name" id="shName" type="text" maxlength="40" placeholder="Character name (optional)" autocomplete="off" aria-label="Name on the card">
-        <div class="sh-layout" role="radiogroup" aria-label="Card shape">
-          <label><input type="radio" name="shLayout" value="wide"> Wide</label>
-          <label><input type="radio" name="shLayout" value="tall"> Tall</label>
-        </div>
       </div>
     </div>
     <div class="sh-preview" id="shPreview"><div class="empty-msg">Drawing your card…</div></div>
@@ -219,8 +214,6 @@ export function createShare(root, deps) {
   const get = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
   const set = (k, v) => { try { localStorage.setItem(k, v); } catch { /* storage unavailable */ } };
   $s("#shName").value = get(NAME_KEY, "");
-  const layoutNow = () => root.querySelector("input[name=shLayout]:checked")?.value ?? "wide";
-  (root.querySelector(`input[name=shLayout][value="${get(LAYOUT_KEY, "wide") === "tall" ? "tall" : "wide"}"]`)).checked = true;
 
   let blob = null, url = null, token = 0, typingTimer = null;
   const fileName = () => `of-dragons-deep-${new Date().toISOString().slice(0, 10)}.png`;
@@ -228,7 +221,7 @@ export function createShare(root, deps) {
     const my = ++token;
     for (const b of ["#shDownload", "#shShare", "#shCopy"]) $s(b).disabled = true;
     const stats = await shareStats(deps);
-    const canvas = await drawShareCard(stats, { layout: layoutNow(), name: $s("#shName").value });
+    const canvas = await drawShareCard(stats, { name: $s("#shName").value });
     const b = await new Promise(r => canvas.toBlob(r, "image/png"));
     if (my !== token) return;
     blob = b;
@@ -249,7 +242,6 @@ export function createShare(root, deps) {
     clearTimeout(typingTimer);
     typingTimer = setTimeout(draw, 300);
   });
-  root.addEventListener("change", e => { if (e.target.name === "shLayout") { set(LAYOUT_KEY, layoutNow()); draw(); } });
   $s("#shDownload").addEventListener("click", () => {
     const a = document.createElement("a");
     a.href = url; a.download = fileName();

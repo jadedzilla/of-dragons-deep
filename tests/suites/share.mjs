@@ -1,4 +1,4 @@
-// Share page: the progress card image (wide and tall), its numbers, and download.
+// Share page: the progress card image (1200×675), its numbers, and download.
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { gridReady, goTo, importFish, text, noOverflow } from "../lib/app.mjs";
@@ -22,19 +22,19 @@ export default async function (t) {
     Buffer.from(await p.evaluate(async () => { const b = await (await fetch(document.querySelector("#shImg").src)).blob(); return [...new Uint8Array(await b.arrayBuffer())]; }))); };
   await save("wide");
 
-  // name + tall layout, remembered
+  // a name redraws the card; only the one (wide) shape is offered
+  const before = await p.$eval("#shImg", i => i.src);
   await p.fill("#shName", "Aya Fisher");
-  await p.check("input[name=shLayout][value=tall]");
-  await p.waitForFunction(() => document.querySelector("#shImg")?.naturalHeight === 1350);
+  await p.waitForFunction(src => document.querySelector("#shImg")?.src !== src && document.querySelector("#shImg").naturalWidth > 0, before);
   im = await img();
-  t.check("Tall card (1080×1350)", im.w === 1080 && im.h === 1350, im);
-  await save("tall");
+  t.check("a name redraws the card, still 1200×675; no shape option", im.w === 1200 && im.h === 675 && !(await p.$("input[name=shLayout]")), im);
+  await save("named");
   const dl = p.waitForEvent("download");
   await p.click("#shDownload");
   const file = await dl;
   t.check("Download PNG saves of-dragons-deep-<date>.png", /^of-dragons-deep-\d{4}-\d{2}-\d{2}\.png$/.test(file.suggestedFilename()), file.suggestedFilename());
   await p.reload(); await p.waitForSelector("#shImg");
-  t.check("name and layout remembered", await p.inputValue("#shName") === "Aya Fisher" && await p.isChecked("input[name=shLayout][value=tall]"));
+  t.check("name remembered", await p.inputValue("#shName") === "Aya Fisher");
   t.check("the card records when achievements were first seen obtained", await p.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("odd-achievements-seen-v1"))).length === 3));
   t.noErrors(p);
 

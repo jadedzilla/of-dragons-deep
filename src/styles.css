@@ -405,9 +405,6 @@ body{
 .sh-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
 .sh-name{flex:1 1 220px;min-width:0;height:32px;padding:0 12px;border-radius:6px;outline:none;background:#10131c;border:1px solid #4a4434;color:var(--text);font:14px "Noto Sans",sans-serif}
 .sh-name:focus{border-color:var(--gold)}
-.sh-layout{display:flex;gap:14px;font-size:13px}
-.sh-layout label{display:flex;align-items:center;gap:6px;cursor:pointer}
-.sh-layout input{accent-color:var(--gold)}
 .sh-preview{display:flex;justify-content:center;padding:8px;border-radius:8px;background:rgba(0,0,0,.35);border:1px solid #2c2a22;min-height:120px}
 .sh-preview img{display:block;max-width:100%;height:auto;max-height:70vh;border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,.5)}
 .sh-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
