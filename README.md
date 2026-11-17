@@ -4,7 +4,7 @@
 
 **Use it:** https://ofdragonsdeep.jadedzilla.com/
 
-Track the fish you've caught in Final Fantasy XIV and work toward the big fishing achievements. Covers the Fish Guide and, on its own tab, the spearfishing log, plus a Fish Timers page showing which fish are up now and when the rest are next catchable, an Achievements page listing every fishing achievement with your progress (import it straight from the game with the [Of Dragons Deep plugin](https://github.com/jadedzilla/of-dragons-deep-plugin)'s achievement export), and a Log Route page that plans the order to catch every fish you still need, grouping fish by fishing spot and slotting in time-limited fish when their windows open.
+Track the fish you've caught in Final Fantasy XIV and work toward the big fishing achievements. Includes the Fish Guide, a Fish Timers page showing which fish are up now and when the rest are next catchable, an Achievements page listing every fishing achievement with your progress (import it straight from the game with the [Of Dragons Deep plugin](https://github.com/jadedzilla/of-dragons-deep-plugin)'s achievement export), and a Log Route page that plans the order to catch every fish you still need, grouping fish by fishing spot and slotting in time-limited fish when their windows open.
 
 ## Run it
 
@@ -20,14 +20,8 @@ npm test             # run the tests (Playwright + Chromium; no network needed)
 
 Fish data is loaded live from the game data on XIVAPI each time the app opens; a bundled snapshot is used if it can't be reached.
 
-## Deploy
-
-Every push to `main` builds the app and publishes it to GitHub Pages (`.github/workflows/pages.yml`).
-One-time setup: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-
 ## Credits
 
 Fish data, icons and weather come from the game data on [XIVAPI](https://v2.xivapi.com/).
 Best bait and the Fish Timers' catch windows (times and weather) come from [FFXIV Teamcraft](https://ffxivteamcraft.com/)'s fishing data.
-Fish Guide order and fields were checked against the [FFXIV Fish Tracker](https://ff14fish.carbuncleplushy.com/) by Carbuncle Plushy.
 FINAL FANTASY XIV © SQUARE ENIX CO., LTD.
