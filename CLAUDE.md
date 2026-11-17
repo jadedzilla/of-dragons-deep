@@ -13,7 +13,7 @@ Currently a proof of concept: plain HTML/CSS/ES modules, **no dependencies and n
 - `npm test` — run the test suites (≈15 s; `npm test -- timers achievements` runs matching suites only; `SHOTS=<dir>` saves screenshots). Needs Playwright + Chromium (see fetch-icons)
 - `npm run test:record` — re-record the test fixtures from XIVAPI/Teamcraft (network; `NODE_USE_ENV_PROXY=1` behind a proxy)
 
-Deploy: `.github/workflows/pages.yml` runs `node scripts/build.mjs --external-icons` on every push to `main` and publishes `dist/` to GitHub Pages at https://jadedzilla.github.io/of-dragons-deep/ (a sub-path, so keep every URL in the app relative — no leading `/`).
+Deploy: `.github/workflows/pages.yml` runs `node scripts/build.mjs --external-icons` on every push to `main` and publishes `dist/` to GitHub Pages at **https://ofdragonsdeep.jadedzilla.com/** (custom domain, set in the repo's Settings → Pages; DNS: a CNAME record `ofdragonsdeep` → `jadedzilla.github.io`). The old address https://jadedzilla.github.io/of-dragons-deep/ redirects there. Keep every URL in the app relative (no leading `/`) so the build also works from a sub-path or from disk. Note: localStorage is per site address, so progress saved under the old address doesn't carry over to the new one.
 
 **Workflow rule (from the project owner): never commit, push or deploy without explicit confirmation.** After making a change, show the owner the new version first (publish a preview, plus screenshots/summary), then ask and wait for their OK. Pushing to `main` deploys to GitHub Pages, so it needs the same confirmation.
 

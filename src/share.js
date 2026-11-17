@@ -6,7 +6,7 @@ import { achievementDone, achievementRequirement, getAchievements } from "./achi
 import { loadMarks, loadAchievementProgress, noteObtained } from "./storage.js";
 
 export const SHARE_LAYOUTS = { wide: { w: 1200, h: 675, rows: 3 }, tall: { w: 1080, h: 1350, rows: 6 } };
-const SITE = "jadedzilla.github.io/of-dragons-deep";
+const SITE = "ofdragonsdeep.jadedzilla.com";
 const C = { bg1: "#0d1220", bg2: "#22304f", panel: "rgba(22,26,38,.92)", gold: "#c9a95c", goldDim: "#7d6a3e", goldHi: "#f1dca0",
   text: "#e8e2d0", muted: "#9a937f", track: "rgba(0,0,0,.45)", green: "#66d36e" };
 const SERIF = '"Cinzel", Georgia, serif', SANS = '"Noto Sans", system-ui, sans-serif';
