@@ -13,6 +13,7 @@
 
 import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
 import { xivAsset } from "./teamcraft.js";
+import { noteObtained } from "./storage.js";
 
 const FISHER_CATEGORY = 34;
 const UNIQUE_FISH = 202;
@@ -186,6 +187,7 @@ export function createAchievements(root, { allFish, byId, isCaught, fishIcon, on
       return parts[0] ?? "other";
     };
     const done = new Map(data.achievements.map(a => [a.id, isDone(a)]));
+    noteObtained([...done].filter(([, d]) => d).map(([id]) => id)); // for "recently obtained" on the Share card
     const nDone = [...done.values()].filter(Boolean).length;
     const pts = data.achievements.reduce((s, a) => s + a.points, 0), ptsDone = data.achievements.reduce((s, a) => s + (done.get(a.id) ? a.points : 0), 0);
     $a("#acSummary").innerHTML = `<b>${nDone}</b> of ${data.achievements.length} obtained · <b>${ptsDone}</b> of ${pts} points`;

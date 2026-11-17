@@ -381,6 +381,19 @@ body{
 .lr-tags{font-weight:400;font-size:11.5px;color:#8fc7ea}
 .lr-bait{color:var(--text)}
 .lr-f .ns-mark{padding:0 8px}
+/* Share page */
+.sh-head{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.sh-head .ns-intro{margin:0}
+.sh-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
+.sh-name{flex:1 1 220px;min-width:0;height:32px;padding:0 12px;border-radius:6px;outline:none;background:#10131c;border:1px solid #4a4434;color:var(--text);font:14px "Noto Sans",sans-serif}
+.sh-name:focus{border-color:var(--gold)}
+.sh-layout{display:flex;gap:14px;font-size:13px}
+.sh-layout label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.sh-layout input{accent-color:var(--gold)}
+.sh-preview{display:flex;justify-content:center;padding:8px;border-radius:8px;background:rgba(0,0,0,.35);border:1px solid #2c2a22;min-height:120px}
+.sh-preview img{display:block;max-width:100%;height:auto;max-height:70vh;border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+.sh-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
+.sh-status{font-size:12px;color:var(--muted)}
 /* Achievements page */
 .ac-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px;margin-bottom:8px}
 .ac-summary{font-size:13px;color:var(--muted)}
@@ -447,4 +460,8 @@ body{
   .tm-icon{width:40px;height:40px;grid-row:span 2}
   .tm-status{grid-column:2;flex-direction:row;flex-wrap:wrap;justify-content:flex-start;gap:2px 8px;align-items:baseline}
   .tm-search{flex:1 1 100%}
+}
+@media (max-width:360px){ /* after the phone nav rules: five links fit a 320px screen */
+  .topnav{gap:3px}
+  .topnav a{font-size:9.5px;letter-spacing:0;padding:7px 2px}
 }

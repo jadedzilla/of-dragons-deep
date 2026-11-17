@@ -5,6 +5,7 @@ import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
 import { createTimers } from "./timers.js";
 import { createAchievements } from "./achievements.js";
 import { createLogRoute } from "./logroute.js";
+import { createShare } from "./share.js";
 import { baitChains, hooksetAndTug, loadTeamcraft, xivAsset, xivRows } from "./teamcraft.js";
 
 const PER_PAGE = 100; // 10x10 grid
@@ -577,8 +578,8 @@ if (linkParams.has("import")) {
 }
 
 /* ---------- Pages: Fish Guide / Fish Timers / Achievements / Log Route (navigation bar; #timers, #achievements, #route) ---------- */
-let timers = null, achievements = null, logRoute = null; // created the first time their page is opened
-const VIEWS = { "#timers": "timers", "#achievements": "achievements", "#route": "route" };
+let timers = null, achievements = null, logRoute = null, share = null; // created the first time their page is opened
+const VIEWS = { "#timers": "timers", "#achievements": "achievements", "#route": "route", "#share": "share" };
 function route() {
   const view = VIEWS[location.hash] ?? "guide";
   document.body.dataset.view = view;
@@ -586,6 +587,7 @@ function route() {
   $("#timersView").hidden = view !== "timers";
   $("#achievementsView").hidden = view !== "achievements";
   $("#routeView").hidden = view !== "route";
+  $("#shareView").hidden = view !== "share";
   $("#tabs").hidden = view !== "guide" || !SPEAR_LIST.length;
   $(".progress").hidden = view !== "guide";
   document.querySelectorAll("#topnav a").forEach(a => a.toggleAttribute("aria-current", a.dataset.view === view));
@@ -605,6 +607,11 @@ function route() {
       markCaught: id => { caught.add(id); saveCaught(caught); }, fishIcon, onOpen: openFishView, esc, oceanCategory: OCEAN_FISHING });
     logRoute.show();
   } else logRoute?.hide();
+  if (view === "share") {
+    share ??= createShare($("#shareView"), { fishList: FISH_LIST, spearList: SPEAR_LIST, allFish: [...FISH_LIST, ...SPEAR_LIST], byId: BY_ID,
+      isCaught: id => caught.has(id), categories: CATEGORIES, oceanCategory: OCEAN_FISHING });
+    share.show();
+  }
   if (view === "guide") render();
 }
 window.addEventListener("hashchange", route);

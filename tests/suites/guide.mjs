@@ -95,6 +95,8 @@ export default async function (t) {
     await pg.click("#pages .pg >> nth=1");
   }
   await ph.click("#search"); await ph.keyboard.type("bass");
+  await ph.waitForFunction(() => { const r = s => document.querySelector(s).getBoundingClientRect(); // it animates open
+    return r("#search").top >= r("#filterBtn").bottom && Math.abs(r("#search").width - r(".toolbar").width) < 1.5; }, null, { timeout: 3000 }).catch(() => {});
   const open = await ph.evaluate(() => { const r = s => document.querySelector(s).getBoundingClientRect();
     return { below: r("#search").top >= r("#filterBtn").bottom, full: Math.abs(r("#search").width - r(".toolbar").width) < 1.5 }; });
   t.check("phone: an open search gets its own full-width row", open.below && open.full, open);

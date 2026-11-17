@@ -5,6 +5,7 @@
 const CAUGHT_KEY = "odd-caught-v2";
 const TAB_KEY = "odd-tab";
 const MARKS_KEY = "odd-achievements-v1";
+const SEEN_KEY = "odd-achievements-seen-v1";
 const PROGRESS_KEY = "odd-achievements-progress-v1";
 
 export function loadCaught(validIds) {
@@ -47,4 +48,22 @@ export function loadAchievementProgress() {
 
 export function saveAchievementProgress(progress) {
   try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); } catch { /* storage unavailable */ }
+}
+
+/**
+ * When each achievement was first seen obtained (ms since epoch), so the Share card can show recent ones. The game
+ * data has no dates: this is when the app first noticed (ticked, worked out from fish, or imported). Ones already
+ * obtained the first time this runs get 0. Achievements no longer obtained are dropped.
+ */
+export function noteObtained(doneIds) {
+  let seen = null;
+  try { seen = JSON.parse(localStorage.getItem(SEEN_KEY) || "null"); } catch { /* storage unavailable */ }
+  const first = !seen;
+  seen ??= {};
+  const now = Date.now(), done = new Set(doneIds);
+  let changed = first;
+  for (const id of done) if (!(id in seen)) { seen[id] = first ? 0 : now; changed = true; }
+  for (const id of Object.keys(seen)) if (!done.has(+id)) { delete seen[id]; changed = true; }
+  if (changed) try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch { /* storage unavailable */ }
+  return seen;
 }
