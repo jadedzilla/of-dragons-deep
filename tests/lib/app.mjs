@@ -44,7 +44,11 @@ export async function importFish(page, ids, achievements) {
   await page.fill("#importText", pluginExport(ids, achievements));
   await page.click("#importGo");
   await page.waitForFunction(() => !document.querySelector("#importDialog").open);
+  await closeGacha(page);
 }
+
+/** Close the new-fish reveal that follows an import that caught new fish (no-op if it isn't showing). */
+export const closeGacha = page => page.evaluate(() => document.querySelector("#gachaDialog")?.close());
 
 export const caughtCount = page => page.textContent("#caughtCount").then(Number);
 export const tileIds = page => page.$$eval(".tile[data-id]", ts => ts.map(t => +t.dataset.id));

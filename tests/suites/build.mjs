@@ -26,7 +26,9 @@ export default async function (t) {
   await goTo(p, "achievements");
   await p.waitForSelector(".ac-row", { state: "attached" });
   await p.click("#acImportBtn"); await p.fill("#importText", pluginExport([4776], [{ id: 2557, complete: true }])); await p.click("#importGo");
-  await p.waitForFunction(() => !document.querySelector("#importDialog").open);
+  await p.waitForFunction(() => document.querySelector("#gachaDialog").open);
+  await p.click("#gachaDialog .gc-title"); await p.click("#gcClose"); // the new-fish reveal: skip, close
+  await p.waitForSelector("#toast.show");
   t.check("single file: the other pages work (import from the Achievements page)", /1 achievement complete/.test(await text(p, "#toast"))
     && await p.$eval('.ac-row[data-id="2557"]', r => r.classList.contains("done")));
   t.noErrors(p, "single file");

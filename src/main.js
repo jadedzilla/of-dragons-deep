@@ -7,6 +7,7 @@ import { createAchievements } from "./achievements.js";
 import { createLogRoute } from "./logroute.js";
 import { createShare } from "./share.js";
 import { initBaitView } from "./baits.js";
+import { createGacha } from "./gacha.js";
 import { baitChains, hooksetAndTug, loadTeamcraft, xivAsset, xivRows } from "./teamcraft.js";
 
 const PER_PAGE = 100; // 10x10 grid
@@ -472,7 +473,7 @@ $("#importForm").addEventListener("submit", e => {
     return;
   }
 
-  const added = known.filter(id => !caught.has(id)).length;
+  const fresh = known.filter(id => !caught.has(id)), added = fresh.length; // newly caught: revealed below
   if (replace) caught.clear();
   known.forEach(id => caught.add(id));
   saveCaught(caught);
@@ -509,7 +510,8 @@ $("#importForm").addEventListener("submit", e => {
   // Success: close the dialog and show the summary as a short-lived notice instead.
   dlg.close();
   importText.value = "";
-  showToast(parts.join(" "), unknown.length || invalid.length ? 9000 : 5000);
+  // reveal the newly caught fish, then the summary notice
+  gacha.show(fresh.map(id => BY_ID.get(id))).then(() => showToast(parts.join(" "), unknown.length || invalid.length ? 9000 : 5000));
 });
 
 // Import summary notice, shown after the dialog closes.
@@ -620,6 +622,7 @@ function route() {
 window.addEventListener("hashchange", route);
 
 initBaitView({ esc }); // clicking a bait anywhere shows where to get it
+const gacha = createGacha({ fishIcon, esc }); // gacha-style reveal of new fish after an import
 
 /* ---------- Start ---------- */
 setMode(mode);

@@ -1,6 +1,6 @@
 // The one Import dialog (Fish Guide and Achievements pages): the plugin's version 2 export of caught fish +
 // Fisher achievements, Replace (default, confirms before unmarking) and Add, error messages, and ?import=2. links.
-import { gridReady, goTo, caughtCount, text, pluginExport, pluginLink } from "../lib/app.mjs";
+import { gridReady, goTo, caughtCount, text, pluginExport, pluginLink, closeGacha } from "../lib/app.mjs";
 
 const ON_A_BOAT_I = 2557, ON_A_BOAT_II = 2558, GO_BIG_I = 916; // Fisher achievement ids
 const ach = (id, complete, current, max) => ({ id, complete, ...(max ? { current, max } : {}) });
@@ -15,10 +15,21 @@ export default async function (t) {
     if (!(await p.$eval("#importDialog", d => d.open))) await p.click("#importBtn");
     await p.fill("#importText", body);
     if (mode) await p.check(`input[name=importMode][value=${mode}]`);
+    await clearToast();
     await p.click("#importGo");
     await p.waitForFunction(() => !document.querySelector("#importDialog").open || document.querySelector("#importResult").textContent.trim());
-    return (await p.$eval("#importDialog", d => d.open)) ? text(p, "#importResult") : text(p, "#toast");
+    if (await p.$eval("#importDialog", d => d.open)) return text(p, "#importResult");
+    reveal = await gachaState(p);
+    await closeGacha(p);
+    await p.waitForSelector("#toast.show");
+    return text(p, "#toast");
   };
+  const clearToast = () => p.evaluate(() => { const n = document.querySelector("#toast"); n.classList.remove("show"); n.textContent = ""; });
+  /** The new-fish reveal after an import (null if none): its cards (fish ids), "+N more" strip. */
+  const gachaState = pg => pg.evaluate(() => { const d = document.querySelector("#gachaDialog"); return d.open ? {
+    cards: [...d.querySelectorAll(".gc-card")].map(c => +c.dataset.id), mini: d.querySelectorAll(".gc-mini").length,
+    more: d.querySelector(".gc-more")?.textContent ?? "" } : null; });
+  let reveal;
 
   // dialog
   await p.click("#importBtn");
@@ -43,6 +54,7 @@ export default async function (t) {
   let msg = await run(pluginExport([4776, 4869, 4870, 20144, 99999, "x"], [ach(ON_A_BOAT_I, true), ach(ON_A_BOAT_II, false, 42000, 100000), ach(GO_BIG_I, false)]));
   t.check("import: dialog closes, notice summarises fish + achievements", /^Marked 4 new fish as caught\. 1 achievement complete \(1 new\), progress for 1 more \(see Achievements\)\./.test(msg)
     && /Skipped 1 ID that isn't a fish: 99999/.test(msg) && /Skipped 1 entry that isn't an item ID: x/.test(msg), msg);
+  t.check("reveal: the new fish (incl. the spearfish), one card each", JSON.stringify(reveal?.cards.sort()) === "[20144,4776,4869,4870]" && !reveal.more, reveal);
   let s = await saved();
   t.check("…saved: 3 fish caught here, achievement mark + progress", await caughtCount(p) === 3 && s.marks.includes(ON_A_BOAT_I) && JSON.stringify(s.progress[ON_A_BOAT_II]) === "[42000,100000]", s);
 
@@ -50,14 +62,38 @@ export default async function (t) {
   msg = await run(pluginExport([4776], [ach(ON_A_BOAT_I, false)]), "replace");
   t.check("Replace that unmarks fish + achievements asks first", await text(p, "#importGo") === "Unmark 3 fish + 1 achievement & import" && /unmark 3 fish and 1 achievement/.test(msg)
     && await caughtCount(p) === 3, msg);
+  await clearToast();
   await p.click("#importGo");
-  await p.waitForFunction(() => !document.querySelector("#importDialog").open);
+  await p.waitForSelector("#toast.show"); // nothing new caught: straight to the notice, no reveal
+  t.check("nothing new caught: no reveal", !(await p.$eval("#gachaDialog", d => d.open)));
   s = await saved();
   t.check("second click replaces", await caughtCount(p) === 1 && !s.marks.includes(ON_A_BOAT_I) && /Unmarked 1 achievement/.test(await text(p, "#toast")), s);
 
   // Add keeps what's there
   msg = await run(pluginExport([4869]), "add");
   t.check("Add keeps existing fish; an export without achievements leaves them alone", await caughtCount(p) === 2 && !/achievement/.test(msg), msg);
+
+  // a big import: the animation plays (orb → cards flip), a tap skips to the end, Close closes; then the notice
+  const many = await p.evaluate(() => [...document.querySelectorAll(".tile[data-id]")].map(t => +t.dataset.id).slice(0, 40));
+  const fresh = many.filter(id => ![4776, 4869].includes(id)).length;
+  await p.click("#importBtn");
+  await p.check("input[name=importMode][value=add]");
+  await p.fill("#importText", pluginExport(many));
+  await clearToast();
+  await p.click("#importGo");
+  await p.waitForFunction(() => document.querySelector("#gachaDialog").open);
+  t.check("reveal starts with the orb: nothing flipped yet, notice held back", await p.evaluate(() => !document.querySelector("#gachaDialog.done")
+    && !document.querySelector(".gc-card.flipped") && !document.querySelector("#toast.show")));
+  await p.waitForSelector(".gc-card.flipped"); // cards turn over one by one
+  await p.click("#gachaDialog .gc-title"); // tap: skip to the end
+  reveal = await gachaState(p);
+  t.check("tap skips to the end: 10 cards face up, the rest as a strip, full count", await p.evaluate(() => document.querySelector("#gachaDialog").classList.contains("done")
+    && document.querySelectorAll(".gc-card.flipped").length === 10) && reveal.cards.length === 10 && reveal.mini === fresh - 10
+    && reveal.more === "" &&await text(p, "#gcCount") === String(fresh), reveal);
+  await t.shot(p, "gacha");
+  await p.click("#gcClose");
+  await p.waitForSelector("#toast.show");
+  t.check("Close ends it and shows the notice", !(await p.$eval("#gachaDialog", d => d.open)) && new RegExp(`^Marked ${fresh} new fish`).test(await text(p, "#toast")), await text(p, "#toast"));
 
   // the Achievements page's Import opens the same dialog
   await goTo(p, "achievements");
