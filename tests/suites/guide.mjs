@@ -82,6 +82,11 @@ export default async function (t) {
   });
   t.check("phone: pages on row 1; search/Edit/Import/Filter on row 2, Filter at the right", lay.pagesAlone && lay.oneRow && lay.filterRight, lay);
   t.check("phone: no horizontal overflow", await noOverflow(ph));
+  for (const [label, page] of [["desktop", p], ["phone", ph]]) {
+    const c = await page.evaluate(() => { const r = s => document.querySelector(s).getBoundingClientRect(), f = r(".credit"), tabs = r("#tabs");
+      return { text: document.querySelector(".credit").textContent, below: f.top >= tabs.bottom + 4, last: f.bottom <= document.documentElement.scrollHeight }; });
+    t.check(`${label}: "created with 🐟 by jadedzilla" at the bottom, clear of the tabs`, c.text === "created with 🐟 by jadedzilla" && c.below && c.last, c);
+  }
   await t.shot(ph, "phone");
   t.noErrors(ph, "phone");
 

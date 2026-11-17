@@ -115,6 +115,7 @@ Game icons include their own square backdrop, so they fill the tile.
 
 ## UI requirements (from the project owner)
 
+- **Credit line** at the very bottom of every page, below the window and its tabs: "created with 🐟 by jadedzilla" (`footer.credit`, small and muted; its top margin clears the tabs, which hang below the window).
 - Fish shown in a paged **10×10 grid** (100 per page), each icon a square with slightly rounded corners.
 - **Order = the game's log order** (Fish Guide and spearfishing log; today identical to the FFXIV Fish Tracker's Fish Guide), left to right, top to bottom, so app page N holds the same fish as the tracker's guide page N. Never sort; filters keep this order.
 - **Page numbers top-left above the grid, search immediately after them, filter button top-right.** Search shows as a round magnifier icon while empty and unfocused (pure CSS: `:not(:focus):placeholder-shown`); clicking it expands it into the box, and it stays open while it has text.

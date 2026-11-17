@@ -13,9 +13,9 @@ html,body{margin:0;min-height:100%}
 body{
   font-family:"Noto Sans",sans-serif;color:var(--text);
   background:radial-gradient(ellipse at top,#22304f 0%,var(--bg1) 60%) fixed, var(--bg1);
-  display:flex;flex-direction:column;align-items:center;padding:28px 12px 70px; /* bottom room for the tabs under the window */
+  display:flex;flex-direction:column;align-items:center;padding:28px 12px 16px;
   /* full-screen home-screen app: keep clear of the notch, status bar and home indicator (0 in a normal browser tab) */
-  padding:calc(28px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(70px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+  padding:calc(28px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
 }
 /* navigation bar above the window: Fish Guide / Fish Timers */
 .topnav{width:100%;max-width:720px;display:flex;gap:6px;margin:0 0 10px;padding:0 4px}
@@ -36,6 +36,7 @@ body{
 /* Fishing / Spearfishing tabs hanging from the bottom-left of the window, like in-game window tabs.
    The active tab overlaps the window's bottom border so it reads as part of the window. */
 .tabs{position:absolute;top:100%;left:18px;display:flex;gap:4px;align-items:flex-start}
+.credit{margin-top:54px;font-size:12px;color:var(--muted);opacity:.75;letter-spacing:.02em;text-align:center} /* top margin clears the tabs under the window */
 .tab{
   margin-top:3px;height:30px;padding:0 16px;cursor:pointer;
   font:700 12px Cinzel,serif;letter-spacing:.08em;color:var(--muted);
