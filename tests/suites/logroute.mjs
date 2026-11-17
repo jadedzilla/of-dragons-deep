@@ -1,7 +1,6 @@
 // Log Route page at a fixed moment: the plan in the browser (the planner itself is covered in unit.mjs).
 import { readFile } from "node:fs/promises";
-import { text, noOverflow } from "../lib/app.mjs";
-import { T0 } from "./unit.mjs";
+import { text, noOverflow, T0 } from "../lib/app.mjs";
 
 const steps = p => p.$$eval(".lr-step", ss => ss.map(s => ({
   kind: ["stop", "timed", "ocean", "nowindow", "nodata"].find(k => s.classList.contains(k)), up: s.classList.contains("up"),

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Test runner: `npm test` runs every suite in tests/suites; `npm test -- timers achievements` runs those whose file
-// names contain a given word. One Chromium, suites in parallel, each page in its own browser context (own
+// names contain a given word. One Chromium, suites in parallel (one per CPU core, slowest first), each page in its own browser context (own
 // localStorage), all network served from tests/fixtures (see lib/network.mjs). SHOTS=<dir> saves screenshots.
 // Exit code 1 if any check fails.
 import { createServer } from "node:http";
+import { availableParallelism } from "node:os";
 import { readFile, readdir, mkdir } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { extname, join, normalize } from "node:path";
@@ -13,7 +14,8 @@ import { mockNetwork } from "./lib/network.mjs";
 const { chromium } = createRequire(import.meta.url)("playwright");
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".webp": "image/webp", ".svg": "image/svg+xml", ".webmanifest": "application/manifest+json" };
-const CONCURRENCY = 4;
+const CONCURRENCY = Math.max(2, availableParallelism()); // suites at once (CPU-bound)
+const SLOW_FIRST = ["achievements", "logroute", "import", "guide"]; // start the longest suites first
 
 // static server for the dev files (like npm run dev)
 const server = createServer(async (req, res) => {
@@ -25,7 +27,8 @@ await new Promise(r => server.listen(0, "127.0.0.1", r));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
 const filters = process.argv.slice(2);
-const files = (await readdir(new URL("./suites/", import.meta.url))).filter(f => f.endsWith(".mjs") && (!filters.length || filters.some(w => f.includes(w)))).sort();
+const files = (await readdir(new URL("./suites/", import.meta.url))).filter(f => f.endsWith(".mjs") && (!filters.length || filters.some(w => f.includes(w))))
+  .sort((a, b) => ((SLOW_FIRST.indexOf(a.slice(0, -4)) + 1 || 99) - (SLOW_FIRST.indexOf(b.slice(0, -4)) + 1 || 99)) || a.localeCompare(b));
 if (!files.length) { console.error(`No suites match ${filters.join(", ")}`); process.exit(1); }
 if (process.env.SHOTS) await mkdir(process.env.SHOTS, { recursive: true });
 
@@ -44,6 +47,7 @@ function harness(name) {
       contexts.push(context);
       await mockNetwork(context, origin);
       if (storage) await context.addInitScript(s => { if (!sessionStorage.__seeded) { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); sessionStorage.__seeded = 1; } }, storage);
+      context.setDefaultTimeout(10000); // a broken check fails in 10 s, not Playwright's 30
       const page = await context.newPage();
       page.errors = [];
       page.on("pageerror", e => page.errors.push(e.message));

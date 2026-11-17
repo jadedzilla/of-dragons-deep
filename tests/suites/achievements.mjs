@@ -1,7 +1,7 @@
 // Achievements page: sections, progress from caught fish, grouped meta achievements, manual marks, collapsing,
-// and importing the Of Dragons Deep plugin's achievement export.
+// and what importing the Of Dragons Deep plugin's export does to the page.
 import { NET } from "../lib/network.mjs";
-import { gridReady, goTo, importFish, text, noOverflow } from "../lib/app.mjs";
+import { gridReady, goTo, importFish, text, noOverflow, pluginExport } from "../lib/app.mjs";
 
 const ACH = Object.entries(NET.exact).find(([k]) => k.includes("sheets=Achievement"))[1].results
   .map(r => ({ id: r.row_id, name: r.fields.Name, points: r.fields.Points }));
@@ -79,43 +79,24 @@ export default async function (t) {
   t.check("phone: no horizontal overflow", await noOverflow(c));
   await t.shot(c, "phone");
 
-  // ---------- plugin import ----------
-  const DONE = ["Good Things Come to Those Who Bait: La Noscea I", "Go Big or Go Home I", "On a Boat I", "I Caught That I"];
-  const PROGRESS = { "Good Things Come to Those Who Bait: La Noscea II": [31, 100], "On a Boat II": [42000, 100000] };
-  const exportJson = (done = DONE) => JSON.stringify({ source: "OfDragonsDeep", version: 1, category: "Fisher",
-    achievements: ACH.map(x => ({ id: x.id, name: x.name, points: x.points, complete: done.includes(x.name), current: PROGRESS[x.name]?.[0] ?? null, max: PROGRESS[x.name]?.[1] ?? null })) });
+  // ---------- what a plugin import does here (the dialog itself is covered in import.mjs) ----------
   const i = await t.page({ storage: ALL_OPEN, path: "#achievements" });
   await i.waitForSelector(".ac-row");
-  const imp = async txt => {
-    if (!(await i.$eval("#acImportDialog", d => d.open))) await i.click("#acImportBtn");
-    await i.fill("#acImportText", txt); await i.click("#acImportGo");
-    await i.waitForFunction(() => document.querySelector("#acImportResult").textContent.trim());
-    return text(i, "#acImportResult");
-  };
-  let msg = await imp(exportJson());
-  t.check("JSON: 4 completed + progress for 2", msg === "Imported 4 completed achievements. Imported progress for 2 unfinished achievements.", msg);
-  await i.click("#acImportClose");
+  await i.click("#acImportBtn");
+  await i.fill("#importText", pluginExport([], [
+    { id: idOf("Go Big or Go Home I"), complete: true }, { id: idOf("On a Boat I"), complete: true },
+    { id: idOf("Good Things Come to Those Who Bait: La Noscea II"), complete: false, current: 31, max: 100 },
+    { id: idOf("On a Boat II"), complete: false, current: 42000, max: 100000 }]));
+  await i.click("#importGo");
+  await i.waitForFunction(() => !document.querySelector("#importDialog").open);
   a = await row(i, "Go Big or Go Home I");
-  t.check("game-reported completion counts for fish-based achievements", a.done && a.progress === "0 / 1", a);
-  t.check("imported progress bars", (await row(i, "Good Things Come to Those Who Bait: La Noscea II")).progress === "31 / 100 in game"
+  t.check("game-reported completion counts for fish-based achievements (0 big fish caught here)", a.done && a.progress === "0 / 1", a);
+  t.check("hand-tracked achievement ticked", (await row(i, "On a Boat I")).mark === true);
+  t.check("in-game progress bars, with separators", (await row(i, "Good Things Come to Those Who Bait: La Noscea II")).progress === "31 / 100 in game"
     && (await row(i, "On a Boat II")).progress === "42,000 / 100,000 in game");
   t.check("'Last imported' note", /^Last imported from the plugin /.test(await text(i, "#acImported")));
-  msg = await imp(exportJson(DONE.filter(n => n !== "On a Boat I")));
-  t.check("re-import that unmarks asks first", /says 1 achievement you've marked obtained isn't complete: On a Boat I/.test(msg) && await text(i, "#acImportGo") === "Unmark 1 & import" && (await row(i, "On a Boat I")).done, msg);
-  await i.click("#acImportGo");
-  await i.waitForFunction(() => /Unmarked/.test(document.querySelector("#acImportResult").textContent));
-  t.check("second click unmarks", !(await row(i, "On a Boat I")).done);
-  msg = await imp(`${idOf("Mine, Mine, Mine")}, 99999`);
-  t.check("ID list only adds; unknown ids listed", /^Imported 1 completed achievement\./.test(msg) && /list of IDs/.test(msg) && /Skipped 1 not in this list: 99999/.test(msg), msg);
-  msg = await imp(`id,name,points,complete,current,max\n${idOf("Baiting Heavensward")},"Baiting Heavensward",10,false,1234,3000`);
-  t.check("CSV with progress", msg === "Imported progress for 1 unfinished achievement." && (await row(i, "Baiting Heavensward")).progress === "1,234 / 3,000 in game", msg);
-  msg = await imp("[x] Baiting Heavensward\n[ ] Not An Achievement");
-  t.check("checklist matched by name", /^Imported 1 completed achievement\./.test(msg) && /Not An Achievement/.test(msg), msg);
-  msg = await imp('{"source":"OfDragonsDeep","fish":[{"id":4776}]}');
-  t.check("a fish export is pointed to the Fish Guide", /fish export/.test(msg), msg);
-  await i.click("#acImportClose");
   await i.reload(); await i.waitForSelector(".ac-row");
-  t.check("imports persist after reload", (await row(i, "Mine, Mine, Mine")).done && (await row(i, "Good Things Come to Those Who Bait: La Noscea II")).progress === "31 / 100 in game");
+  t.check("imports persist after reload", (await row(i, "On a Boat I")).done && (await row(i, "Good Things Come to Those Who Bait: La Noscea II")).progress === "31 / 100 in game");
   t.noErrors(i, "import");
 
   // ---------- failed load ----------

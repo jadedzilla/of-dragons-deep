@@ -1,59 +1,93 @@
-// Fish Import: add / replace (with confirm), skipped ids, ?import= links (plain and the plugin's compressed format),
-// and an achievements export pasted in the wrong place.
-import { deflateRawSync } from "node:zlib";
-import { gridReady, caughtCount, text } from "../lib/app.mjs";
+// The one Import dialog (Fish Guide and Achievements pages): the plugin's version 2 export of caught fish +
+// Fisher achievements, Replace (default, confirms before unmarking) and Add, error messages, and ?import=2. links.
+import { gridReady, goTo, caughtCount, text, pluginExport, pluginLink } from "../lib/app.mjs";
 
-/** The plugin's link payload: sorted id deltas as LEB128 varints, raw deflate, base64url without padding. */
-function pluginLink(ids) {
-  const out = []; let prev = 0;
-  for (const id of [...ids].sort((a, b) => a - b)) { let d = id - prev; prev = id; do { let b = d & 0x7f; d = Math.floor(d / 128); if (d) b |= 0x80; out.push(b); } while (d); }
-  return "1." + deflateRawSync(Buffer.from(out)).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
+const ON_A_BOAT_I = 2557, ON_A_BOAT_II = 2558, GO_BIG_I = 916; // Fisher achievement ids
+const ach = (id, complete, current, max) => ({ id, complete, ...(max ? { current, max } : {}) });
 
 export default async function (t) {
   const p = await t.page();
   await gridReady(p);
-  const run = async (ids, mode = "add") => {
+  const saved = () => p.evaluate(() => ({ marks: JSON.parse(localStorage.getItem("odd-achievements-v1") || "[]"),
+    progress: JSON.parse(localStorage.getItem("odd-achievements-progress-v1") || "null")?.items ?? {} }));
+  /** Paste into the dialog, pick a mode, press Import; returns the dialog's message, or the notice if it closed. */
+  const run = async (body, mode) => {
     if (!(await p.$eval("#importDialog", d => d.open))) await p.click("#importBtn");
-    await p.fill("#importText", ids);
-    await p.check(`input[name=importMode][value=${mode}]`);
+    await p.fill("#importText", body);
+    if (mode) await p.check(`input[name=importMode][value=${mode}]`);
     await p.click("#importGo");
+    await p.waitForFunction(() => !document.querySelector("#importDialog").open || document.querySelector("#importResult").textContent.trim());
+    return (await p.$eval("#importDialog", d => d.open)) ? text(p, "#importResult") : text(p, "#toast");
   };
 
-  await run("4776, 4869 4870;20144\nabc, 99999");
-  await p.waitForFunction(() => !document.querySelector("#importDialog").open);
-  t.check("add: fish + spearfish ids, any separators; dialog closes", await caughtCount(p) === 3);
-  t.check("notice reports skipped ids", /Marked 4 new fish/.test(await text(p, "#toast")) && /99999/.test(await text(p, "#toast")) && /abc/.test(await text(p, "#toast")), await text(p, "#toast"));
+  // dialog
+  await p.click("#importBtn");
+  t.check("dialog: covers fish + achievements, Replace is the default", /caught fish.*fishing achievements/.test(await text(p, "#importDialog .hint"))
+    && await p.isChecked("input[name=importMode][value=replace]"));
 
-  await run("4776", "replace");
-  t.check("replace that would unmark asks first", await text(p, "#importGo") === "Unmark 3 & import" && /unmark 3/i.test(await text(p, "#importResult")) && await caughtCount(p) === 3);
+  // errors: nothing changes, dialog stays open
+  const errors = [
+    ["empty", "", /Paste the plugin's Copy JSON export first/],
+    ["a plain id list", "4776, 4869", /isn't an export from the Of Dragons Deep plugin/],
+    ["someone else's JSON", '{"fish":[4776]}', /isn't an export from the Of Dragons Deep plugin/],
+    ["an older plugin export", JSON.stringify({ source: "OfDragonsDeep", version: 1, fish: [{ id: 4776 }] }), /older version of the Of Dragons Deep plugin/],
+    ["cut-off JSON", pluginExport([4776]).slice(0, 30), /couldn't be read/],
+    ["no known fish or achievements", pluginExport([99999]), /no caught fish or achievements/],
+  ];
+  for (const [name, body, re] of errors) {
+    const msg = await run(body);
+    t.check(`rejects ${name}`, re.test(msg) && await p.$eval("#importDialog", d => d.open) && await caughtCount(p) === 0, msg);
+  }
+
+  // Replace into an empty log: fish (and spearfish) + achievements, unknown / invalid ids reported
+  let msg = await run(pluginExport([4776, 4869, 4870, 20144, 99999, "x"], [ach(ON_A_BOAT_I, true), ach(ON_A_BOAT_II, false, 42000, 100000), ach(GO_BIG_I, false)]));
+  t.check("import: dialog closes, notice summarises fish + achievements", /^Marked 4 new fish as caught\. 1 achievement complete \(1 new\), progress for 1 more \(see Achievements\)\./.test(msg)
+    && /Skipped 1 ID that isn't a fish: 99999/.test(msg) && /Skipped 1 entry that isn't an item ID: x/.test(msg), msg);
+  let s = await saved();
+  t.check("…saved: 3 fish caught here, achievement mark + progress", await caughtCount(p) === 3 && s.marks.includes(ON_A_BOAT_I) && JSON.stringify(s.progress[ON_A_BOAT_II]) === "[42000,100000]", s);
+
+  // Replace that would unmark asks first, naming both kinds
+  msg = await run(pluginExport([4776], [ach(ON_A_BOAT_I, false)]), "replace");
+  t.check("Replace that unmarks fish + achievements asks first", await text(p, "#importGo") === "Unmark 3 fish + 1 achievement & import" && /unmark 3 fish and 1 achievement/.test(msg)
+    && await caughtCount(p) === 3, msg);
   await p.click("#importGo");
   await p.waitForFunction(() => !document.querySelector("#importDialog").open);
-  t.check("second click replaces", await caughtCount(p) === 1);
+  s = await saved();
+  t.check("second click replaces", await caughtCount(p) === 1 && !s.marks.includes(ON_A_BOAT_I) && /Unmarked 1 achievement/.test(await text(p, "#toast")), s);
 
-  await run("99999, abc");
-  t.check("nothing valid: warning, dialog stays open", /None of these are fish/.test(await text(p, "#importResult")) && await p.$eval("#importDialog", d => d.open));
-  await run('{"source":"OfDragonsDeep","achievements":[{"id":259,"complete":true}]}');
-  t.check("an achievements export points to the Achievements page", /achievements export/.test(await text(p, "#importResult")) && await caughtCount(p) === 1);
-  await p.click("#toAchImport");
-  await p.waitForFunction(() => location.hash === "#achievements" && !document.querySelector("#importDialog").open);
-  t.check("…and its link opens Achievements", true);
+  // Add keeps what's there
+  msg = await run(pluginExport([4869]), "add");
+  t.check("Add keeps existing fish; an export without achievements leaves them alone", await caughtCount(p) === 2 && !/achievement/.test(msg), msg);
+
+  // the Achievements page's Import opens the same dialog
+  await goTo(p, "achievements");
+  await p.waitForSelector(".ac-row", { state: "attached" });
+  await p.click("#acImportBtn");
+  t.check("Achievements page Import opens the same dialog", await p.$eval("#importDialog", d => d.open));
+  msg = await run(pluginExport([], [ach(GO_BIG_I, true)]), "add");
+  t.check("…and importing there updates the page", /1 achievement complete/.test(msg) && await p.evaluate(id => document.querySelector(`.ac-row[data-id="${id}"]`).classList.contains("done"), GO_BIG_I)
+    && /^Last imported from the plugin /.test(await text(p, "#acImported")));
   t.noErrors(p);
 
-  // ?import= links open the dialog prefilled; nothing changes until Import
-  for (const [name, param, n] of [["plain list", "4776,4869,4870", 3], ["plugin format", pluginLink([4776, 4869, 4870, 4925, 99999]), 4]]) {
-    const q = await t.page({ path: `?import=${encodeURIComponent(param)}#x` });
-    await gridReady(q);
-    await q.waitForFunction(() => document.querySelector("#importDialog").open);
-    t.check(`link (${name}): prefilled, nothing imported yet, ?import removed`, (await text(q, "#importResult")).includes(`Loaded ${n} fish`) && await caughtCount(q) === 0
-      && await q.evaluate(() => location.search + location.hash) === "#x");
-    await q.click("#importGo");
-    await q.waitForFunction(() => !document.querySelector("#importDialog").open);
-    t.check(`link (${name}): Import marks them`, await caughtCount(q) === n);
-    t.noErrors(q, name);
+  // ?import=2. links open the dialog filled in; nothing changes until Import
+  const link = await pluginLink([4776, 4869, 4870, 99999], [ach(ON_A_BOAT_I, true), ach(ON_A_BOAT_II, false, 31, 100), ach(GO_BIG_I, false)]);
+  const q = await t.page({ path: `?import=${link}#x` });
+  await gridReady(q);
+  await q.waitForFunction(() => document.querySelector("#importDialog").open && document.querySelector("#importResult").textContent.trim());
+  t.check("link: dialog filled in, nothing imported yet, ?import removed", /Loaded 3 fish and 1 completed achievements from your link/.test(await text(q, "#importResult"))
+    && await caughtCount(q) === 0 && await q.evaluate(() => location.search + location.hash) === "#x" && await q.isChecked("input[name=importMode][value=replace]"));
+  const decoded = JSON.parse(await q.inputValue("#importText"));
+  t.check("link decodes to the same export (fish, achievements by id, progress)", JSON.stringify(decoded) === pluginExport([4776, 4869, 4870, 99999],
+    [ach(GO_BIG_I, false), ach(ON_A_BOAT_I, true), ach(ON_A_BOAT_II, false, 31, 100)]), decoded);
+  await q.click("#importGo");
+  await q.waitForFunction(() => !document.querySelector("#importDialog").open);
+  t.check("link: Import applies it", await caughtCount(q) === 3);
+  t.noErrors(q, "link");
+
+  for (const [name, param, re] of [["old plugin link", "1.abc", /older version/], ["plain id list link", "4776,4869", /older version/], ["broken link", "2.%21%21bad", /couldn't be read/]]) {
+    const b = await t.page({ path: `?import=${param}` });
+    await gridReady(b);
+    await b.waitForFunction(() => document.querySelector("#importResult").textContent.trim());
+    t.check(`${name}: message, nothing changed`, re.test(await text(b, "#importResult")) && await caughtCount(b) === 0, await text(b, "#importResult"));
   }
-  const bad = await t.page({ path: "?import=1.%21%21bad" });
-  await gridReady(bad);
-  await bad.waitForFunction(() => document.querySelector("#importDialog").open);
-  t.check("broken link: warning, nothing changed", /couldn't be read/.test(await text(bad, "#importResult")) && await caughtCount(bad) === 0);
 }

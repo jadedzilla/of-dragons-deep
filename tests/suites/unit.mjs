@@ -1,13 +1,12 @@
-// Pure logic, no browser: data loading, bait chains, the timer engine, the route planner and export parsing.
+// Pure logic, no browser: data loading, bait chains, the timer engine and the route planner.
 import { readFile } from "node:fs/promises";
 import { loadFishFromXivapi } from "../../src/fishsource.js";
 import { baitChains, hooksetAndTug, loadTeamcraft } from "../../src/teamcraft.js";
 import { loadTimerData, nextWindow, forecastTarget, eorzeaTime } from "../../src/timers.js";
-import { parseAchievementExport, looksLikeAchievementExport } from "../../src/achievements.js";
-import { planLogRoute } from "../../src/logroute.js";
+import { planLogRoute, loadOceanRoutes } from "../../src/logroute.js";
 import { recordedFetch, NET } from "../lib/network.mjs";
+import { T0 } from "../lib/app.mjs";
 
-export const T0 = 1794850000; // a fixed moment (ET 05:42) shared with the browser suites
 
 export default async function (t) {
   // ---------- data: live (recorded XIVAPI) and the committed snapshot agree ----------
@@ -49,8 +48,9 @@ export default async function (t) {
   t.check(`nextWindow start and end match a brute-force scan (${checked} fish)`, checked >= 15 && !bad.length, bad);
 
   // ---------- route planner ----------
-  const ocean = { spots: NET.exact[Object.keys(NET.exact).find(k => k.includes("/IKDSpot?") && k.includes("SpotSub") && !k.includes("Item"))].rows
-    .filter(r => r.row_id > 0).map(r => ({ id: r.row_id, name: r.fields.PlaceName?.fields?.Name, main: r.fields.SpotMain?.value, sub: r.fields.SpotSub?.value })), routes: [] };
+  const realFetch = globalThis.fetch; // loadOceanRoutes uses the global fetch
+  globalThis.fetch = recordedFetch;
+  const ocean = await loadOceanRoutes().finally(() => { globalThis.fetch = realFetch; });
   const zone = snapshot.tables.zone, oceanRegion = snapshot.tables.reg.indexOf("The High Seas");
   const fish = snapshot.rows.map(r => ({ id: r[0], name: r[1], lvl: r[3], zone: zone[r[7]], cat: r[6] === oceanRegion ? 6 : r[4] }));
   const spots = await loadTeamcraft("fishing-spots", recordedFetch);
@@ -71,18 +71,4 @@ export default async function (t) {
     && noTimedIds.length + noTimed.leftOut === 1517 && new Set(noTimedIds).size === noTimedIds.length && noTimed.leftOut > 400, noTimed.leftOut);
   const firstOcean = plan.steps.findIndex(s => s.kind === "ocean");
   t.check("ocean fishing comes after all land steps", firstOcean > 0 && plan.steps.slice(firstOcean).every(s => s.kind === "ocean" || s.kind === "nowindow"));
-
-  // ---------- plugin achievement exports ----------
-  const A = [{ id: 259, name: "Good Things Come to Those Who Bait: La Noscea I" }, { id: 2834, name: "No River Wide Enough" }];
-  const parse = x => parseAchievementExport(x, A);
-  const j = parse(JSON.stringify({ achievements: [{ id: 259, complete: true }, { id: 2834, complete: false, current: 3, max: 5 }, { id: 1, complete: true }] }));
-  t.check("export JSON: entries, progress, unknown, full", j.full && j.entries.length === 2 && j.entries[1].current === 3 && j.unknown.length === 1, j);
-  const c = parse('id,name,points,complete,current,max\n2834,"No River, Wide",20,false,1,2');
-  t.check("export CSV with a quoted comma", c.full && c.entries[0].id === 2834 && c.entries[0].current === 1 && c.entries[0].max === 2, c);
-  const l = parse("[x] No River Wide Enough\n[ ] Good Things Come to Those Who Bait: La Noscea I (5/20)");
-  t.check("export checklist by name with (cur/max)", l.entries.length === 2 && l.entries[0].complete && l.entries[1].current === 5, l);
-  const ids = parse("259, 2834");
-  t.check("export ID list only adds", !ids.full && ids.entries.every(e => e.complete));
-  t.check("export errors: fish export / garbage", /fish/.test(parse('{"fish":[]}').error) && !!parse("hello there").error);
-  t.check("achievement exports recognised; fish id lists not", looksLikeAchievementExport('{"achievements":[]}') && looksLikeAchievementExport("[x] A") && !looksLikeAchievementExport("4776,4869"));
 }

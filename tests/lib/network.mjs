@@ -10,7 +10,9 @@ import { canonical } from "./canonical.mjs";
 export const NET = JSON.parse(gunzipSync(readFileSync(new URL("../fixtures/network.json.gz", import.meta.url))));
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
 const CORS = { "access-control-allow-origin": "*" };
-const json = (route, body, status = 200) => route.fulfill({ status, contentType: "application/json", headers: CORS, body: JSON.stringify(body) });
+const serialized = new WeakMap(); // recorded body → its JSON text, so each is serialised once, not on every request
+const toJson = body => { let s = serialized.get(body); if (s === undefined) serialized.set(body, s = JSON.stringify(body)); return s; };
+const json = (route, body, status = 200) => route.fulfill({ status, contentType: "application/json", headers: CORS, body: toJson(body) });
 
 /** A fetch() for Node that answers from the recording (for computing expected values with the app's own modules). */
 export async function recordedFetch(url) {

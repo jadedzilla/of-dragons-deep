@@ -3,7 +3,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { gridReady, goTo, tileIds, text } from "../lib/app.mjs";
+import { gridReady, goTo, tileIds, text, pluginExport } from "../lib/app.mjs";
 
 const run = promisify(execFile);
 const ROOT = new URL("../../", import.meta.url);
@@ -24,8 +24,10 @@ export default async function (t) {
     && await p.waitForFunction(() => document.querySelectorAll(".tile .ic.ready").length >= 90).then(() => true));
   await goTo(p, "achievements");
   await p.waitForSelector(".ac-row", { state: "attached" });
-  await p.click("#acImportBtn"); await p.fill("#acImportText", "[x] On a Boat I"); await p.click("#acImportGo");
-  t.check("single file: the other pages work (achievement import)", /^Imported 1 completed achievement\./.test(await text(p, "#acImportResult")));
+  await p.click("#acImportBtn"); await p.fill("#importText", pluginExport([4776], [{ id: 2557, complete: true }])); await p.click("#importGo");
+  await p.waitForFunction(() => !document.querySelector("#importDialog").open);
+  t.check("single file: the other pages work (import from the Achievements page)", /1 achievement complete/.test(await text(p, "#toast"))
+    && await p.$eval('.ac-row[data-id="2557"]', r => r.classList.contains("done")));
   t.noErrors(p, "single file");
 
   // a fish whose icon isn't in the sheets: loads from XIVAPI, else a placeholder
