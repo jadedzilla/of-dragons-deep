@@ -191,21 +191,24 @@ export function planLogRoute({ fish, sources, windows, ocean, oceanCategory, now
 export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fishIcon, onOpen, esc, oceanCategory }) {
   root.innerHTML = `
     <div class="lr-head">
-      <div class="lr-summary" id="lrSummary"></div>
-      <div class="lr-tools">
+      <div class="lr-stats" id="lrSummary"></div>
+      <div class="lr-head-notes" id="lrNotes"></div>
+      <div class="lr-bar">
         <label class="tm-opt" title="Fish that can only be caught at certain Eorzea times or weather"><input type="checkbox" id="lrTimed"> Include timed fish</label>
-        <button type="button" class="btn small" id="lrRecalc" title="Plan again from the current time">↻ Re-plan from now</button>
-        <button type="button" class="btn small" id="lrGbrAll" title="Copy every land step as one GatherBuddy Reborn auto-gather list (Import from clipboard)">Copy all steps for GatherBuddy</button>
+        <div class="lr-actions">
+          <button type="button" class="btn small" id="lrRecalc" title="Plan again from the current time">↻ Re-plan</button>
+          <button type="button" class="btn small" id="lrGbrAll" title="Copy every land step as one GatherBuddy Reborn auto-gather list (Import from clipboard)"><svg class="lr-copy" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8.5" rx="1.5"/><path d="M10.5 3.5V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v6.5A1.5 1.5 0 0 0 4 11h.5"/></svg>GatherBuddy</button>
+        </div>
       </div>
+      <details class="lr-about"><summary>How the route is planned</summary>
+        <div class="ns-intro">Your remaining Fish Guide fish in the order to catch them, planned from now: fish with no time or weather
+          limit are grouped into as few fishing spots as possible; with <b>Include timed fish</b> ticked, fish with a catch window are
+          slotted in when their window opens. Times are estimates. Ocean fishing comes last, grouped by voyage stop.</div></details>
     </div>
-    <div class="ns-intro">Your remaining Fish Guide fish in the order to catch them, planned from now: fish with no time or weather
-      limit are grouped into as few fishing spots as possible; with <b>Include timed fish</b> ticked, fish with a catch window are
-      slotted in when their window opens.
-      Times are estimates. Ocean fishing comes last, grouped by voyage stop.</div>
     <div class="ns-list" id="lrList"><div class="empty-msg">Planning your route…</div></div>
     <div class="tm-credit">Places, weather and voyages from XIVAPI game data; spots, bait, hooksets, tugs, intuition and catch windows from
       <a href="https://ffxivteamcraft.com/" target="_blank" rel="noopener">FFXIV Teamcraft</a>. Spearfish aren't planned (separate log, no spot data).</div>`;
-  const list = root.querySelector("#lrList"), summary = root.querySelector("#lrSummary");
+  const list = root.querySelector("#lrList"), summary = root.querySelector("#lrSummary"), notes = root.querySelector("#lrNotes");
   let base = null, loading = null, plan = null, shown = STEP_PAGE;
   const names = { item: new Map(), spot: new Map(), weather: new Map() };
 
@@ -302,19 +305,8 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
     return `<div class="lr-where">No route data yet · ${step.fish.length} fish</div><div class="lr-notes">${step.fish.map(f => esc(f.name)).join(", ")}</div>`;
   }
 
-  // ---------- GatherBuddy Reborn: copy a step as an auto-gather list ----------
+  // ---------- GatherBuddy Reborn: copy the route as an auto-gather list ----------
   // Land steps only (ocean fishing runs on voyages, which auto-gather doesn't do).
-  const gbrButton = s => s.kind === "stop" || s.kind === "timed"
-    ? `<div class="lr-gbr"><button type="button" class="btn small" data-gbr="${stepId(s)}" title="Copy this step as a GatherBuddy Reborn auto-gather list (Import from clipboard)">Copy for GatherBuddy</button></div>` : "";
-  function gbrStep(step) {
-    const n = plan.steps.indexOf(step) + 1, spot = step.kind === "stop" ? step.spot : step.e.spot;
-    const fish = step.kind === "stop" ? step.fish : [step.f];
-    const place = names.spot.get(spot)?.name ?? fish[0].zone;
-    const baits = [...new Set(fish.map(f => chainsAt(f.id, spot)[0]?.[0]).filter(Boolean))].map(itemName);
-    return gatherBuddyList({ name: `Of Dragons Deep · Step ${n}: ${place}`,
-      description: `${fish.map(f => f.name).join(", ")} at ${place}${baits.length ? `. Bait: ${baits.join(", ")}` : ""}.`,
-      fish: fish.map(f => ({ id: f.id, spot })) });
-  }
   /** Every land step (the whole route, not just the steps shown) as one list, in route order, each fish at its step's spot. */
   function gbrAll() {
     const land = plan.steps.filter(st => st.kind === "stop" || st.kind === "timed");
@@ -323,12 +315,13 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
       description: `Fishing log route from Of Dragons Deep, ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}: `
         + `${land.length} steps, ${fish.length} fish, each at the route's fishing spot. Ocean fishing isn't included.`, fish });
   }
-  /** Copy, then show the outcome on the button for a moment. */
-  async function copyWithFeedback(button, make, label) {
+  /** Copy, then show the outcome on the button for a moment before putting its label back. */
+  async function copyWithFeedback(button, make) {
+    const label = button.dataset.label ??= button.innerHTML;
     const ok = await make().then(copyText);
-    button.textContent = ok ? "Copied — import it in GatherBuddy" : "Couldn't copy here";
+    button.textContent = ok ? "Copied!" : "Couldn't copy";
     button.classList.toggle("done", ok);
-    setTimeout(() => { if (button.isConnected) { button.textContent = label; button.classList.remove("done"); } }, 2500);
+    setTimeout(() => { if (button.isConnected) { button.innerHTML = label; button.classList.remove("done"); } }, 2500);
   }
   async function copyText(text) {
     try { await navigator.clipboard.writeText(text); return true; } catch { /* no clipboard API here */ }
@@ -405,13 +398,18 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
     if (my !== token) return;
     const now = Date.now() / 1000, caught = fishList.length - plan.left, hours = plan.minutes / 60;
     stepsById = new Map(visible.map(s => [stepId(s), s]));
+    // summary tiles (fish left, steps, hours of land fishing), then any notes about timed fish
+    const n = x => x.toLocaleString("en-US"), stat = (value, label) => ` <div class="lr-stat"><b>${value}</b> <span>${label}</span></div>`;
     summary.innerHTML = plan.left
-      ? `<b>${plan.left.toLocaleString("en-US")}</b> fish left (${caught.toLocaleString("en-US")} / ${fishList.length.toLocaleString("en-US")} caught) · ${steps.length} steps · land fishing ≈ <b>${hours >= 1 ? `${Math.round(hours)} h` : `${plan.minutes} min`}</b>`
-        + (plan.leftOut ? `<div class="lr-leftout">${plan.leftOut.toLocaleString("en-US")} timed fish not in the route — tick <b>Include timed fish</b> to add them.</div>` : "")
+      ? stat(n(plan.left), `fish left · ${n(caught)} / ${n(fishList.length)} caught`) + stat(n(steps.length), "steps")
+        + stat(`≈ ${hours >= 1 ? `${Math.round(hours)} h` : `${plan.minutes} min`}`, "of land fishing")
+      : `<div class="lr-stat lr-done"><b>Fish Guide complete! 🎉</b></div>`;
+    notes.innerHTML = plan.left
+      ? (plan.leftOut ? `<div class="lr-leftout">${n(plan.leftOut)} timed fish not in the route — tick <b>Include timed fish</b> to add them.</div>` : "")
         + (plan.missed ? `<div class="lr-missed">${plan.missed} timed fish missed ${plan.missed === 1 ? "its" : "their"} window — <b>Re-plan</b> to fit ${plan.missed === 1 ? "it" : "them"} back in.</div>` : "")
-      : `Fish Guide complete! 🎉`;
+      : "";
     list.innerHTML = plan.left ? `<ol class="lr-steps">${visible.map((s, i) => `<li class="lr-step ${s.kind}${s.kind === "timed" && s.w.start <= now ? " up" : ""}" data-step="${stepId(s)}">
-        <span class="ns-rank">${i + 1}</span><div class="lr-body">${i === 0 ? `<div class="lr-when">Next</div>` : ""}${stepHtml(s, i + 1, now)}${gbrButton(s)}</div></li>`).join("")}</ol>`
+        <span class="ns-rank">${i + 1}</span><div class="lr-body">${i === 0 ? `<div class="lr-when">Next</div>` : ""}${stepHtml(s, i + 1, now)}</div></li>`).join("")}</ol>`
       + (steps.length > shown ? `<button type="button" class="btn ns-more-ach" id="lrMore">Show ${Math.min(STEP_PAGE, steps.length - shown)} more steps (${steps.length - shown} left)</button>` : "")
       : `<div class="empty-msg">Every Fish Guide fish is caught. 🎉</div>`;
   }
@@ -440,15 +438,11 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
         .filter(s => !(s.fish && !s.fish.length) && !(s.kind === "timed" && s.f.id === id));
       plan.left--;
       render();
-    } else if (t.dataset.gbr) {
-      const step = stepsById.get(t.dataset.gbr);
-      if (!step) return;
-      copyWithFeedback(t, () => gbrStep(step), "Copy for GatherBuddy");
     } else if (t.id === "lrMore") { shown += STEP_PAGE; render(); }
   });
   root.querySelector("#lrRecalc").addEventListener("click", () => { if (base) { replan(); shown = STEP_PAGE; render(); } });
   const gbrAllBtn = root.querySelector("#lrGbrAll");
-  gbrAllBtn.addEventListener("click", () => { if (plan) copyWithFeedback(gbrAllBtn, gbrAll, "Copy all steps for GatherBuddy"); });
+  gbrAllBtn.addEventListener("click", () => { if (plan) copyWithFeedback(gbrAllBtn, gbrAll); });
   // Timed fish are left out unless ticked (off by default); the choice is remembered in this browser.
   const TIMED_KEY = "odd-route-timed", timedBox = root.querySelector("#lrTimed");
   try { timedBox.checked = localStorage.getItem(TIMED_KEY) === "1"; } catch { /* storage unavailable */ }

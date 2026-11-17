@@ -16,7 +16,7 @@ export default async function (t) {
   const ds = await steps(d);
   t.check("without timed fish: step 1 says Next, no times anywhere", ds[0].when === "Next" && ds.slice(1).every(x => x.when === ""), ds.map(x => x.when));
   t.check("Include timed fish is off by default: no timed steps, a note says how many were left out", !(await d.isChecked("#lrTimed"))
-    && ds.every(x => x.kind !== "timed") && /^\d{3} timed fish not in the route — tick Include timed fish to add them\.$/.test(await text(d, ".lr-leftout")), await text(d, "#lrSummary"));
+    && ds.every(x => x.kind !== "timed") && /^\d{3} timed fish not in the route — tick Include timed fish to add them\.$/.test(await text(d, ".lr-leftout")), await text(d, "#lrNotes"));
   await d.check("#lrTimed");
   await d.waitForFunction(() => document.querySelector(".lr-step")?.classList.contains("timed"));
   t.check("ticking it adds timed fish (route re-planned) and drops the note", !(await d.$(".lr-leftout")));
@@ -26,7 +26,7 @@ export default async function (t) {
 
   const p = await t.page({ clock: T0, path: "#route", storage: { "odd-route-timed": "1" } });
   await p.waitForSelector(".lr-step");
-  t.check("summary: fish left, steps, hours", /^1,517 fish left \(0 \/ 1,517 caught\) · \d+ steps · land fishing ≈ \d+ h$/.test(await text(p, "#lrSummary")), await text(p, "#lrSummary"));
+  t.check("summary: fish left, steps, hours", /^1,517 fish left · 0 \/ 1,517 caught \d+ steps ≈ \d+ h of land fishing$/.test(await text(p, "#lrSummary")), await text(p, "#lrSummary"));
   let s = await steps(p);
   t.check("15 steps at a time", s.length === 15);
   t.check("step 1: 'Next', a timed fish whose window is open", s[0].when === "Next" && s[0].kind === "timed" && s[0].up, s[0]);
@@ -83,40 +83,36 @@ export default async function (t) {
   t.check("a fish icon opens its details", true);
   t.noErrors(p);
 
-  // GatherBuddy Reborn: each land step copies an auto-gather list in its clipboard format
+  // GatherBuddy Reborn: the header button copies the whole route as one auto-gather list in its clipboard format
   const g = await t.page({ clock: T0, path: null });
   await g.addInitScript(() => { window.__copied = []; Object.defineProperty(navigator, "clipboard", { value: { writeText: async x => { window.__copied.push(x); } } }); });
   await g.goto(t.url + "#route");
-  await g.waitForSelector(".lr-step.stop [data-gbr]");
-  t.check("GatherBuddy button on land steps, not on ocean steps", await g.$$eval(".lr-step.stop, .lr-step.timed", ss => ss.every(x => x.querySelector("[data-gbr]")))
-    && await g.$$eval(".lr-step.ocean [data-gbr]", b => b.length === 0));
+  await g.waitForSelector(".lr-step.stop");
+  t.check("one GatherBuddy button (copy icon + 'GatherBuddy'); no per-step buttons", await text(g, "#lrGbrAll") === "GatherBuddy"
+    && !!(await g.$("#lrGbrAll svg.lr-copy")) && await g.$$eval(".lr-step [data-gbr], .lr-gbr", b => b.length === 0));
   const stopEl = await g.$(".lr-step.stop");
   const stopFish = await stopEl.$$eval(".lr-f [data-mark]", b => b.map(x => +x.dataset.mark));
-  const stopNo = await stopEl.$eval(".ns-rank", e => +e.textContent);
-  await (await stopEl.$("[data-gbr]")).click();
-  await g.waitForFunction(() => window.__copied.length === 1);
-  t.check("button confirms the copy", /^Copied/.test(await stopEl.$eval("[data-gbr]", b => b.textContent)));
-  const raw = Buffer.from(await g.evaluate(() => window.__copied[0]), "base64");
-  const bytes = gunzipSync(raw), cfg = JSON.parse(bytes.subarray(1).toString("utf8"));
-  t.check("format: base64 of gzip, version byte 6, then JSON (GatherBuddy's AutoGatherList.Config)", raw[0] === 0x1f && raw[1] === 0x8b && bytes[0] === 6);
-  t.check("fields GatherBuddy requires are present", Array.isArray(cfg.ItemIds) && typeof cfg.Name === "string" && typeof cfg.Description === "string"
-    && cfg.Quantities && cfg.PrefferedLocations && cfg.EnabledItems && cfg.Enabled === false, Object.keys(cfg));
-  const spots = Object.values(cfg.PrefferedLocations);
-  t.check("the step's fish, 1 each, pinned to the step's fishing spot", JSON.stringify(cfg.ItemIds) === JSON.stringify(stopFish)
-    && cfg.ItemIds.every(id => cfg.Quantities[id] === 1 && cfg.EnabledItems[id] === true) && spots.length === stopFish.length && new Set(spots).size === 1
-    && NET.exact[Object.keys(NET.exact).find(k => k.includes("fishing-sources.json"))][stopFish[0]].some(e => e.spot === spots[0]), cfg);
-  t.check("list named after the step; description has the fish and bait", cfg.Name.startsWith(`Of Dragons Deep · Step ${stopNo}: `) && /Bait: /.test(cfg.Description), [cfg.Name, cfg.Description]);
-  // Copy all steps: one list with every land step's fish (the whole route), in route order
   await g.click("#lrGbrAll");
-  await g.waitForFunction(() => window.__copied.length === 2);
-  const all = JSON.parse(gunzipSync(Buffer.from(await g.evaluate(() => window.__copied[1]), "base64")).subarray(1).toString("utf8"));
+  await g.waitForFunction(() => window.__copied.length === 1);
+  t.check("button confirms the copy", /^Copied/.test(await text(g, "#lrGbrAll")));
+  const raw = Buffer.from(await g.evaluate(() => window.__copied[0]), "base64");
+  const bytes = gunzipSync(raw), all = JSON.parse(bytes.subarray(1).toString("utf8"));
+  t.check("format: base64 of gzip, version byte 6, then JSON (GatherBuddy's AutoGatherList.Config)", raw[0] === 0x1f && raw[1] === 0x8b && bytes[0] === 6);
+  t.check("fields GatherBuddy requires are present", Array.isArray(all.ItemIds) && typeof all.Name === "string" && typeof all.Description === "string"
+    && all.Quantities && all.PrefferedLocations && all.EnabledItems && all.Enabled === false, Object.keys(all));
+  const firstSpot = new Set(stopFish.map(id => all.PrefferedLocations[id]));
+  t.check("1 each, every fish pinned to its step's fishing spot (the first step's fish all at its spot)", all.ItemIds.every(id => all.Quantities[id] === 1 && all.EnabledItems[id] === true)
+    && firstSpot.size === 1 && NET.exact[Object.keys(NET.exact).find(k => k.includes("fishing-sources.json"))][stopFish[0]].some(e => e.spot === [...firstSpot][0]), [...firstSpot]);
   const leftOut = +(/^(\d+) timed fish/.exec(await text(g, ".lr-leftout"))?.[1] ?? 0);
-  t.check("Copy all steps: one list with every land fish of the whole route (not just the 15 shown), each at its spot",
+  t.check("one list with every land fish of the whole route (not just the 15 shown), in route order",
     all.ItemIds.length === 1517 - 259 - leftOut && new Set(all.ItemIds).size === all.ItemIds.length && Object.keys(all.PrefferedLocations).length === all.ItemIds.length
-    && JSON.stringify(all.ItemIds.slice(0, stopFish.length)) === JSON.stringify(stopFish) && all.Enabled === false
+    && JSON.stringify(all.ItemIds.slice(0, stopFish.length)) === JSON.stringify(stopFish)
     && all.Name === `Of Dragons Deep · Log route (${all.ItemIds.length} fish)`, { n: all.ItemIds.length, leftOut, name: all.Name });
-  t.check("Copy all steps confirms the copy", /^Copied/.test(await text(g, "#lrGbrAll")));
+  await g.waitForFunction(() => document.querySelector("#lrGbrAll").textContent === "GatherBuddy" && document.querySelector("#lrGbrAll svg"), null, { timeout: 5000 });
+  t.check("then the button's label and icon come back", true);
   t.noErrors(g, "gatherbuddy");
+  await g.setViewportSize({ width: 390, height: 844 });
+  t.check("phones: no GatherBuddy button (it's a PC plugin), Re-plan still there", !(await g.isVisible("#lrGbrAll")) && await g.isVisible("#lrRecalc"));
 
   // only ocean fish left: one step per voyage stop, with port, spectral-current split and time-of-day voyages
   const data = JSON.parse(await readFile(new URL("../../data/fish.json", import.meta.url), "utf8")), sea = data.tables.reg.indexOf("The High Seas");
