@@ -12,7 +12,7 @@ const ALL_OPEN = { "odd-achievements-open": '["log","big","ocean","milestones","
 const row = (p, name) => p.evaluate(n => {
   const r = [...document.querySelectorAll(".ac-row")].find(r => r.querySelector(".ac-name").firstChild.textContent.trim() === n);
   if (!r) return null;
-  const parentRow = r.closest(".ac-children")?.closest(".ac-group")?.querySelector(":scope > .ac-row");
+  const parentRow = r.closest(".ac-children")?.closest(".ac-group")?.querySelector(":scope > summary > .ac-row");
   return { done: r.classList.contains("done"), progress: r.querySelector(".ac-progress span")?.textContent.replace(/\s+/g, " ").trim() ?? null,
     fish: r.querySelectorAll(".ac-f").length, caughtFish: r.querySelectorAll(".ac-f.caught").length, mark: r.querySelector("[data-mark]")?.checked ?? null,
     parent: parentRow?.querySelector(".ac-name").firstChild.textContent.trim() ?? null, section: r.closest(".ac-section").querySelector("h3").firstChild.textContent.trim() };
@@ -40,7 +40,7 @@ export default async function (t) {
   t.check("voyage achievements are in Ocean Fishing (53 there), marked by hand", a.section === "Ocean Fishing" && a.mark === false && /\/ 53$/.test(await text(p, '.ac-section[data-section=ocean] summary')), a);
 
   const tree = await p.evaluate(() => {
-    const walk = g => ({ name: g.querySelector(":scope > .ac-row .ac-name").firstChild.textContent.trim(),
+    const walk = g => ({ name: g.querySelector(":scope > summary > .ac-row .ac-name").firstChild.textContent.trim(),
       parts: [...(g.querySelector(":scope > .ac-children")?.children ?? [])].map(c => c.classList.contains("ac-group") ? walk(c) : c.querySelector(".ac-name").firstChild.textContent.trim()) });
     return [...document.querySelectorAll(".ac-section > .ac-group")].map(walk);
   });
@@ -48,6 +48,22 @@ export default async function (t) {
   t.check("groups: Greater Eorzea → 3 regions → 5 each", tree.length === 2 && ge?.parts.length === 3 && ge.parts.every(x => x.parts?.length === 5), ge);
   t.check("groups: big fish chain nested 3 deep", JSON.stringify(big) === JSON.stringify({ name: "I Came, I Saw, I Fished", parts: [{ name: "Fish Fear Me", parts: [
     { name: "No River Wide Enough", parts: ["Go Big or Go Home XVI", "Go Big Far from Home V"] }, "Go Big Till the End III"] }, "Go Big on the Trail III"] }), big);
+
+  // groups start open; clicking the top achievement collapses its parts; remembered
+  const group = id => p.$eval(`.ac-group[data-group="${id}"]`, g => ({ open: g.open,
+    partsShown: [...g.querySelectorAll(":scope > .ac-children > *")].filter(c => c.checkVisibility()).length }));
+  const ge277 = 277; // A Fisher's Life for Me: Greater Eorzea
+  let gs = await group(ge277);
+  t.check("groups start open, parts showing", gs.open && gs.partsShown === 3 && await p.$$eval(".ac-group", gg => gg.every(g => g.open)), gs);
+  await p.click(`.ac-group[data-group="${ge277}"] > summary`);
+  await p.waitForFunction(id => !document.querySelector(`.ac-group[data-group="${id}"]`).open
+    && (localStorage.getItem("odd-achievements-groups-closed") || "").includes(String(id)), ge277);
+  gs = await group(ge277);
+  t.check("clicking the top achievement collapses the group", !gs.open && gs.partsShown === 0, gs);
+  await p.reload(); await p.waitForSelector(".ac-row");
+  t.check("a collapsed group stays collapsed after reload; others open", !(await group(ge277)).open && (await group(264)).open);
+  await p.click(`.ac-group[data-group="${ge277}"] > summary`);
+  await p.waitForFunction(id => document.querySelector(`.ac-group[data-group="${id}"]`).open, ge277);
 
   for (const n of ["I", "II", "III", "IV"]) await mark(p, `Good Things Come to Those Who Bait: La Noscea ${n}`);
   a = await row(p, "A Fisher's Life for Me: La Noscea");

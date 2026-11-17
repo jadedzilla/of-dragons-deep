@@ -137,8 +137,16 @@ export function createAchievements(root, { allFish, byId, isCaught, fishIcon, on
   // Sections start collapsed; click a heading to expand it. Which ones are open is remembered in this browser.
   const OPEN_KEY = "odd-achievements-open";
   const expanded = new Set((() => { try { return JSON.parse(localStorage.getItem(OPEN_KEY) || "[]"); } catch { return []; } })());
+  // Groups (an achievement with its parts) start open; collapsed ones are remembered too.
+  const GROUPS_KEY = "odd-achievements-groups-closed";
+  const closedGroups = new Set((() => { try { return JSON.parse(localStorage.getItem(GROUPS_KEY) || "[]"); } catch { return []; } })());
   list.addEventListener("toggle", e => {
-    const key = e.target.dataset?.section;
+    const { section: key, group } = e.target.dataset ?? {};
+    if (group) {
+      if (e.target.open) closedGroups.delete(+group); else closedGroups.add(+group);
+      try { localStorage.setItem(GROUPS_KEY, JSON.stringify([...closedGroups])); } catch { /* storage unavailable */ }
+      return;
+    }
     if (!key) return;
     if (e.target.open) expanded.add(key); else expanded.delete(key);
     try { localStorage.setItem(OPEN_KEY, JSON.stringify([...expanded])); } catch { /* storage unavailable */ }
@@ -205,7 +213,10 @@ export function createAchievements(root, { allFish, byId, isCaught, fishIcon, on
       const r = reqs.get(a.id), row = rowHtml(a, done.get(a.id));
       if (r.kind !== "meta") return depth ? row.replace('class="ac-row', 'class="ac-row ac-sub') : row;
       const parts = r.ids.map(id => all.get(id)).filter(Boolean).map(x => node(x, depth + 1)).join("");
-      return `<div class="ac-group${depth ? " ac-sub" : ""}" data-group="${a.id}">${row}${parts ? `<div class="ac-children">${parts}</div>` : ""}</div>`;
+      // a group collapses by clicking its top achievement (open unless collapsed before; remembered)
+      const head = row.replace(/^(\s*<div class="ac-row[^>]*>)/, '$1<span class="ac-chev" aria-hidden="true"></span>');
+      return `<details class="ac-group${depth ? " ac-sub" : ""}" data-group="${a.id}"${closedGroups.has(a.id) ? "" : " open"}>`
+        + `<summary>${head}</summary>${parts ? `<div class="ac-children">${parts}</div>` : ""}</details>`;
     };
     list.innerHTML = SECTIONS.map(([key, title, note]) => {
       const items = data.achievements.filter(a => sectionOf(a) === key);
