@@ -33,13 +33,14 @@ export function loadOceanRoutes() {
   const schema = `schema=${encodeURIComponent(XIVAPI_SCHEMA)}`;
   const get = url => fetch(url).then(r => { if (!r.ok) throw new Error(`XIVAPI HTTP ${r.status}`); return r.json(); });
   oceanRoutesPromise ??= Promise.all([
-    get(`${XIVAPI}/sheet/IKDSpot?limit=500&fields=PlaceName.Name,SpotMain,SpotSub&${schema}`),
-    get(`${XIVAPI}/sheet/IKDRoute?limit=500&fields=Spot,Time[].TimeOfDay&${schema}`),
+    // @as(raw): just the row ids — plain SpotMain/Spot would expand whole FishingSpot rows (~730 KB instead of ~9 KB)
+    get(`${XIVAPI}/sheet/IKDSpot?limit=500&fields=PlaceName.Name,SpotMain@as(raw),SpotSub@as(raw)&${schema}`),
+    get(`${XIVAPI}/sheet/IKDRoute?limit=500&fields=Spot@as(raw),Time[].TimeOfDay&${schema}`),
   ]).then(([spots, routes]) => ({
     spots: spots.rows.filter(r => r.row_id > 0).map(r => ({ id: r.row_id, name: r.fields.PlaceName?.fields?.Name ?? "",
-      main: r.fields.SpotMain?.value, sub: r.fields.SpotSub?.value })),
+      main: r.fields["SpotMain@as(raw)"], sub: r.fields["SpotSub@as(raw)"] })),
     routes: routes.rows.filter(r => r.row_id > 0).map(r => ({
-      stops: r.fields.Spot.map((s, i) => [s.value ?? s.row_id, r.fields.Time[i]?.fields?.TimeOfDay]).filter(([s]) => s > 0) })),
+      stops: r.fields["Spot@as(raw)"].map((s, i) => [s, r.fields.Time[i]?.fields?.TimeOfDay]).filter(([s]) => s > 0) })),
   })).catch(e => { oceanRoutesPromise = null; throw e; });
   return oceanRoutesPromise;
 }

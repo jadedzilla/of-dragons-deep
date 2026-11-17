@@ -67,7 +67,8 @@ async function fetchSpearfishingRows(fetchFn, signal) {
 async function fetchAquariumRows(fetchFn, signal) {
   const rows = [];
   for (let after = -1; ;) {
-    const p = await getJson(pageUrl(after, "AquariumFish", "Item,Size,AquariumWater.Name"), fetchFn, signal);
+    // Item@as(raw) = just the item id (plain "Item" would expand the whole Item row: ~4.6 MB instead of ~40 KB)
+    const p = await getJson(pageUrl(after, "AquariumFish", "Item@as(raw),Size,AquariumWater.Name"), fetchFn, signal);
     rows.push(...p.rows);
     if (p.rows.length < PAGE) return rows;
     after = p.rows.at(-1).row_id;
@@ -135,9 +136,10 @@ export function buildDataset(fishParameterRows, meta, spearfishingRows = [], aqu
   const rows = logOrder(inLog(fishParameterRows)).map(toRow("FishingSpot", (_, level, region) => expansionOf(level, region)));
   const spear = logOrder(inLog(spearfishingRows), "Unknown2").map(toRow("SpearfishingNotebook", spearExpansion));
   const ours = new Set([...rows, ...spear].map(r => r[0]));
+  const aquariumItem = r => r.fields["Item@as(raw)"] ?? f(r, "Item")?.value; // raw id (older snapshots: a reference)
   const aquarium = Object.fromEntries(aquariumRows
-    .filter(r => ours.has(f(r, "Item")?.value) && r.fields.Size > 0)
-    .map(r => [f(r, "Item").value, [r.fields.Size, f(r, "AquariumWater", "Name") ?? ""]]));
+    .filter(r => ours.has(aquariumItem(r)) && r.fields.Size > 0)
+    .map(r => [aquariumItem(r), [r.fields.Size, f(r, "AquariumWater", "Name") ?? ""]]));
   return { source: `${XIVAPI}/sheet/FishParameter`, ...meta, columns: FISH_COLUMNS, tables, rows, spear, aquarium };
 }
 

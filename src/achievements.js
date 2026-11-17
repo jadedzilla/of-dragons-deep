@@ -30,7 +30,8 @@ export async function loadAchievements({ fetchFn = fetch, signal } = {}) {
   };
   const results = [];
   let page = await get(`${XIVAPI}/search?sheets=Achievement&query=${encodeURIComponent(`AchievementCategory=${FISHER_CATEGORY}`)}`
-    + `&limit=500&fields=Name,Description,Points,Type,Key,Data,Order,Icon&${schema}`);
+    // @as(raw): plain numbers — without it Key/Data expand the linked rows (~250 KB instead of ~50 KB)
+    + `&limit=500&fields=Name,Description,Points,Type@as(raw),Key@as(raw),Data@as(raw),Order,Icon&${schema}`);
   results.push(...page.results);
   while (page.next) { page = await get(`${XIVAPI}/search?cursor=${encodeURIComponent(page.next)}&limit=500`); results.push(...page.results); }
 
@@ -44,8 +45,8 @@ export async function loadAchievements({ fetchFn = fetch, signal } = {}) {
   }));
 
   const achievements = results.map(({ row_id, fields: f }) => ({
-    id: row_id, name: f.Name, desc: f.Description, points: f.Points, order: f.Order, type: refValue(f.Type),
-    key: refValue(f.Key), data: (f.Data ?? []).map(refValue).filter(v => v > 0),
+    id: row_id, name: f.Name, desc: f.Description, points: f.Points, order: f.Order, type: refValue(f["Type@as(raw)"] ?? f.Type),
+    key: refValue(f["Key@as(raw)"] ?? f.Key), data: (f["Data@as(raw)"] ?? f.Data ?? []).map(refValue).filter(v => v > 0),
     icon: f.Icon?.path_hr1 ? xivAsset(f.Icon.path_hr1) : f.Icon?.path ? xivAsset(f.Icon.path) : null,
   })).sort((a, b) => a.order - b.order || a.id - b.id);
   return { achievements, oceanSpots };
