@@ -14,6 +14,7 @@
     "dev": "node scripts/serve.mjs",
     "fetch-data": "node scripts/fetch-fish-data.mjs",
     "fetch-icons": "node scripts/fetch-icons.mjs && node scripts/webp-sheets.mjs",
+    "fetch-baits": "node scripts/fetch-bait-data.mjs",
     "build": "node scripts/build.mjs",
     "test": "node tests/run.mjs",
     "test:record": "node tests/fixtures/record.mjs"

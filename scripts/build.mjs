@@ -13,12 +13,13 @@ import { createHash } from "node:crypto";
 
 const root = new URL("..", import.meta.url);
 const read = p => readFile(new URL(p, root), "utf8");
-const MODULES = ["src/storage.js", "src/icons.js", "src/fishsource.js", "src/data.js", "src/teamcraft.js", "src/timers.js", "src/achievements.js", "src/logroute.js", "src/share.js", "src/main.js"];
+const MODULES = ["src/storage.js", "src/icons.js", "src/fishsource.js", "src/data.js", "src/teamcraft.js", "src/timers.js", "src/achievements.js", "src/logroute.js", "src/share.js", "src/baits.js", "src/main.js"];
 
 const js = (await Promise.all(MODULES.map(read)))
   .map((src, i) => `// ---- ${MODULES[i]} ----\n` + src.replace(/^import .*$/gm, "").replace(/^export /gm, ""))
   .join("\n");
 const data = await read("data/fish.json");
+const baits = (await read("data/baits.json")).trim();
 const css = await read("src/styles.css");
 const externalIcons = process.argv.includes("--external-icons");
 const icons = JSON.parse(await read("data/icons.json"));
@@ -39,7 +40,7 @@ let html = await read("index.html");
 html = html
   .replace('<link rel="stylesheet" href="src/styles.css">', () => `<style>\n${css}</style>`)
   .replace('<script type="module" src="src/main.js"></script>',
-    () => `<script>window.__FISH_DATA__ = ${data};\nwindow.__ICON_DATA__ = ${JSON.stringify(icons)};</script>\n<script type="module">\n${js}</script>`);
+    () => `<script>window.__FISH_DATA__ = ${data};\n${externalIcons ? "" : `window.__BAIT_DATA__ = ${baits};\n`}window.__ICON_DATA__ = ${JSON.stringify(icons)};</script>\n<script type="module">\n${js}</script>`);
 
 // Web app manifest (home-screen install): copied with the icons it lists for --external-icons. The single file drops
 // it — an app can't be installed from a file opened from disk, and a data: manifest has no origin to resolve against.
@@ -63,6 +64,12 @@ for (const path of new Set([...html.matchAll(/(?:href|src)="(public\/[^"]+)"/g)]
     const uri = `data:${type};base64,` + (await readFile(new URL(path, root))).toString("base64");
     html = html.replaceAll(`"${path}"`, `"${uri}"`);
   }
+}
+
+// Bait sources: inlined in the single file; a separate file for Pages (loaded only when a bait is opened).
+if (externalIcons) {
+  await mkdir(new URL("dist/data/", root), { recursive: true });
+  await copyFile(new URL("data/baits.json", root), new URL("dist/data/baits.json", root));
 }
 
 await writeFile(new URL("dist/index.html", root), html);

@@ -6,6 +6,7 @@ import { createTimers } from "./timers.js";
 import { createAchievements } from "./achievements.js";
 import { createLogRoute } from "./logroute.js";
 import { createShare } from "./share.js";
+import { initBaitView } from "./baits.js";
 import { baitChains, hooksetAndTug, loadTeamcraft, xivAsset, xivRows } from "./teamcraft.js";
 
 const PER_PAGE = 100; // 10x10 grid
@@ -225,7 +226,9 @@ function baitHtml({ groups, items, spots }) {
   const item = id => {
     const it = items[id] ?? { name: BY_ID.get(id)?.name ?? `Item ${id}` };
     const img = it.icon ? `<img src="${esc(it.icon)}" alt="" loading="lazy" onerror="this.remove()">` : "";
-    return `<span class="fv-bait-item">${img}${esc(it.name)}</span>`;
+    // a real bait opens where to get it; a fish used as bait (mooch) isn't a bait chip
+    return BY_ID.has(id) ? `<span class="fv-bait-item">${img}${esc(it.name)}</span>`
+      : `<button type="button" class="fv-bait-item bait-link" data-bait="${id}" title="Where to get ${esc(it.name)}">${img}${esc(it.name)}</button>`;
   };
   const chain = ids => ids.map((id, i) => (i ? `<span class="fv-arrow">→</span> ` : "") + item(id) + (i ? ` <span class="fv-or">(mooch)</span>` : "")).join(" ");
   const alternatives = chains => chains.map(chain).join(` <span class="fv-or">or</span> `);
@@ -615,6 +618,8 @@ function route() {
   if (view === "guide") render();
 }
 window.addEventListener("hashchange", route);
+
+initBaitView({ esc }); // clicking a bait anywhere shows where to get it
 
 /* ---------- Start ---------- */
 setMode(mode);

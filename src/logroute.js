@@ -189,7 +189,10 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
   const itemName = id => byId.get(id)?.name ?? names.item.get(id)?.name ?? `Item ${id}`;
   const itemHtml = id => {
     const icon = names.item.get(id)?.icon;
-    return `<span class="ns-item">${icon ? `<img src="${esc(icon)}" alt="" loading="lazy" onerror="this.remove()">` : ""}${esc(itemName(id))}</span>`;
+    const inner = `${icon ? `<img src="${esc(icon)}" alt="" loading="lazy" onerror="this.remove()">` : ""}${esc(itemName(id))}`;
+    // a real bait (not a fish) opens where to get it
+    return byId.has(id) ? `<span class="ns-item">${inner}</span>`
+      : `<button type="button" class="ns-item bait-link" data-bait="${id}" title="Where to get ${esc(itemName(id))}">${inner}</button>`;
   };
   const hookTug = e => e ? [LR_HOOKSETS[e.hookset] && `${LR_HOOKSETS[e.hookset]}`, LR_TUGS[e.tug]].filter(Boolean).join(", ") : "";
   const spotHtml = (spot, f) => {
