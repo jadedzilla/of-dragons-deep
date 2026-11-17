@@ -195,6 +195,7 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
       <div class="lr-tools">
         <label class="tm-opt" title="Fish that can only be caught at certain Eorzea times or weather"><input type="checkbox" id="lrTimed"> Include timed fish</label>
         <button type="button" class="btn small" id="lrRecalc" title="Plan again from the current time">↻ Re-plan from now</button>
+        <button type="button" class="btn small" id="lrGbrAll" title="Copy every land step as one GatherBuddy Reborn auto-gather list (Import from clipboard)">Copy all steps for GatherBuddy</button>
       </div>
     </div>
     <div class="ns-intro">Your remaining Fish Guide fish in the order to catch them, planned from now: fish with no time or weather
@@ -313,6 +314,21 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
       description: `${fish.map(f => f.name).join(", ")} at ${place}${baits.length ? `. Bait: ${baits.join(", ")}` : ""}.`,
       fish: fish.map(f => ({ id: f.id, spot })) });
   }
+  /** Every land step (the whole route, not just the steps shown) as one list, in route order, each fish at its step's spot. */
+  function gbrAll() {
+    const land = plan.steps.filter(st => st.kind === "stop" || st.kind === "timed");
+    const fish = land.flatMap(st => (st.kind === "stop" ? st.fish : [st.f]).map(f => ({ id: f.id, spot: st.kind === "stop" ? st.spot : st.e.spot })));
+    return gatherBuddyList({ name: `Of Dragons Deep · Log route (${fish.length} fish)`,
+      description: `Fishing log route from Of Dragons Deep, ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}: `
+        + `${land.length} steps, ${fish.length} fish, each at the route's fishing spot. Ocean fishing isn't included.`, fish });
+  }
+  /** Copy, then show the outcome on the button for a moment. */
+  async function copyWithFeedback(button, make, label) {
+    const ok = await make().then(copyText);
+    button.textContent = ok ? "Copied — import it in GatherBuddy" : "Couldn't copy here";
+    button.classList.toggle("done", ok);
+    setTimeout(() => { if (button.isConnected) { button.textContent = label; button.classList.remove("done"); } }, 2500);
+  }
   async function copyText(text) {
     try { await navigator.clipboard.writeText(text); return true; } catch { /* no clipboard API here */ }
     const ta = document.createElement("textarea"); // fallback for browsers/iframes without clipboard access
@@ -426,14 +442,12 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
     } else if (t.dataset.gbr) {
       const step = stepsById.get(t.dataset.gbr);
       if (!step) return;
-      gbrStep(step).then(copyText).then(ok => {
-        t.textContent = ok ? "Copied — import it in GatherBuddy" : "Couldn't copy here";
-        t.classList.toggle("done", ok);
-        setTimeout(() => { if (t.isConnected) { t.textContent = "Copy for GatherBuddy"; t.classList.remove("done"); } }, 2500);
-      });
+      copyWithFeedback(t, () => gbrStep(step), "Copy for GatherBuddy");
     } else if (t.id === "lrMore") { shown += STEP_PAGE; render(); }
   });
   root.querySelector("#lrRecalc").addEventListener("click", () => { if (base) { replan(); shown = STEP_PAGE; render(); } });
+  const gbrAllBtn = root.querySelector("#lrGbrAll");
+  gbrAllBtn.addEventListener("click", () => { if (plan) copyWithFeedback(gbrAllBtn, gbrAll, "Copy all steps for GatherBuddy"); });
   // Timed fish are left out unless ticked (off by default); the choice is remembered in this browser.
   const TIMED_KEY = "odd-route-timed", timedBox = root.querySelector("#lrTimed");
   try { timedBox.checked = localStorage.getItem(TIMED_KEY) === "1"; } catch { /* storage unavailable */ }

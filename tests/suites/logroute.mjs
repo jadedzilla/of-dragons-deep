@@ -106,6 +106,16 @@ export default async function (t) {
     && cfg.ItemIds.every(id => cfg.Quantities[id] === 1 && cfg.EnabledItems[id] === true) && spots.length === stopFish.length && new Set(spots).size === 1
     && NET.exact[Object.keys(NET.exact).find(k => k.includes("fishing-sources.json"))][stopFish[0]].some(e => e.spot === spots[0]), cfg);
   t.check("list named after the step; description has the fish and bait", cfg.Name.startsWith(`Of Dragons Deep · Step ${stopNo}: `) && /Bait: /.test(cfg.Description), [cfg.Name, cfg.Description]);
+  // Copy all steps: one list with every land step's fish (the whole route), in route order
+  await g.click("#lrGbrAll");
+  await g.waitForFunction(() => window.__copied.length === 2);
+  const all = JSON.parse(gunzipSync(Buffer.from(await g.evaluate(() => window.__copied[1]), "base64")).subarray(1).toString("utf8"));
+  const leftOut = +(/^(\d+) timed fish/.exec(await text(g, ".lr-leftout"))?.[1] ?? 0);
+  t.check("Copy all steps: one list with every land fish of the whole route (not just the 15 shown), each at its spot",
+    all.ItemIds.length === 1517 - 259 - leftOut && new Set(all.ItemIds).size === all.ItemIds.length && Object.keys(all.PrefferedLocations).length === all.ItemIds.length
+    && JSON.stringify(all.ItemIds.slice(0, stopFish.length)) === JSON.stringify(stopFish) && all.Enabled === false
+    && all.Name === `Of Dragons Deep · Log route (${all.ItemIds.length} fish)`, { n: all.ItemIds.length, leftOut, name: all.Name });
+  t.check("Copy all steps confirms the copy", /^Copied/.test(await text(g, "#lrGbrAll")));
   t.noErrors(g, "gatherbuddy");
 
   // only ocean fish left: one step per voyage stop, with port, spectral-current split and time-of-day voyages
