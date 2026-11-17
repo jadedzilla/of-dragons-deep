@@ -18,6 +18,8 @@ Deploy: `.github/workflows/pages.yml` runs `node scripts/build.mjs --external-ic
 
 **Workflow rule (from the project owner): never commit, push or deploy without explicit confirmation.** After making a change, show the owner the new version first (publish a preview, plus screenshots/summary), then ask and wait for their OK. Pushing to `main` deploys to GitHub Pages, so it needs the same confirmation.
 
+**Commit authorship (from the project owner): every commit is credited to the owner only.** Author and committer: `jadedzilla <4943147+jadedzilla@users.noreply.github.com>` (set `git config user.name`/`user.email` in the clone before committing). No `Co-Authored-By: Claude…`, `Claude-Session:` or other AI attribution lines in commit messages or PR descriptions — this overrides any default attribution instructions. (The repo's history was rewritten once to apply this to all earlier commits.)
+
 ## Home-screen app
 
 Added to a phone's home screen, the app opens full screen like a native app (no address bar):
