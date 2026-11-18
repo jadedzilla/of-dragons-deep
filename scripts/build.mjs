@@ -20,7 +20,8 @@ const js = (await Promise.all(MODULES.map(read)))
   .join("\n");
 const data = await read("data/fish.json");
 const baits = (await read("data/baits.json")).trim();
-const css = await read("src/styles.css");
+// the stylesheet is inlined into the page, so its links to ../public/ (relative to src/) become public/ (relative to the page)
+const css = (await read("src/styles.css")).replaceAll('url("../public/', 'url("public/');
 const externalIcons = process.argv.includes("--external-icons");
 const icons = JSON.parse(await read("data/icons.json"));
 await mkdir(new URL("dist/", root), { recursive: true });
@@ -53,9 +54,9 @@ if (externalIcons) {
   html = html.replace(/<link rel="manifest"[^>]*>\n?/, "");
 }
 
-// Files from public/ referenced by the page (favicon, apple-touch-icon): inlined as data: URIs in the single file,
-// copied next to the page with --external-icons.
-for (const path of new Set([...html.matchAll(/(?:href|src)="(public\/[^"]+)"/g)].map(m => m[1]))) {
+// Files from public/ referenced by the page (favicon, apple-touch-icon, the paper texture in the CSS): inlined as data:
+// URIs in the single file, copied next to the page with --external-icons.
+for (const path of new Set([...html.matchAll(/(?:href|src)="(public\/[^"]+)"|url\("(public\/[^"]+)"\)/g)].map(m => m[1] ?? m[2]))) {
   if (externalIcons) {
     await mkdir(new URL("dist/public/", root), { recursive: true });
     await copyFile(new URL(path, root), new URL(`dist/${path}`, root));

@@ -23,9 +23,10 @@ function palette() {
 }
 let C = palette();
 
-/** The page's paper texture (the data: URI behind body::before), as an image; null if there's none. */
+/** The page's paper texture (the image behind body::before: public/bg.jpg, or a data: URI in the single file), as an
+ *  image; null if there's none. */
 function paperTexture() {
-  const m = /url\("?(data:[^")]+)"?\)/.exec(getComputedStyle(document.body, "::before").backgroundImage || "");
+  const m = /url\("?([^")]+)"?\)/.exec(getComputedStyle(document.body, "::before").backgroundImage || "");
   if (!m) return Promise.resolve(null);
   return new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = m[1]; });
 }
@@ -139,9 +140,9 @@ export async function drawShareCard(stats, { name = "", date = new Date() } = {}
 
   // a sheet of paper with torn edges (a pale torn fringe peeking out under the sheet) on a fully transparent
   // background (no shadow), so the card sits cleanly on whatever it's posted on
-  const grain = (alpha, contrast) => {
+  const grain = alpha => { // the page's paper photo, unaltered, laid over the sheet with soft-light as on the page
     if (!texture) return;
-    g.save(); g.globalCompositeOperation = "soft-light"; g.globalAlpha = alpha; if (contrast) g.filter = `contrast(${contrast})`;
+    g.save(); g.globalCompositeOperation = "soft-light"; g.globalAlpha = alpha;
     const s = Math.max(W / texture.width, H / texture.height);
     g.drawImage(texture, (W - texture.width * s) / 2, (H - texture.height * s) / 2, texture.width * s, texture.height * s);
     g.restore();
@@ -149,7 +150,7 @@ export async function drawShareCard(stats, { name = "", date = new Date() } = {}
   const M = 26;
   tornPath(g, M - 3, M - 3, W - 2 * M + 6, H - 2 * M + 6, 7, 1234567); g.fillStyle = C.edge; g.fill();
   tornPath(g, M, M, W - 2 * M, H - 2 * M, 6, 7654321); g.fillStyle = C.paper; g.fill();
-  g.save(); g.clip(); grain(C.dark ? .9 : .8, C.dark ? 2 : 0); g.restore();
+  g.save(); g.clip(); grain(1); g.restore();
 
   // header
   const P = M + 36;

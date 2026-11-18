@@ -4,7 +4,9 @@
   --display:Neuton,Georgia,serif; --title-sans:Montserrat,"Noto Sans",sans-serif; --sans:"Rethink Sans","Noto Sans",sans-serif;
   --r-sm:2px; --r:3px; --r-lg:3px; --r-pill:999px;
   --on-danger:#1b0b06;
-  --paper-tex:url("public/bg.jpg");
+  /* the paper texture: the Carrd's background photo, used exactly as it is (public/bg.jpg; the build points this at the
+     page's own copy) */
+  --paper-tex:url("../public/bg.jpg");
   --caught-check:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12.5l5 5L20 6.5' stroke='%23000' stroke-width='7' stroke-opacity='.75'/%3E%3Cpath d='M4 12.5l5 5L20 6.5' stroke='%2366d36e' stroke-width='3.6'/%3E%3C/svg%3E");
 }
 html[data-theme=light]{
@@ -501,8 +503,11 @@ html[data-theme=dark] :is(.gc-card,.gc-big){--face:#2c2b27;--text:#e0ded7;--mute
 .gc-card.flipped .gc-inner{transform:rotateY(180deg)}
 /* a card: the paper sheet (texture over the face colour), square corners, a soft drop shadow; its kind shows as a thin border
    in its colour all the way round and the same colour in its label */
-.gc-back,.gc-front,.gc-face,.gc-info{position:absolute;inset:0;border-radius:var(--r);background:var(--paper-tex) center/360px,var(--face);background-blend-mode:soft-light;
+.gc-back,.gc-front,.gc-face,.gc-info{position:absolute;inset:0;border-radius:var(--r);background:var(--face);
   box-shadow:0 10px 24px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06);backface-visibility:hidden;-webkit-backface-visibility:hidden}
+/* the paper texture on the card, under its content (each face is its own stacking context) */
+:is(.gc-back,.gc-front,.gc-face,.gc-info)::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+  background:var(--paper-tex) center/360px;mix-blend-mode:soft-light}
 .gc-back{transform:translateZ(1px);outline:1px solid color-mix(in srgb,var(--text) 22%,transparent);outline-offset:-8px} /* a fine frame inset on the back */
 .gc-back::after{content:"🐟";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;opacity:.75}
 .gc-front,.gc-face{transform:rotateY(180deg) translateZ(1px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;text-align:center;
@@ -684,12 +689,10 @@ html[data-theme=dark] :is(.gc-card,.gc-big){--face:#2c2b27;--text:#e0ded7;--mute
    square corners and a faint shadow, round charcoal (light) / paper (dark) buttons. Light and dark mode come from the
    tokens above (html[data-theme], switched by the sun/moon button in the title bar). */
 
-/* the Carrd's paper texture (its background photo, reduced to a neutral grey high-pass so only the fibres remain), laid
-   over the page with soft-light: it lightens and darkens around the page colour, so it reads as paper in both modes */
-body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;mix-blend-mode:soft-light;opacity:var(--paper-strength);
+/* the Carrd's paper texture (public/bg.jpg, unaltered) over the page with soft-light, so it shows on the page colour in
+   both modes. A few px past the screen's edges, so the photo's own dark edge never shows */
+body::before{content:"";position:fixed;inset:-6px;z-index:-1;pointer-events:none;mix-blend-mode:soft-light;opacity:var(--paper-strength);
   background:var(--paper-tex) center/cover}
-
-html[data-theme=dark] body::before{filter:contrast(2.6)} /* soft-light is gentler on dark colours: stronger fibres so the paper still shows */
 
 
 /* the window is the page itself (no frame); the title is large Neuton */
