@@ -404,7 +404,7 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
     summary.innerHTML = plan.left
       ? stat(n(plan.left), `fish left · ${n(caught)} / ${n(fishList.length)} caught`) + stat(n(steps.length), "steps")
         + stat(`≈ ${hours >= 1 ? `${Math.round(hours)} h` : `${plan.minutes} min`}`, "of land fishing")
-      : `<div class="lr-stat lr-done"><b>Fish Guide complete! 🎉</b></div>`;
+      : `<div class="lr-stat lr-done"><b>Fish Guide complete!</b></div>`;
     notes.innerHTML = plan.left
       ? (plan.leftOut ? `<div class="lr-leftout">${n(plan.leftOut)} timed fish not in the route. Tick <b>Include timed fish</b> to add them.</div>` : "")
         + (plan.missed ? `<div class="lr-missed">${plan.missed} timed fish missed ${plan.missed === 1 ? "its" : "their"} window. <b>Re-plan</b> to fit ${plan.missed === 1 ? "it" : "them"} back in.</div>` : "")
@@ -412,7 +412,7 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
     list.innerHTML = plan.left ? `<ol class="lr-steps">${visible.map((s, i) => `<li class="lr-step ${s.kind}${s.kind === "timed" && s.w.start <= now ? " up" : ""}" data-step="${stepId(s)}">
         <span class="ns-rank">${i + 1}</span><div class="lr-body">${i === 0 ? `<div class="lr-when">Next</div>` : ""}${stepHtml(s, i + 1, now)}</div></li>`).join("")}</ol>`
       + (steps.length > shown ? `<button type="button" class="btn ns-more-ach" id="lrMore">Show ${Math.min(STEP_PAGE, steps.length - shown)} more steps (${steps.length - shown} left)</button>` : "")
-      : `<div class="empty-msg">Every Fish Guide fish is caught. 🎉</div>`;
+      : `<div class="empty-msg">Every Fish Guide fish is caught.</div>`;
   }
 
   function load() {
