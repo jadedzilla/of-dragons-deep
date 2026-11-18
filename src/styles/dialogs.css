@@ -1,0 +1,64 @@
+/* import dialog */
+/* dialogs (Import, confirmations, the fish view, the bait view) share one shell (styled under "dialogs, menus, notice" below) */
+.import-dialog,.fish-dialog{
+  width:min(480px,calc(100vw - 32px));padding:16px 18px 18px;color:var(--text);
+  background:var(--panel-deep);border:1px solid var(--accent-dim);border-radius:var(--r-lg);
+  box-shadow:var(--shadow-dialog);
+}
+.import-dialog::backdrop,.fish-dialog::backdrop{background:rgba(5,8,15,.65)}
+.import-dialog h2{margin:0 0 6px;font:700 18px/1.25 var(--display);}
+.import-dialog .hint{margin:0 0 10px;font-size:12px;color:var(--muted);line-height:1.5}
+.import-dialog code{color:var(--accent-hi);background:var(--well-bg);padding:1px 4px;border-radius:var(--r-sm)}
+.import-dialog textarea{width:100%;resize:vertical;min-height:90px;padding:8px 10px;border-radius:var(--r);outline:none;border:1px solid var(--border);color:var(--text);font:13px/1.4 ui-monospace,Consolas,monospace;background:var(--input);border-color:var(--border);}
+.import-dialog textarea:focus{border-color:var(--accent)}
+.import-dialog .modes label{display:flex;align-items:center;gap:8px;font-size:13px;padding:2px 0;cursor:pointer}
+.import-dialog input[type=radio]{accent-color:var(--accent)}
+.import-result{font-size:12px;line-height:1.5;margin-top:10px;overflow-wrap:anywhere;padding:8px 10px;border-radius:var(--r);background:var(--inset-bg);border:1px solid var(--line)}
+.import-result:empty{display:none}
+.import-result.ok{border-color:var(--info-line)}
+.import-result.warn{border-color:var(--warn-line);color:var(--warn)}
+.import-result b{color:var(--text)}
+.import-result .sub{margin-top:4px;color:var(--muted)}
+/* fish detail view (click/tap a fish while Edit is off) */
+.fish-dialog{width:min(420px,calc(100vw - 32px))}
+.fish-dialog:focus{outline:none}
+.fv-head{display:flex;align-items:center;gap:14px;padding-right:22px;position:relative}
+.fv-icon{flex:none;width:80px;height:80px;border-radius:var(--r);overflow:hidden;background:linear-gradient(160deg,var(--tile-hi),var(--tile));display:flex;align-items:center;justify-content:center;border:0;box-shadow:none;}
+/* Fish icons outside the grid (fish view, timers, Log Route, achievements, the import reveal): sprite icons fade in when
+   their sheet has loaded (.ready), at once if it was already there (.instant); XIVAPI fallback <img>s show as they load */
+.fv-icon .ic,.tm-icon .ic,.ns-ficon .ic,.ac-f .ic,.gc-icon .ic,.gc-mini .ic{display:block;width:100%;height:100%;background-repeat:no-repeat;opacity:0;transition:opacity .3s ease}
+.fv-icon .ic.ready,.tm-icon .ic.ready,.ns-ficon .ic.ready,.ac-f .ic.ready,.gc-icon .ic.ready,.gc-mini .ic.ready,
+.ns-ficon img.ic,.ac-f img.ic,.gc-icon img.ic,.gc-mini img.ic{opacity:1}
+.fv-icon .ic.instant,.tm-icon .ic.instant,.ns-ficon .ic.instant,.ac-f .ic.instant{transition:none}
+.fv-icon svg{width:76%;height:76%}
+.fv-title{min-width:0}
+.fv-title h2{margin:0 0 6px;font:700 18px/1.25 var(--display);}
+/* tags: small pills with a border in their meaning's colour (fish view tags, achievement points) */
+.fv-tags{display:flex;flex-wrap:wrap;gap:4px}
+.fv-tags span{font-size:11px;padding:1px 7px;border-radius:var(--r-pill);border:1px solid var(--border);color:var(--muted);white-space:nowrap;border-color:var(--border);}
+.fv-tags .big{border-color:var(--big);color:var(--big);}
+.fv-tags .coll{border-color:var(--coll);color:var(--coll);}
+.fv-tags .caught{border-color:var(--caught-line);color:var(--caught-hi)}
+.fv-x{position:absolute;top:-6px;right:-8px;width:28px;height:28px;border:0;background:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer} /* the dialogs' close button */
+.fv-x:hover{color:var(--accent-hi)}
+.fv-facts{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;margin:14px 0 0;padding:12px 0 0;border-top:1px solid rgba(226,194,122,.3);font-size:13px;border-top-color:var(--line);}
+.fv-facts dt{color:var(--muted)}
+.fv-facts dd{margin:0;overflow-wrap:anywhere}
+.fv-facts dd.pending{color:var(--muted);font-style:italic}
+.fv-bait{line-height:1.9}
+.fv-bait-item{white-space:nowrap}
+.fv-bait-item img{width:20px;height:20px;border-radius:var(--r-sm);vertical-align:-5px;margin-right:4px}
+.fv-arrow{color:var(--accent-dim);margin:0 2px}
+.fv-or{color:var(--muted);font-size:12px}
+.fv-spots{color:var(--muted);font-size:12px;font-style:italic}
+.fv-desc{margin-top:12px;padding:8px 10px;border-radius:var(--r);background:var(--inset-bg);border:1px solid var(--line);font-size:13px;line-height:1.55}
+.fv-desc:empty{display:none}
+.fv-desc .note{margin-top:6px;color:var(--muted);font-size:12px}
+.fv-desc .loading{color:var(--muted);font-style:italic}
+
+/* import summary notice (also .import-result), shown after the dialog closes */
+.toast{position:fixed;left:50%;bottom:20px;z-index:20;width:min(440px,calc(100vw - 32px));margin:0;padding:10px 34px 10px 12px;opacity:0;transform:translate(-50%,12px);pointer-events:none;transition:opacity .2s,transform .2s;}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast-x{position:absolute;top:4px;right:6px;width:24px;height:24px;border:0;background:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer}
+.toast-x:hover{color:var(--accent-hi)}
+.import-dialog .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}

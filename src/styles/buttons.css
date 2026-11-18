@@ -1,0 +1,48 @@
+/* buttons: one family. Default, primary (pale blue, once per view), danger (red), small */
+.btn{height:30px;padding:0 14px;cursor:pointer;font:600 13px var(--sans);}
+.btn:hover{border-color:var(--accent-hi);}
+
+.btn.small{height:26px;padding:0 10px;font-size:12px}
+.bulk{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.bulk[hidden]{display:none}
+.confirm-dialog{width:min(400px,calc(100vw - 32px))}
+.confirm-dialog .hint{font-size:13px;color:var(--text);margin-bottom:14px}
+.confirm-dialog .hint b{color:var(--text)}
+
+.btn.danger:hover{color:var(--on-danger);filter:brightness(1.08)}
+
+@media (max-width:520px){
+  
+  .ac-row,.tm-row,.lr-step{padding:8px}
+  
+  
+
+  
+
+  
+  
+  .ac-status{grid-column:2}
+
+  .grid{gap:3px;padding:6px}
+  /* one row: page numbers (5 slots), search icon, Edit, Import, Filter; an open search drops to its own row */
+  .toolbar{flex-wrap:wrap;gap:6px 4px}
+  /* the page slots share what's left of the row equally (capped at a normal button), so they always fit and keep
+     the same widths from page to page, so the arrows never move */
+  .pages{flex:1 1 0;min-width:0;gap:2px}
+  .toolbar .spacer{display:none} /* the page numbers take the spare width instead */
+  .pages > *{flex:1 1 0;min-width:0;max-width:32px;padding:0}
+  .pages .pg.arrow{flex-grow:.7;max-width:24px}
+  .pages > .gap{min-width:0} /* the "…" shares the width like a page button */
+  .pg{font-size:12px}
+  
+  .search:focus,.search:not(:placeholder-shown){order:10;flex:1 1 100%}
+  .tile.caught::after{width:11px;height:11px;right:0;bottom:0}
+  .legend{display:flex;flex-direction:column;gap:2px} /* stacked, as before; fixed width so it never shifts */
+  .legend span{margin-left:0}
+}
+
+/* very narrow phones (≤360px): tighter page buttons, smaller title */
+@media (max-width:360px){
+  
+  
+}

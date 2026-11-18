@@ -1,0 +1,76 @@
+/* ===================== Page chrome =====================
+   After "A Fisher's Guide to Eorzea": a paper-textured page, each page's content on a raised sheet, flat cards with
+   square corners and a faint shadow, round charcoal (light) / paper (dark) buttons. Light and dark mode come from the
+   tokens above (html[data-theme], switched by the sun/moon button in the title bar). */
+
+/* the Carrd's paper texture (src/assets/bg.jpg, unaltered) over the page with soft-light, so it shows on the page colour in
+   both modes. Exactly the screen (the large-viewport height, so phone toolbars sliding in and out don't rescale it); the
+   photo (1668 × 2160) keeps its shape and covers it with 6px to spare on each side, so the photo's own dark edge is clipped */
+body::before{content:"";position:fixed;top:0;left:0;width:100%;height:100vh;height:100lvh;z-index:-1;pointer-events:none;mix-blend-mode:soft-light;opacity:var(--paper-strength);
+  background:var(--paper-tex) center no-repeat;background-size:max(calc(100% + 12px),calc((100lvh + 12px) * 1668 / 2160)) auto}
+
+
+/* the window is the page itself (no frame); the title is large Neuton */
+
+.progress{font:13px var(--sans);color:var(--muted)}
+.body{padding:14px 0 18px}
+.theme-btn{order:3;flex:none;width:34px;height:34px;padding:0;border:0;border-radius:50%;cursor:pointer;display:grid;place-items:center;
+  background:var(--accent-fill);color:var(--on-accent)}
+.theme-btn svg{width:18px;height:18px;grid-area:1/1}
+html[data-theme=light] .theme-btn .sun,html[data-theme=dark] .theme-btn .moon{display:none}
+
+@media (max-width:360px){.titlebar h1{font-size:26px}}
+@media (max-width:520px){.titlebar h1{font-size:28px}}
+
+/* controls: round charcoal buttons (like the Carrd's arrow buttons); page numbers as plain numbers, the current one in a circle */
+.btn,.filter-btn{border:0;border-radius:var(--r-pill);background:var(--accent-fill);color:var(--on-accent);font-family:var(--sans)}
+.btn:hover,.filter-btn:hover,.filter-btn.open{color:var(--on-accent);opacity:.85;box-shadow:none}
+.btn.small:hover{color:var(--text)}
+.btn.primary{background:var(--accent-fill);color:var(--on-accent);border:0;font-weight:600;box-shadow:0 1px 0 rgba(0,0,0,.1),0 2px 6px rgba(0,0,0,.15);}
+.btn.primary:hover{color:var(--on-accent);filter:none}
+.btn.danger{background:#b4513a;color:#fff;border:0}
+.toolbar .filter-btn{flex:none;width:30px;height:30px;padding:0;gap:0;justify-content:center}
+.toolbar .filter-btn:hover .label,.toolbar .filter-btn:focus-visible .label{display:none}
+
+.pg:hover{color:var(--text);box-shadow:none;border:0}
+.pg.active{background:var(--accent-fill);color:var(--on-accent);box-shadow:none}
+
+/* items and lists: flat cards with a faint shadow */
+
+.tile.caught{border-color:transparent}
+
+.tm-row,.ac-row,.lr-step,.lr-stat{background:var(--card-bg);border:0;border-radius:0;box-shadow:var(--card-shadow)}
+.tm-row:hover,.ac-group > summary:hover > .ac-row{background:var(--card-hi)}
+.tm-row.up,.ac-row.done,.ac-group > summary > .ac-row.done,.lr-step.up{background:var(--caught-bg);box-shadow:inset 3px 0 0 var(--caught),var(--card-shadow)}
+.lr-step.timed{box-shadow:inset 3px 0 0 var(--big),var(--card-shadow)}
+
+.lr-f,.bv-list li{background:var(--inset-bg);border:0;border-radius:0}
+
+/* type: Neuton for headings, Montserrat for names and big numbers, Rethink Sans for everything else */
+.ac-section h3,.import-dialog h2,.fv-title h2,.bv-body h3,.filter-panel h3{font-family:var(--display);font-weight:400;letter-spacing:0;color:var(--accent-hi);text-shadow:none}
+.import-dialog h2,.fv-title h2{font-size:24px}
+.bv-body h3,.filter-panel h3{font-size:17px}
+.tm-name,.ac-name,.lr-fname,.bv-npc,.tooltip .n,.lr-where b{font-family:var(--title-sans);font-weight:500;color:var(--accent-hi)}
+.tm-clock b,.lr-stat b,.ns-rank{font-family:var(--title-sans);font-weight:500;color:var(--accent-hi);letter-spacing:0}
+
+/* dialogs, menus, notice: the same flat card, raised */
+.import-dialog,.fish-dialog,.filter-panel,.tooltip,.toast{background:var(--panel-deep);border:0;border-radius:0;color:var(--text);box-shadow:var(--shadow-dialog)}
+
+/* each page's content stands apart from the title and page: one raised sheet holding it (for the Fish Guide: toolbar, grid and footer) (a shade
+   lighter than the cards, with a hairline edge and a deeper shadow); the grid sits recessed in it; the Fishing /
+   Spearfishing tabs hang from the sheet in the same colour */
+
+#guideView,#timersView,#achievementsView,#routeView,#shareView{position:relative;margin:4px 0 0;padding:14px 16px 14px;background:var(--sheet);border:1px solid var(--sheet-line);box-shadow:var(--sheet-shadow)}
+#guideView{margin-bottom:-18px} /* the Fishing / Spearfishing tabs hang straight from its bottom edge */
+#guideView .grid{background:var(--card-bg);box-shadow:inset 0 1px 4px rgba(0,0,0,.12)}
+@media (max-width:520px){#guideView,#timersView,#achievementsView,#routeView,#shareView{padding:10px 8px 10px}}
+/* secondary buttons (Mark all caught / uncaught, Re-plan, GatherBuddy, Show more, Import on Achievements, the ✓ on
+   route fish, Close, Cancel…) read clearly as buttons: a solid outline in the text colour, semibold label, a little
+   lift; on hover they fill in. Primary actions stay solid; danger stays red. */
+.btn:not(.primary):not(.danger){
+  background:var(--sheet);color:var(--accent-hi);border:1.5px solid var(--accent);font-weight:600;
+  box-shadow:0 1px 0 rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.1);transition:background .12s,color .12s,transform .08s}
+.btn:not(.primary):not(.danger):hover{background:var(--accent-fill);color:var(--on-accent);opacity:1}
+.btn:not(:disabled):active{transform:translateY(1px)}
+
+.btn:disabled{opacity:.45;cursor:default;box-shadow:none}

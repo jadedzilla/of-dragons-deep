@@ -1,19 +1,19 @@
 #!/usr/bin/env node
-// Downloads the game icon for every fish in data/fish.json from XIVAPI and packs them into sprite sheets:
-//   data/icons/sheet-00.png …  (10×10 icons of 80px each per sheet)
-//   data/icons.json            ({ size, cols, sheets: [file…], icons: { iconId: index } })
+// Downloads the game icon for every fish in src/data/fish.json from XIVAPI and packs them into sprite sheets:
+//   src/assets/icons/sheet-00.png …  (10×10 icons of 80px each per sheet)
+//   src/data/icons.json          ({ size, cols, sheets: [file…], icons: { iconId: index } })
 // Icon i lives in sheet floor(i / 100), cell i % 100. Icons are ordered by first appearance in fish.json,
 // so the default first page of the grid only needs the first sheet.
 //
 // Source: XIVAPI v2 asset endpoint, high-resolution (_hr1, 80×80) icons; falls back to the 40×40 icon, upscaled.
-// Writes PNG sheets; `npm run fetch-icons` then runs webp-sheets.mjs to convert them to WebP (much smaller).
-// Requires Node 18+ and network access to v2.xivapi.com. Usage: npm run fetch-icons
+// Writes PNG sheets; `npm run fetch:icons` then runs webp-sheets.mjs to convert them to WebP (much smaller).
+// Needs network access to v2.xivapi.com. Usage: npm run fetch:icons
 import { readFile, writeFile, mkdir, readdir, unlink } from "node:fs/promises";
 import { decodePng, encodePng } from "./png.mjs";
 
 const SIZE = 80, COLS = 10, PER_SHEET = COLS * COLS, CONCURRENCY = 8;
 const root = new URL("..", import.meta.url);
-const outDir = new URL("data/icons/", root);
+const outDir = new URL("src/assets/icons/", root);
 
 const iconPath = (id, hr) => {
   const s = String(id).padStart(6, "0");
@@ -29,7 +29,7 @@ async function download(url, tries = 4) {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return Buffer.from(await r.arrayBuffer());
     } catch (e) {
-      if (i >= tries) throw new Error(`${url}: ${e.message}`);
+      if (i >= tries) throw new Error(`${url}: ${e.message}`, { cause: e });
       await new Promise(res => setTimeout(res, 500 * 2 ** i));
     }
   }
@@ -53,7 +53,7 @@ async function fetchIcon(id) {
   return lr ? { img: toSize(decodePng(lr)), hr: false } : null;
 }
 
-const { rows, spear = [] } = JSON.parse(await readFile(new URL("data/fish.json", root), "utf8"));
+const { rows, spear = [] } = JSON.parse(await readFile(new URL("src/data/fish.json", root), "utf8"));
 // Fishing icons first, then spearfishing, so adding spearfish never moves an existing icon to another sheet.
 const ids = [...new Set([...rows, ...spear].map(r => r[2]).filter(Boolean))];
 console.log(`Downloading ${ids.length} icons from v2.xivapi.com …`);
@@ -90,7 +90,7 @@ for (let s = 0; s * PER_SHEET < found.length; s++) {
 }
 
 const manifest = { source: "https://v2.xivapi.com/api/asset", fetched: new Date().toISOString().slice(0, 10), size: SIZE, cols: COLS, sheets, icons };
-await writeFile(new URL("data/icons.json", root), JSON.stringify(manifest));
-console.log(`Wrote ${sheets.length} sheets with ${found.length} icons to data/icons/`);
+await writeFile(new URL("src/data/icons.json", root), JSON.stringify(manifest));
+console.log(`Wrote ${sheets.length} sheets with ${found.length} icons to src/assets/icons/`);
 if (lowRes.length) console.log(`  ${lowRes.length} icon(s) only available at 40px (upscaled): ${lowRes.join(", ")}`);
 if (missing.length) console.log(`  ${missing.length} icon(s) not found (placeholder used): ${missing.join(", ")}`);

@@ -1,0 +1,43 @@
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;padding:10px;transition:border-color .15s,box-shadow .15s;background:var(--card-bg);border:0;border-radius:0;box-shadow:var(--card-shadow);}
+.tile{position:relative;aspect-ratio:1;cursor:default;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;transition:transform .08s,border-color .08s;border-color:transparent;border-radius:var(--r);background:var(--tile);box-shadow:none;}
+.tile svg,.tile .ic{width:76%;height:76%;filter:grayscale(.85) brightness(.55);transition:filter .12s}
+.tile .ic{display:block;width:100%;height:100%;border-radius:5px;background-repeat:no-repeat; /* game icons carry their own square backdrop */
+  opacity:0;transition:filter .12s,opacity .4s ease} /* fade in once the sheet/image has loaded (.ready) */
+.tile .ic.ready{opacity:1}
+.tile .ic.instant{transition:filter .12s} /* sheet was already loaded or arrived quickly: no fade */
+.tile:has(.ic){overflow:hidden}
+.grid.editing .tile:not(.empty){cursor:pointer}
+.grid.editing .tile:hover{border-color:var(--accent);transform:none;}
+.grid.editing{border-color:var(--accent-dim);box-shadow:0 0 0 2px var(--big),var(--card-shadow);}
+/* edit toggle */
+.edit-btn.on{background:var(--big);color:#fff;border:0;box-shadow:none} /* Edit on: gold, like the big-fish mark */
+.edit-btn.on:hover{color:#fff;filter:brightness(1.08)}
+#hint b{color:var(--text);font-weight:600}
+.tile:not(.caught):hover .ic,.tile:not(.caught):hover svg{filter:grayscale(.4) brightness(.8)}
+
+.tile.caught svg,.tile.caught .ic{filter:none}
+.tile.caught::after{ /* green checkmark, bottom-right */
+  content:"";position:absolute;right:1px;bottom:1px;width:17px;height:17px;
+  background:var(--caught-check) center/contain no-repeat;filter:drop-shadow(0 0 2px rgba(102,211,110,.45));
+}
+.tile.big::before{
+  content:"";position:absolute;left:3px;top:3px;width:7px;height:7px;transform:rotate(45deg);
+  background:var(--big);box-shadow:0 0 0 1px #000;
+}
+.tile.empty{border-color:var(--line);box-shadow:none;background:var(--tile);opacity:.5;}
+
+.tooltip{position:fixed;pointer-events:none;z-index:10;display:none;max-width:220px;padding:6px 10px;font-size:12px;line-height:1.45;}
+.tooltip .n{font-size:13px;}
+.tooltip .m{color:var(--muted)}
+.tooltip .t{color:var(--accent)}
+.footer .note{font-size:11px;margin-top:2px}
+.footer .note.offline{color:var(--warn)}
+.footer .showing{color:var(--accent)}
+.footer{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font-size:12px;color:var(--muted)}
+.footer > :first-child{flex:1;min-width:0}
+.legend{flex:none} /* fixed width, so the legend never shifts with the text beside it (e.g. when switching tabs) */
+.legend span{margin-left:12px;white-space:nowrap}
+.legend span.off{visibility:hidden}
+.legend i{display:inline-block;width:8px;height:8px;margin-right:4px;vertical-align:middle}
+.legend i.check{width:13px;height:13px;margin-top:-2px;background:var(--caught-check) center/contain no-repeat}

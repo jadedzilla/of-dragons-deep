@@ -1,0 +1,105 @@
+/* Fish Timers page */
+/* page headers (Timers, Achievements, Log Route, Share) share spacing: 12px below, 8px/16px gaps */
+.tm-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-bottom:8px}
+.tm-clock{font-size:13px;color:var(--muted);margin-right:auto}
+.tm-clock b{font:700 18px var(--display);margin-left:4px;font-variant-numeric:tabular-nums;} /* big numbers */
+.tm-search{flex:0 1 200px}
+.tm-opt{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap}
+.tm-opt input{accent-color:var(--accent)}
+.tm-summary{font-size:12px;color:var(--muted);margin:2px 0 12px}
+/* list cards (timers, achievements, route steps): the same card, 6px apart; live/done ones turn green */
+.tm-list{display:flex;flex-direction:column;gap:6px;min-height:120px}
+.tm-row{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:10px;width:100%;padding:8px 10px;text-align:left;font:13px var(--sans);color:var(--text);cursor:pointer;}
+.tm-row:hover{border-color:var(--accent-dim)}
+.tm-row.up{border-color:var(--caught-line);}
+.tm-icon{width:44px;height:44px;border-radius:var(--r);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.tm-icon svg{width:80%;height:80%}
+.tm-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tm-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tm-big{display:inline-block;width:7px;height:7px;margin:0 6px 1px 1px;transform:rotate(45deg);background:var(--big);box-shadow:0 0 0 1px #000}
+.tm-zone{font-size:12px;color:var(--muted)}
+.tm-cond{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:12px;color:var(--muted)}
+.tm-hours{font-variant-numeric:tabular-nums}
+.tm-weather{display:inline-flex;align-items:center;gap:3px}
+.tm-w{width:20px;height:20px}
+.tm-arrow{margin:0 2px;color:var(--accent-dim)}
+.tm-wn{font-style:italic}
+.tm-status{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;font-size:12px;color:var(--muted);white-space:nowrap}
+.tm-status b{color:var(--text);font-variant-numeric:tabular-nums}
+.tm-up{font-weight:600;color:var(--caught-hi)}
+.tm-at{font-size:11px}
+/* Log Route page (some .ns-* helpers shared) */
+.ns-intro{font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.5}
+.ns-intro b{color:var(--text);font-weight:600}
+.ns-list{display:flex;flex-direction:column;gap:12px;min-height:120px}
+.ns-rank{font:700 18px var(--display);min-width:18px;text-align:center;line-height:44px;}
+.ns-ficon{flex:none;width:40px;height:40px;padding:0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.ns-ficon:hover{border-color:var(--accent-dim)}
+.ns-ficon svg{width:80%;height:80%}
+.ns-mark{flex:none}
+.ns-item{white-space:nowrap;color:var(--text)}
+.ns-item img{width:18px;height:18px;border-radius:var(--r-sm);vertical-align:-4px;margin-right:3px}
+.ns-alt{color:var(--muted)}
+.ns-more-ach{align-self:center}
+/* header: summary tiles, notes about timed fish, a toolbar, and the planning notes folded away */
+.lr-head{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.lr-stats{display:flex;flex-wrap:wrap;gap:6px}
+.lr-stat{flex:1 1 0;min-width:110px;display:flex;flex-direction:column;gap:3px;padding:8px 10px;}
+.lr-stat b{font:700 18px/1.2 var(--display);font-variant-numeric:tabular-nums;}
+.lr-stat span{font-size:12px;color:var(--muted)}
+.lr-stat.lr-done b{font-size:17px}
+.lr-head-notes:empty{display:none}
+.lr-head-notes{display:flex;flex-direction:column;gap:3px;margin-top:-2px}
+.lr-leftout{font-size:12px;color:var(--muted)}
+.lr-leftout b{color:var(--text)}
+.lr-missed{font-size:12px;color:var(--warn)}
+.lr-missed b{color:var(--warn)}
+.lr-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:8px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-color:var(--line);}
+.lr-actions{display:flex;flex-wrap:wrap;gap:8px}
+.lr-about summary{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer;list-style:none}
+.lr-about summary::-webkit-details-marker{display:none}
+.lr-about summary::before{content:"";width:5px;height:5px;border-right:1.5px solid var(--accent);border-bottom:1.5px solid var(--accent);transform:rotate(-45deg);transition:transform .15s ease}
+.lr-about[open] summary::before{transform:rotate(45deg)}
+.lr-about summary:hover{color:var(--accent-hi)}
+.lr-about .ns-intro{margin:6px 0 0}
+@media (max-width:520px){.lr-stat{min-width:0}.lr-actions .btn{padding:0 10px}#lrGbrAll{display:none} /* GatherBuddy is a PC plugin: desktop only */}
+@media (max-width:350px){.lr-stat:first-child{flex-basis:100%}}
+.lr-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.lr-step{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 10px;}
+.lr-step.up{border-color:var(--caught-line);}
+.lr-step .ns-rank{line-height:22px}
+.lr-body{min-width:0}
+.lr-when{font-weight:600;color:var(--big);font-style:italic;text-transform:none;letter-spacing:0;font-family:var(--title-sans);font-size:12px;}
+.lr-where{font-size:13px;color:var(--text)}
+
+.lr-notes{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.6}
+.lr-notes b{color:var(--text);font-weight:600}
+.lr-sub{margin-top:8px;font-size:12px;color:var(--info);font-weight:600}
+/* inset rows (fish in a route step, vendors in the bait view): flat dark rows inside a card or dialog, 4px apart */
+.lr-fish{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
+.lr-f{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;}
+.lr-f .ns-ficon{width:34px;height:34px}
+.lr-fmain{flex:1;min-width:0;font-size:12px;line-height:1.55}
+.lr-fname{font-size:13px;}
+.lr-tags{font-weight:400;font-size:12px;color:var(--info)}
+.lr-bait{color:var(--text)}
+.lr-f .ns-mark{padding:0 8px}
+#lrGbrAll.done{border-color:var(--caught-line);color:var(--caught-hi)}
+.lr-copy{width:13px;height:13px;margin-right:5px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linejoin:round}
+/* Bait chips (open the bait view) and the bait view */
+.bait-link{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:left;text-decoration:underline dotted var(--muted);text-underline-offset:3px;text-decoration-color:var(--muted);}
+.bait-link:hover{text-decoration-color:var(--accent-hi);color:var(--accent-hi);}
+.bait-link img{cursor:pointer}
+.bv-body h3{margin:14px 0 6px;font:700 13px var(--display);} /* sub-headings (bait view, filter panel) */
+.bv-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.bv-list li{display:grid;grid-template-columns:1fr auto;gap:0 10px;padding:6px 8px;font-size:13px;}
+
+.bv-where{grid-column:1;color:var(--muted);font-size:12px}
+.bv-xy{white-space:nowrap}
+.bv-price{grid-column:2;grid-row:1 / span 2;align-self:center;white-space:nowrap;color:var(--text);font-size:13px;font-variant-numeric:tabular-nums}
+.bv-price img{width:16px;height:16px;vertical-align:-3px;margin-right:3px}
+.bv-more{margin-top:4px}
+.bv-more summary{cursor:pointer;font-size:12px;color:var(--accent);padding:2px 0}
+.bv-more .bv-list{margin-top:4px}
+.bv-note{margin-top:12px;font-size:12px;color:var(--muted)}
+.bv-body .loading{color:var(--muted);font-style:italic;font-size:13px;margin-top:10px}

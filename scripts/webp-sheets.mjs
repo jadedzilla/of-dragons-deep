@@ -1,23 +1,17 @@
 #!/usr/bin/env node
-// Converts the icon sprite sheets (data/icons/sheet-NN.png, written by fetch-icons.mjs) to WebP and points
-// data/icons.json at them. WebP at quality 0.82 is ~5× smaller (≈145 KB vs ≈750 KB per sheet) and visually
+// Converts the icon sprite sheets (src/assets/icons/sheet-NN.png, written by fetch-icons.mjs) to WebP and points
+// src/data/icons.json at them. WebP at quality 0.82 is ~5× smaller (≈145 KB vs ≈750 KB per sheet) and visually
 // indistinguishable at the size tiles are shown, so pages load much faster.
 //
-// Node can't encode WebP itself, so this uses a headless Chromium via Playwright, a dev-only dependency that is
-// needed just for refreshing icons; the app itself has no dependencies.
-//   npm install && npx playwright install chromium   (once)
-//   npm run fetch-icons                              (runs fetch-icons.mjs, then this)
+// Node can't encode WebP itself, so this uses headless Chromium via Playwright (a dev dependency).
+// Runs as part of npm run fetch:icons.
 import { readFile, writeFile, unlink } from "node:fs/promises";
-import { createRequire } from "node:module";
+import { chromium } from "@playwright/test";
 
 const QUALITY = 0.82;
 const root = new URL("..", import.meta.url);
-const dir = new URL("data/icons/", root);
-const manifestUrl = new URL("data/icons.json", root);
-
-let chromium;
-try { ({ chromium } = createRequire(import.meta.url)("playwright")); } // require() also honours NODE_PATH
-catch { console.error("Playwright is needed to write WebP sheets: run `npm install && npx playwright install chromium`."); process.exit(1); }
+const dir = new URL("src/assets/icons/", root);
+const manifestUrl = new URL("src/data/icons.json", root);
 
 const manifest = JSON.parse(await readFile(manifestUrl, "utf8"));
 const browser = await chromium.launch();

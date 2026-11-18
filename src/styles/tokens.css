@@ -1,0 +1,57 @@
+:root{
+  /* Theme tokens: use these by role instead of raw values, so both modes stay consistent. Colours are per mode below;
+     these are shared. Fonts: Neuton (titles, headings), Montserrat (names, numbers, navigation), Rethink Sans (text). */
+  --display:Neuton,Georgia,serif; --title-sans:Montserrat,"Noto Sans",sans-serif; --sans:"Rethink Sans","Noto Sans",sans-serif;
+  --r-sm:2px; --r:3px; --r-lg:3px; --r-pill:999px;
+  --on-danger:#1b0b06;
+  /* the paper texture: the Carrd's background photo, used exactly as it is (src/assets/bg.jpg) */
+  --paper-tex:url("../assets/bg.jpg");
+  --caught-check:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12.5l5 5L20 6.5' stroke='%23000' stroke-width='7' stroke-opacity='.75'/%3E%3Cpath d='M4 12.5l5 5L20 6.5' stroke='%2366d36e' stroke-width='3.6'/%3E%3C/svg%3E");
+}
+html[data-theme=light]{
+  /* Light mode: greige paper page, warm stone cards, charcoal ink */
+  color-scheme:light;
+  /* page and surfaces */
+  --bg1:#c9c8c4; --bg-lift:#dcdbd7; --paper-strength:1; --sheet:#eeede7; --sheet-line:rgba(0,0,0,.07);
+  --sheet-shadow:0 .9rem 2.4rem rgba(0,0,0,.13),0 1px 3px rgba(0,0,0,.08); --card:#e0ded7; --card-bg:#e0ded7;
+  --card-hi:#e8e6df; --card-shadow:0 .5rem 1.75rem .125rem rgba(0,0,0,.045); --inset-bg:#eae8e2;
+  --well-bg:transparent; --panel-deep:#e6e4dd; --input:#f2f1ec; --tile:#d3d1ca; --tile-hi:#dcdad3;
+  --control-bg:#e0ded7;
+  /* text and lines */
+  --text:#2b2b2b; --text-soft:#444; --muted:#637185; --placeholder:#8b93a0; --line:rgba(0,0,0,.09);
+  --border:rgba(0,0,0,.14);
+  /* accent: charcoal in light mode, paper in dark mode (selected page, page number, buttons) */
+  --accent:#333333; --accent-dim:#9b9890; --accent-hi:#171717; --accent-pale:#000; --accent-fill:#333333;
+  --on-accent:#ffffff;
+  /* what a fish is (gold big fish, blue collectables, silver the rest) and states */
+  --big:#a77d22; --coll:#3e6cb3; --coll-glow:rgba(62,108,179,.45); --plain:#8a929c; --caught:#2f8f3a;
+  --caught-hi:#2f8f3a; --caught-line:rgba(47,143,58,.45); --caught-bg:#dce5d6; --info:#3e6cb3;
+  --info-line:rgba(62,108,179,.4); --warn:#9a6214; --warn-line:#c99b56;
+  /* depth */
+  --shadow-dialog:0 1rem 2.5rem rgba(0,0,0,.18); --shadow-float:0 .5rem 1.75rem rgba(0,0,0,.12);
+  --shimmer:linear-gradient(100deg,rgba(0,0,0,.04) 30%,rgba(0,0,0,.09) 50%,rgba(0,0,0,.04) 70%);
+}
+html[data-theme=dark],.gacha-dialog{
+  /* Dark mode: charcoal page, dark warm-grey cards, paper-coloured ink. The import reveal always uses it, in both modes */
+  color-scheme:dark;
+  /* page and surfaces */
+  --bg1:#141414; --bg-lift:#1c1c1c; --paper-strength:1; --sheet:#2c2b27; --sheet-line:rgba(255,255,255,.07);
+  --sheet-shadow:0 .9rem 2.4rem rgba(0,0,0,.5),0 1px 3px rgba(0,0,0,.4); --card:#262522; --card-bg:#262522;
+  --card-hi:#2e2d29; --card-shadow:0 .5rem 1.75rem .125rem rgba(0,0,0,.35); --inset-bg:#1f1e1b;
+  --well-bg:transparent; --panel-deep:#24231f; --input:#1b1b19; --tile:#1c1c1a; --tile-hi:#232320;
+  --control-bg:#262522;
+  /* text and lines */
+  --text:#e0ded7; --text-soft:#cfccc4; --muted:#9aa3b2; --placeholder:#6f7682; --line:rgba(255,255,255,.08);
+  --border:rgba(255,255,255,.14);
+  /* accent: charcoal in light mode, paper in dark mode (selected page, page number, buttons) */
+  --accent:#e0ded7; --accent-dim:#6d6a62; --accent-hi:#f4f2ec; --accent-pale:#fff; --accent-fill:#e0ded7;
+  --on-accent:#171717;
+  /* what a fish is (gold big fish, blue collectables, silver the rest) and states */
+  --big:#e2c27a; --coll:#8fb8ea; --coll-glow:rgba(143,184,234,.45); --plain:#c8ccd2; --caught:#7fc98a;
+  --caught-hi:#9be3a0; --caught-line:rgba(127,201,138,.45); --caught-bg:#24302a; --info:#8fb8ea;
+  --info-line:rgba(143,184,234,.4); --warn:#e6c08a; --warn-line:#a8763a;
+  /* depth */
+  --shadow-dialog:0 1rem 2.5rem rgba(0,0,0,.6); --shadow-float:0 .5rem 1.75rem rgba(0,0,0,.5);
+  --shimmer:linear-gradient(100deg,rgba(255,255,255,.03) 30%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.03) 70%);
+}
+*{box-sizing:border-box}

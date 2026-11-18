@@ -1,4 +1,4 @@
-<img src="public/ofdragonsdeep-banner.png" alt="Of Dragons Deep logo, featuring the Nepto Dragon from Final Fantasy III" width="488" height="128"/>
+<img src="docs/banner.png" alt="Of Dragons Deep logo, featuring the Nepto Dragon from Final Fantasy III" width="488" height="128"/>
 
 **Of Dragons Deep** is a fishing tracker. Yes, another one.
 
@@ -8,14 +8,18 @@ Track the fish you've caught in Final Fantasy XIV and work toward the big fishin
 
 ## Run it
 
-Requires [Node.js](https://nodejs.org) 18 or newer. No `npm install` needed to run or build: the app has no dependencies. (Only `npm run fetch-icons` and `npm test` use a dev tool, Playwright.)
+Requires [Node.js](https://nodejs.org) 20 or newer. Built with React and Vite.
 
 ```sh
+npm install
 npm run dev          # open http://localhost:5173
-npm run fetch-data   # refresh the offline fallback data/fish.json from XIVAPI
-npm run fetch-icons  # refresh fish icons (data/icons/) from XIVAPI (needs `npm install` first: Playwright, for WebP)
-npm run build        # single-file build at dist/index.html
-npm test             # run the tests (Playwright + Chromium; no network needed)
+npm run build        # production build in dist/ (npm run preview serves it)
+npm test             # unit and component tests
+npm run lint         # ESLint
+npm run test:e2e     # end-to-end tests in Chromium (no network needed)
+npm run fetch:fish   # refresh the offline fallback src/data/fish.json from XIVAPI
+npm run fetch:icons  # refresh the fish icon sheets from XIVAPI
+npm run fetch:baits  # refresh where to get each bait
 ```
 
 Fish data is loaded live from the game data on XIVAPI each time the app opens; a bundled snapshot is used if it can't be reached.

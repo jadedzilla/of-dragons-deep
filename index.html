@@ -4,167 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Of Dragons Deep</title>
-<link rel="icon" type="image/png" href="public/neptodragon-icon-clean-512x.png">
-<!-- added to the home screen: open full screen like an app (no address bar) -->
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="/neptodragon-icon-clean-512x.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#c9c8c4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Dragons Deep">
-<link rel="apple-touch-icon" href="public/app-icon-180.png">
+<link rel="apple-touch-icon" href="/app-icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Sans:wght@400;600&family=Montserrat:ital,wght@0,500;1,500&family=Rethink+Sans:ital,wght@0,400;0,600;1,400&family=Neuton:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
-<script>/* light or dark: the saved choice, else the device's setting; set before the first paint */try{document.documentElement.dataset.theme=localStorage.getItem("odd-theme")||(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark")}catch{document.documentElement.dataset.theme="dark"}</script>
-<link rel="stylesheet" href="src/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600&family=Montserrat:ital,wght@0,500;1,500&family=Rethink+Sans:ital,wght@0,400;0,600;1,400&family=Neuton:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<!-- light or dark: the saved choice, else the device's setting; set before the first paint -->
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("odd-theme")||(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark")}catch{document.documentElement.dataset.theme="dark"}</script>
 </head>
 <body>
-<nav class="topnav" id="topnav" aria-label="Pages">
-  <a href="#guide" data-view="guide" aria-current="page">Fish Guide</a>
-  <a href="#timers" data-view="timers">Fish Timers</a>
-  <a href="#achievements" data-view="achievements">Achievements</a>
-  <a href="#route" data-view="route">Log Route</a>
-  <a href="#share" data-view="share">Share</a>
-</nav>
-<div class="window">
-  <div class="titlebar">
-    <h1>Of Dragons Deep</h1>
-    <button class="theme-btn" id="themeBtn" type="button" aria-label="Switch between light and dark mode" title="Light / dark mode"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
-    <div class="progress"><b id="caughtCount">0</b> / <span id="totalCount">0</span> caught</div>
-  </div>
-  <div class="body">
-    <div id="guideView">
-    <div class="toolbar">
-      <div class="pages" id="pages"></div>
-      <input class="search" id="search" type="search" placeholder="Search fish or zone…" autocomplete="off" aria-label="Search fish or zone" title="Search">
-      <div class="spacer"></div>
-      <button class="filter-btn edit-btn" id="editBtn" type="button" aria-pressed="false" aria-label="Edit mode: turn on to mark fish as caught">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.2V21h3.8l11-11-3.8-3.8zM20.7 7a1 1 0 0 0 0-1.4l-2.3-2.3a1 1 0 0 0-1.4 0l-1.8 1.8 3.8 3.8z"/></svg>
-        <span class="label">Edit</span>
-      </button>
-      <button class="filter-btn" id="importBtn" type="button" aria-label="Import fish and achievements">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11 16h2V6.8l3.3 3.3 1.4-1.4L12 3 6.3 8.7l1.4 1.4L11 6.8zM4 18h16v2H4z"/></svg>
-        <span class="label">Import</span>
-      </button>
-      <button class="filter-btn" id="filterBtn" type="button" aria-label="Filter">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>
-        <span class="label">Filter</span> <span class="count" id="filterCount">0</span>
-      </button>
-      <div class="filter-panel" id="filterPanel">
-        <h3>Status</h3>
-        <label><input type="radio" name="status" value="all" checked> All</label>
-        <label><input type="radio" name="status" value="caught"> Caught</label>
-        <label><input type="radio" name="status" value="uncaught"> Not caught</label>
-        <h3>Category</h3>
-        <div id="expFilters"></div>
-        <h3>Type</h3>
-        <label><input type="checkbox" id="bigOnly"> Big fish only</label>
-        <label><input type="checkbox" id="collOnly"> Collectables only</label>
-        <button class="reset" id="resetFilters" type="button">Reset filters</button>
-      </div>
-    </div>
-
-    <div class="grid" id="grid"><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><span class="sr-only" role="status">Loading the Fish Guide from XIVAPI…</span></div>
-
-    <div class="footer">
-      <div><span id="hint">Turn on <b>Edit</b> to mark fish as caught.</span> <span id="showing" class="showing"></span>
-        <div class="bulk" id="bulkBar" hidden>
-          <button type="button" class="btn small" id="markAllBtn">Mark all caught</button>
-          <button type="button" class="btn small" id="unmarkAllBtn">Mark all uncaught</button>
-        </div>
-        <div id="dataNote" class="note"></div></div>
-      <div class="legend">
-        <span id="bigLegend"><i style="background:var(--big);transform:rotate(45deg)"></i>Big fish</span>
-        <span><i class="check"></i>Caught</span>
-      </div>
-    </div>
-    </div>
-    <section id="timersView" class="timers" hidden aria-label="Fish timers"></section>
-    <section id="achievementsView" class="achievements" hidden aria-label="Fishing achievements"></section>
-    <section id="routeView" class="logroute" hidden aria-label="Fishing log route"></section>
-    <section id="shareView" class="share" hidden aria-label="Share your progress"></section>
-  </div>
-  <div class="tabs" id="tabs" role="tablist" aria-label="Guide">
-    <button class="tab active" type="button" role="tab" aria-selected="true" data-mode="fish">Fishing</button>
-    <button class="tab" type="button" role="tab" aria-selected="false" data-mode="spear">Spearfishing</button>
-  </div>
-</div>
-<dialog class="import-dialog" id="importDialog">
-  <form method="dialog" id="importForm">
-    <h2>Import</h2>
-    <p class="hint">Imports your <b>caught fish</b> and <b>fishing achievements</b> (with in-game progress) from the
-      Of Dragons Deep plugin. In game, type <code>/dragonsdeep</code>, click <b>Copy JSON</b> and paste it here.
-      <b>Copy tracker link</b> opens this with everything filled in.</p>
-    <textarea id="importText" rows="6" placeholder='{"source":"OfDragonsDeep","version":2,"fish":[…],"achievements":[…]}' spellcheck="false"></textarea>
-    <div class="modes">
-      <label><input type="radio" name="importMode" value="replace" checked> Replace my fish and achievements with this export</label>
-      <label><input type="radio" name="importMode" value="add"> Add to my fish and achievements</label>
-    </div>
-    <div class="import-result" id="importResult" role="status"></div>
-    <div class="actions">
-      <button type="button" class="btn" id="importCancel">Close</button>
-      <button type="submit" class="btn primary" id="importGo" value="import">Import</button>
-    </div>
-  </form>
-</dialog>
-<dialog class="import-dialog confirm-dialog" id="bulkDialog" aria-labelledby="bulkTitle">
-  <form method="dialog">
-    <h2 id="bulkTitle"></h2>
-    <p class="hint" id="bulkText"></p>
-    <div class="actions">
-      <button type="submit" class="btn" value="cancel" id="bulkCancel">Cancel</button>
-      <button type="submit" class="btn primary" value="confirm" id="bulkGo"></button>
-    </div>
-  </form>
-</dialog>
-<dialog class="gacha-dialog" id="gachaDialog" aria-label="New fish caught"></dialog>
-<dialog class="fish-dialog bait-dialog" id="baitDialog" aria-labelledby="bvName" tabindex="-1">
-  <div class="fv-head">
-    <div class="fv-icon bv-icon" id="bvIcon"></div>
-    <div class="fv-title"><h2 id="bvName"></h2><div class="fv-tags"><span>Bait</span></div></div>
-    <button type="button" class="fv-x" id="bvClose" aria-label="Close">×</button>
-  </div>
-  <div class="bv-body" id="bvBody"></div>
-</dialog>
-<dialog class="fish-dialog" id="fishDialog" aria-labelledby="fvName" tabindex="-1">
-  <div class="fv-head">
-    <div class="fv-icon" id="fvIcon"></div>
-    <div class="fv-title">
-      <h2 id="fvName"></h2>
-      <div class="fv-tags" id="fvTags"></div>
-    </div>
-    <button type="button" class="fv-x" id="fvClose" aria-label="Close">×</button>
-  </div>
-  <dl class="fv-facts" id="fvFacts"></dl>
-  <div class="fv-desc" id="fvDesc"></div>
-</dialog>
-<div class="tooltip" id="tooltip"></div>
-<div class="toast import-result" id="toast" role="status" aria-live="polite"></div>
-<footer class="credit">created with 🐟 by jadedzilla</footer>
-<script>
-// Light / dark mode switch in the title bar; the choice is remembered (odd-theme)
-document.querySelector("#themeBtn").addEventListener("click", () => {
-  const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
-  document.documentElement.dataset.theme = next;
-  try { localStorage.setItem("odd-theme", next); } catch {}
-});
-</script>
-<script>
-// Until the app has loaded the fish list and started, show the page in the address with a loading placeholder
-// (instead of the Fish Guide's). The app replaces it when the page is ready.
-(() => {
-  const view = { "#timers": "timers", "#achievements": "achievements", "#route": "route", "#share": "share" }[location.hash];
-  if (!view) return;
-  for (const sel of ["#guideView", ".progress", "#tabs"]) document.querySelector(sel).hidden = true;
-  document.querySelectorAll("#topnav a").forEach(a => a.toggleAttribute("aria-current", a.dataset.view === view));
-  const row = '<div class="sk-row"><i class="sk sk-ic"></i><div class="sk-col"><i class="sk sk-line" style="width:40%"></i><i class="sk sk-line sm" style="width:65%"></i></div></div>';
-  const section = document.querySelector(`#${view}View`);
-  section.hidden = false;
-  section.innerHTML = (view === "share" ? '<i class="sk sk-card"></i>' : '<i class="sk sk-line lg" style="width:35%"></i>' + row.repeat(6))
-    + '<span class="sr-only" role="status">Loading…</span>';
-})();
-</script>
-<script type="module" src="src/main.js"></script>
+<div id="root"></div>
+<script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
