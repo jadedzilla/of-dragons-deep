@@ -12,6 +12,7 @@
 // Each fish carries its route: spot, intuition predators, bait → mooch chain with hookset/tug, lures, snagging,
 // minimum Gathering and the window (timers engine). Spearfish aren't part of the fishing log and aren't planned.
 
+import { skeleton } from "./skeleton.js";
 import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
 import { baitChains, loadTeamcraft, xivAsset, xivRows } from "./teamcraft.js";
 import { getTimerData, nextWindow, tmDuration, tmEtHour, tmLocal } from "./timers.js";
@@ -29,7 +30,7 @@ const STEP_PAGE = 15;
 
 /**
  * A GatherBuddy Reborn auto-gather list in its clipboard format (AutoGatherList.Config.ToBase64, version 6):
- * base64 of gzip([6] + UTF-8 JSON). Fish are pinned to the route's fishing spot (PrefferedLocations — their spelling;
+ * base64 of gzip([6] + UTF-8 JSON). Fish are pinned to the route's fishing spot (PrefferedLocations, their spelling;
  * GatherBuddy's location id for line fishing is the FishingSpot row id) and asked for once each. The list is imported
  * disabled, so several steps can be imported without all running at once.
  */
@@ -58,7 +59,7 @@ export function loadOceanRoutes() {
   const schema = `schema=${encodeURIComponent(XIVAPI_SCHEMA)}`;
   const get = url => fetch(url).then(r => { if (!r.ok) throw new Error(`XIVAPI HTTP ${r.status}`); return r.json(); });
   oceanRoutesPromise ??= Promise.all([
-    // @as(raw): just the row ids — plain SpotMain/Spot would expand whole FishingSpot rows (~730 KB instead of ~9 KB)
+    // @as(raw): just the row ids; plain SpotMain/Spot would expand whole FishingSpot rows (~730 KB instead of ~9 KB)
     get(`${XIVAPI}/sheet/IKDSpot?limit=500&fields=PlaceName.Name,SpotMain@as(raw),SpotSub@as(raw)&${schema}`),
     get(`${XIVAPI}/sheet/IKDRoute?limit=500&fields=Spot@as(raw),Time[].TimeOfDay&${schema}`),
   ]).then(([spots, routes]) => ({
@@ -74,7 +75,7 @@ const lrTimed = e => e.spawn !== undefined || e.weathers?.length || e.weathersFr
 
 /**
  * Plan the route (spotZone: Map(spot → zone id), from Teamcraft's fishing-spots.json, so stops group by the spot's own
- * zone — a fish's other spots can be in another zone; includeTimed: false leaves time/weather-limited fish out).
+ * zone, since a fish's other spots can be in another zone; includeTimed: false leaves time/weather-limited fish out).
  * Returns { steps, left, leftOut (timed fish left out), minutes } where each step is
  *   { kind: "stop", at, spot, fish: [f…] } | { kind: "timed", at, f, e, w } | { kind: "ocean", stop, fish: [f…] }
  *   | { kind: "nowindow", fish } | { kind: "nodata", fish }   (at = planned start, Unix seconds).
@@ -191,7 +192,7 @@ export function planLogRoute({ fish, sources, windows, ocean, oceanCategory, now
 export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fishIcon, onOpen, esc, oceanCategory }) {
   root.innerHTML = `
     <div class="lr-head">
-      <div class="lr-stats" id="lrSummary"></div>
+      <div class="lr-stats" id="lrSummary">${skeleton("routeStats")}</div>
       <div class="lr-head-notes" id="lrNotes"></div>
       <div class="lr-bar">
         <label class="tm-opt" title="Fish that can only be caught at certain Eorzea times or weather"><input type="checkbox" id="lrTimed"> Include timed fish</label>
@@ -205,7 +206,7 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
           limit are grouped into as few fishing spots as possible; with <b>Include timed fish</b> ticked, fish with a catch window are
           slotted in when their window opens. Times are estimates. Ocean fishing comes last, grouped by voyage stop.</div></details>
     </div>
-    <div class="ns-list" id="lrList"><div class="empty-msg">Planning your route…</div></div>
+    <div class="ns-list" id="lrList">${skeleton("route", "Planning your route…")}</div>
     <div class="tm-credit">Places, weather and voyages from XIVAPI game data; spots, bait, hooksets, tugs, intuition and catch windows from
       <a href="https://ffxivteamcraft.com/" target="_blank" rel="noopener">FFXIV Teamcraft</a>. Spearfish aren't planned (separate log, no spot data).</div>`;
   const list = root.querySelector("#lrList"), summary = root.querySelector("#lrSummary"), notes = root.querySelector("#lrNotes");
@@ -273,8 +274,8 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
       const tags = [e?.spot === stop.sub ? "spectral current" : "", t ? IKD_TIME_NAMES[t] : "", e?.weathers?.length ? `<span class="tm-weather">${weatherHtml(e.weathers)}</span>` : ""].filter(Boolean);
       return fishRow(f, e?.spot, tags.length ? ` <span class="lr-tags">${tags.join(" · ")}</span>` : ""); };
     const normal = fish.filter(f => base.sources[f.id]?.[0]?.spot !== stop.sub), spectral = fish.filter(f => base.sources[f.id]?.[0]?.spot === stop.sub);
-    return `<div class="lr-where">Ocean fishing from ${port} — stop <b>${esc(stop.name)}</b> · ${fish.length} fish</div>
-      ${times.length ? `<div class="lr-notes">Time-of-day fish need a voyage that reaches ${esc(stop.name)} then: ${times.map(t => `<b>${IKD_TIME_NAMES[t]}</b> — ${voyages(t).slice(0, 1).join("")}`).join("; ")}.</div>` : ""}
+    return `<div class="lr-where">Ocean fishing from ${port}, stop <b>${esc(stop.name)}</b> · ${fish.length} fish</div>
+      ${times.length ? `<div class="lr-notes">Time-of-day fish need a voyage that reaches ${esc(stop.name)} then: ${times.map(t => `<b>${IKD_TIME_NAMES[t]}</b>: ${voyages(t).slice(0, 1).join("")}`).join("; ")}.</div>` : ""}
       ${normal.length ? `<ol class="lr-fish">${normal.map(row).join("")}</ol>` : ""}
       ${spectral.length ? `<div class="lr-sub">During a spectral current</div><ol class="lr-fish">${spectral.map(row).join("")}</ol>` : ""}`;
   }
@@ -288,7 +289,7 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
     if (step.kind === "stop") {
       const f0 = step.fish[0], baits = [...new Set(step.fish.map(f => chainsAt(f.id, step.spot)[0]?.[0]).filter(Boolean))];
       return `<div class="lr-where">Go to ${spotHtml(step.spot, f0)} · ${step.fish.length} fish</div>
-        <div class="lr-notes">Bring: ${baits.map(itemHtml).join(", ") || "—"}</div>
+        <div class="lr-notes">Bring: ${baits.map(itemHtml).join(", ") || "none"}</div>
         <ol class="lr-fish">${step.fish.map(f => fishRow(f, step.spot)).join("")}</ol>`;
     }
     if (step.kind === "timed") {
@@ -297,7 +298,7 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
       const weather = (t.prev ? weatherHtml([...t.prev]) + `<span class="tm-arrow" title="then">→</span>` : "") + (t.weather ? weatherHtml([...t.weather]) : "");
       return `${n === 1 ? "" : `<div class="lr-when">≈ ${tmLocal(step.at, now)}</div>`}
         <div class="lr-where">Go to ${spotHtml(e.spot, f)} for a timed fish</div>
-        <div class="lr-notes">${[hours, weather && `<span class="tm-weather">${weather}</span>`].filter(Boolean).join(" ")} — <span class="lr-countdown">${windowStatus(w, now)}</span></div>
+        <div class="lr-notes">${[hours, weather && `<span class="tm-weather">${weather}</span>`].filter(Boolean).join(" ")} · <span class="lr-countdown">${windowStatus(w, now)}</span></div>
         <ol class="lr-fish">${fishRow(f, e.spot)}</ol>`;
     }
     if (step.kind === "ocean") return oceanHtml(step);
@@ -405,8 +406,8 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
         + stat(`≈ ${hours >= 1 ? `${Math.round(hours)} h` : `${plan.minutes} min`}`, "of land fishing")
       : `<div class="lr-stat lr-done"><b>Fish Guide complete! 🎉</b></div>`;
     notes.innerHTML = plan.left
-      ? (plan.leftOut ? `<div class="lr-leftout">${n(plan.leftOut)} timed fish not in the route — tick <b>Include timed fish</b> to add them.</div>` : "")
-        + (plan.missed ? `<div class="lr-missed">${plan.missed} timed fish missed ${plan.missed === 1 ? "its" : "their"} window — <b>Re-plan</b> to fit ${plan.missed === 1 ? "it" : "them"} back in.</div>` : "")
+      ? (plan.leftOut ? `<div class="lr-leftout">${n(plan.leftOut)} timed fish not in the route. Tick <b>Include timed fish</b> to add them.</div>` : "")
+        + (plan.missed ? `<div class="lr-missed">${plan.missed} timed fish missed ${plan.missed === 1 ? "its" : "their"} window. <b>Re-plan</b> to fit ${plan.missed === 1 ? "it" : "them"} back in.</div>` : "")
       : "";
     list.innerHTML = plan.left ? `<ol class="lr-steps">${visible.map((s, i) => `<li class="lr-step ${s.kind}${s.kind === "timed" && s.w.start <= now ? " up" : ""}" data-step="${stepId(s)}">
         <span class="ns-rank">${i + 1}</span><div class="lr-body">${i === 0 ? `<div class="lr-when">Next</div>` : ""}${stepHtml(s, i + 1, now)}</div></li>`).join("")}</ol>`
@@ -422,7 +423,7 @@ export function createLogRoute(root, { fishList, byId, isCaught, markCaught, fis
     }, err => {
       loading = null;
       list.innerHTML = `<div class="empty-msg">Couldn't plan the route (${esc(err.message)}). <button type="button" class="btn" id="lrRetry">Try again</button></div>`;
-      root.querySelector("#lrRetry").addEventListener("click", () => { list.innerHTML = `<div class="empty-msg">Planning your route…</div>`; load(); });
+      root.querySelector("#lrRetry").addEventListener("click", () => { list.innerHTML = `${skeleton("route", "Planning your route…")}`; load(); });
     });
     return loading;
   }

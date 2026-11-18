@@ -8,8 +8,7 @@ export default async function (t) {
     if (await p.$eval("#fishDialog", d => d.open)) await p.keyboard.press("Escape");
     await search(p, name);
     await p.click(`.tile[data-id="${id}"]`);
-    await p.waitForFunction(() => document.querySelector("#fishDialog").open && !/…/.test(document.querySelector("#fvFacts").textContent)
-      && !document.querySelector("#fvDesc .loading:not(:empty)")?.textContent.startsWith("Loading"));
+    await p.waitForFunction(() => document.querySelector("#fishDialog").open && !document.querySelector("#fishDialog .sk")); // loaded: no placeholders left
     return p.evaluate(() => ({
       tags: [...document.querySelectorAll("#fvTags span")].map(s => s.textContent),
       facts: Object.fromEntries([...document.querySelectorAll("#fvFacts dt")].map(dt => [dt.textContent, dt.nextElementSibling.textContent.replace(/\s+/g, " ").trim()])),

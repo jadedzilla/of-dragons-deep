@@ -10,7 +10,7 @@
 const FLIP_MS = 1050, FLIP_HALF = .135;
 const CARDS = 10, STRIP = 60, FLIP_GAP = Math.round(FLIP_MS * FLIP_HALF); // ms between cards
 
-/** The explosion, drawn on one screen-sized canvas (.gc-boom) — big CSS/SVG layers scaled past the screen glitch on
+/** The explosion, drawn on one screen-sized canvas (.gc-boom), because big CSS/SVG layers scaled past the screen glitch on
  *  phones. Two layers of light rays (freshly randomised wedges at irregular angles, of varying width and length, with
  *  an empty core, fading in at the inner end and out at the tip) spin out from the bobber at (cx, cy) while a soft
  *  white bloom grows from it to cover the screen, holds, then fades to show the cards. */
@@ -67,7 +67,7 @@ function burst(dialog, cx, cy) {
 }
 
 /** Bubbles that float up the screen as the cards appear: random column, size, sway, speed and start. */
-const BUBBLE_DELAY = .3, BUBBLE_RISE = [.55, .95]; // s: latest start, rise time range — the cards flip once they've all gone
+const BUBBLE_DELAY = .3, BUBBLE_RISE = [.55, .95]; // s: latest start, rise time range; the cards flip once they've all gone
 function bubbles(n = 46) {
   const rnd = (a, b) => (a + Math.random() * (b - a)).toFixed(2);
   return Array.from({ length: n }, () => `<i style="left:${rnd(0, 100)}%;bottom:${rnd(5, 70)}vh;--s:${rnd(70, 240)}px;--d:${rnd(0, BUBBLE_DELAY)}s;--t:${rnd(...BUBBLE_RISE)}s;--x:${rnd(-30, 30)}px"><b></b></i>`).join("");
@@ -77,7 +77,7 @@ function bubbles(n = 46) {
  *  halves in front of it, so it sits inside the rings on the water instead of on top of them. */
 const rings = side => `<i class="gc-splash ${side}"></i>${[0, 1, 2].map(k => `<i class="gc-ripple ${side}" style="--k:${k}"></i>`).join("")}`;
 
-/** Exclamation marks like the game's tugs, by kind of fish: !!! big fish, !! collectable, ! otherwise — on the bobber at
+/** Exclamation marks like the game's tugs, by kind of fish: !!! big fish, !! collectable, ! otherwise. Shown on the bobber at
  *  the bite (for the best fish caught) and on each card's corner. */
 const tierOf = f => f.big ? 3 : f.collectable ? 2 : 1;
 const KIND = ["", "std", "coll", "big"]; // card colour class by tier: silver, blue, gold

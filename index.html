@@ -62,7 +62,7 @@
       </div>
     </div>
 
-    <div class="grid" id="grid"><div class="empty-msg">Loading the Fish Guide from XIVAPI…</div></div>
+    <div class="grid" id="grid"><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><div class="tile sk"></div><span class="sr-only" role="status">Loading the Fish Guide from XIVAPI…</span></div>
 
     <div class="footer">
       <div><span id="hint">Turn on <b>Edit</b> to mark fish as caught.</span> <span id="showing" class="showing"></span>
@@ -139,6 +139,21 @@
 <div class="tooltip" id="tooltip"></div>
 <div class="toast import-result" id="toast" role="status" aria-live="polite"></div>
 <footer class="credit">created with 🐟 by jadedzilla</footer>
+<script>
+// Until the app has loaded the fish list and started, show the page in the address with a loading placeholder
+// (instead of the Fish Guide's). The app replaces it when the page is ready.
+(() => {
+  const view = { "#timers": "timers", "#achievements": "achievements", "#route": "route", "#share": "share" }[location.hash];
+  if (!view) return;
+  for (const sel of ["#guideView", ".progress", "#tabs"]) document.querySelector(sel).hidden = true;
+  document.querySelectorAll("#topnav a").forEach(a => a.toggleAttribute("aria-current", a.dataset.view === view));
+  const row = '<div class="sk-row"><i class="sk sk-ic"></i><div class="sk-col"><i class="sk sk-line" style="width:40%"></i><i class="sk sk-line sm" style="width:65%"></i></div></div>';
+  const section = document.querySelector(`#${view}View`);
+  section.hidden = false;
+  section.innerHTML = (view === "share" ? '<i class="sk sk-card"></i>' : '<i class="sk sk-line lg" style="width:35%"></i>' + row.repeat(6))
+    + '<span class="sr-only" role="status">Loading…</span>';
+})();
+</script>
 <script type="module" src="src/main.js"></script>
 </body>
 </html>

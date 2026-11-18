@@ -1,10 +1,11 @@
 // Fish timers: when each time/weather-restricted fish can next be caught.
 //
 // Catch windows (spawn Eorzea hour + duration, required weather, required previous weather, fishing spot) come
-// from FFXIV Teamcraft's fishing data (see src/teamcraft.js) — the game data has no windows, only yes/no flags.
+// from FFXIV Teamcraft's fishing data (see src/teamcraft.js); the game data has no windows, only yes/no flags.
 // Weather odds per zone come from XIVAPI game data (FishingSpot / SpearfishingNotebook → TerritoryType → WeatherRate).
 // Weather is forecast with the game's own formula (as published in the SaintCoinach library).
 
+import { skeleton } from "./skeleton.js";
 import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
 import { loadTeamcraft, xivAsset, xivRows } from "./teamcraft.js";
 
@@ -169,7 +170,7 @@ export function createTimers(root, { byId, isCaught, fishIcon, onOpen, esc }) {
       <label class="tm-opt"><input type="checkbox" id="tmBigOnly"> Big fish only</label>
     </div>
     <div class="tm-summary" id="tmSummary"></div>
-    <div class="tm-list" id="tmList"><div class="empty-msg">Loading catch windows…</div></div>
+    <div class="tm-list" id="tmList">${skeleton("timers", "Loading catch windows…")}</div>
     <div class="tm-credit">Catch windows from <a href="https://ffxivteamcraft.com/" target="_blank" rel="noopener">FFXIV Teamcraft</a>
       · weather from XIVAPI game data · window times in Eorzea time (ET), countdowns and start times in your local time.</div>`;
   const $t = s => root.querySelector(s);
@@ -231,7 +232,7 @@ export function createTimers(root, { byId, isCaught, fishIcon, onOpen, esc }) {
     }, err => {
       loading = null;
       list.innerHTML = `<div class="empty-msg">Couldn't load the catch windows (${esc(err.message)}). <button type="button" class="btn" id="tmRetry">Try again</button></div>`;
-      $t("#tmRetry").addEventListener("click", () => { list.innerHTML = `<div class="empty-msg">Loading catch windows…</div>`; load(); });
+      $t("#tmRetry").addEventListener("click", () => { list.innerHTML = `${skeleton("timers", "Loading catch windows…")}`; load(); });
     });
     return loading;
   }

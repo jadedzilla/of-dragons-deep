@@ -116,4 +116,16 @@ export default async function (t) {
   await off.route(/v2\.xivapi\.com\/api\/sheet\/(FishParameter|SpearfishingItem|AquariumFish)/, r => r.abort());
   await off.goto(t.url); await gridReady(off);
   t.check("XIVAPI down: snapshot used, amber 'offline snapshot' note", /offline snapshot/.test(await text(off, "#dataNote")) && await off.$eval("#dataNote", e => e.classList.contains("offline")) && (await tileIds(off)).length === 100);
+
+  // loading placeholders: shimmering shapes while data is on its way, replaced by the content when it arrives
+  const lp = await t.page({ path: null });
+  let release; const held = new Promise(r => { release = r; });
+  await lp.route(/sheets=Achievement/, async r => { await held; await r.fallback(); });
+  await lp.goto(t.url + "#achievements");
+  await lp.waitForSelector("#achievementsView .sk");
+  t.check("a page opened directly shows its own placeholder, not the Fish Guide's", await lp.isVisible("#achievementsView .sk") && !(await lp.isVisible("#guideView"))
+    && await lp.$eval('#topnav a[aria-current]', a => a.dataset.view) === "achievements");
+  release();
+  await lp.waitForSelector(".ac-row", { state: "attached" });
+  t.check("…and the content replaces it", !(await lp.$("#achievementsView .sk")));
 }

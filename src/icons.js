@@ -2,7 +2,7 @@
 // Fish added since the sheets were built load their icon straight from XIVAPI; if that fails too
 // (offline, or remote images blocked), main.js swaps in an SVG placeholder.
 //
-// Loading: icons start transparent and appear (CSS .ic.ready) once their sheet has loaded — at once (.instant) if
+// Loading: icons start transparent and appear (CSS .ic.ready) once their sheet has loaded: at once (.instant) if
 // it was already loaded or took under FADE_AFTER_MS, otherwise with a short fade. A sheet is requested the first
 // time a tile needs it, or earlier by prefetchSheets; the browser reuses that download for the CSS background.
 

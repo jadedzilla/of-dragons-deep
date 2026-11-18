@@ -21,7 +21,7 @@ export const T0 = 1794850000;
 export const pluginExport = (fish, achievements) =>
   JSON.stringify({ source: "OfDragonsDeep", version: 2, fish, ...(achievements ? { achievements } : {}) });
 
-/** The plugin's Copy tracker link payload (?import=2.<data>): base64url of raw-DEFLATE'd LEB128 varints — fish count +
+/** The plugin's Copy tracker link payload (?import=2.<data>): base64url of raw-DEFLATE'd LEB128 varints: fish count +
  *  sorted id deltas; then achievement count + per achievement (by id) the id delta and 0 / 1 complete / 2 + current + max. */
 export async function pluginLink(fish, achievements) {
   const { deflateRawSync } = await import("node:zlib");

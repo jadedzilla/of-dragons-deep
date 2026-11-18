@@ -1,5 +1,5 @@
-// Bait view: clicking a bait (fish view, Log Route) shows where to get it — vendors with places, coordinates and
-// prices, and crafting — from data/baits.json. Mooch fish aren't bait chips.
+// Bait view: clicking a bait (fish view, Log Route) shows where to get it: vendors with places, coordinates and
+// prices, and crafting, from data/baits.json. Mooch fish aren't bait chips.
 import { readFile } from "node:fs/promises";
 import { gridReady, search, text, noOverflow, T0 } from "../lib/app.mjs";
 import { NET } from "../lib/network.mjs";

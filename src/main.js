@@ -1,4 +1,5 @@
 import { loadFish, CATEGORIES, OCEAN_FISHING } from "./data.js";
+import { skeleton, skInline } from "./skeleton.js";
 import { fishIcon, fishPlaceholder, loadIcons, prefetchSheets, sheetsFor, sheetsReady, sheetCount } from "./icons.js";
 import { loadCaught, saveCaught, loadTab, saveTab, loadMarks, saveMarks, loadAchievementProgress, saveAchievementProgress } from "./storage.js";
 import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
@@ -207,7 +208,7 @@ function canvasFrom(text) {
   if (m) return m[1][0].toUpperCase() + m[1].slice(1);
   return /Use item to acquire/i.test(text) ? "Can't be printed (minion item)" : "Can't be printed";
 }
-// Best bait: from Teamcraft's fishing data — the bait, then any fish to mooch with ("or" between baits that all work).
+// Best bait: from Teamcraft's fishing data: the bait, then any fish to mooch with ("or" between baits that all work).
 // When it differs between the fish's spots, each set of baits gets its own line with its spots ("other spots" for the most common one when there are many).
 // Item and spot names/icons come from XIVAPI, fetched per fish and remembered.
 const baitInfo = new Map(); // fish id → Promise<{ groups, items: { id: {name, icon} }, spots: { id: name } }>
@@ -245,7 +246,8 @@ function baitHtml({ groups, items, spots }) {
 }
 // Aquariums: AquariumFish size 1–4 (S/M/L/XL) is also the smallest tank tier that holds the fish.
 const aquariumText = a => a ? `${a.water}, tier ${a.size} tanks and up (size ${["", "S", "M", "L", "XL"][a.size]})` : "Not suitable";
-// Facts filled in once their data arrives: their <dd> attributes.
+// Facts filled in once their data arrives (a loading placeholder until then): their <dd> attributes.
+const LOADING = Symbol("loading");
 const LATER = { Canvas: ` id="fvCanvas" class="pending"`, "Best bait": ` id="fvBait" class="pending fv-bait"`,
   Hookset: ` id="fvHook" class="pending"`, Tug: ` id="fvTug" class="pending"` };
 function openFishView(f) {
@@ -263,17 +265,17 @@ function openFishView(f) {
     [f.spear ? "Size" : "Water", f.water],
     f.cat !== OCEAN_FISHING ? ["Level", String(f.lvl)] : null,
     [f.cat === OCEAN_FISHING ? "Category" : "Expansion", CATEGORIES[f.cat]],
-    f.spear ? null : ["Best bait", "…"], // these three are filled in from Teamcraft's data below
-    f.spear ? null : ["Hookset", "…"],
-    f.spear ? null : ["Tug", "…"],
+    f.spear ? null : ["Best bait", LOADING], // these three are filled in from Teamcraft's data below
+    f.spear ? null : ["Hookset", LOADING],
+    f.spear ? null : ["Tug", LOADING],
     ["Aquarium", aquariumText(f.aquarium)],
-    ["Canvas", "…"], // filled in from the description below
+    ["Canvas", LOADING], // filled in from the description below
     ["Status", caught.has(f.id) ? "Caught" : "Not yet caught"],
     ["Item ID", String(f.id)],
   ].filter(Boolean);
-  $("#fvFacts").innerHTML = facts.map(([k, v]) => `<dt>${k}</dt><dd${LATER[k] ?? ""}>${esc(v)}</dd>`).join("");
+  $("#fvFacts").innerHTML = facts.map(([k, v]) => `<dt>${k}</dt><dd${LATER[k] ?? ""}>${v === LOADING ? skInline(k === "Best bait" ? "160px" : "84px") : esc(v)}</dd>`).join("");
   const desc = $("#fvDesc");
-  desc.innerHTML = `<span class="loading">Loading description…</span>`;
+  desc.innerHTML = skeleton("desc", "Loading description…");
   loadDescription(f.id).then(text => {
     if (viewing !== f.id) return;
     renderDescription(desc, text);

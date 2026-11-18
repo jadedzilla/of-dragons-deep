@@ -13,7 +13,7 @@ import { createHash } from "node:crypto";
 
 const root = new URL("..", import.meta.url);
 const read = p => readFile(new URL(p, root), "utf8");
-const MODULES = ["src/storage.js", "src/icons.js", "src/fishsource.js", "src/data.js", "src/teamcraft.js", "src/timers.js", "src/achievements.js", "src/logroute.js", "src/share.js", "src/baits.js", "src/gacha.js", "src/main.js"];
+const MODULES = ["src/storage.js", "src/skeleton.js", "src/icons.js", "src/fishsource.js", "src/data.js", "src/teamcraft.js", "src/timers.js", "src/achievements.js", "src/logroute.js", "src/share.js", "src/baits.js", "src/gacha.js", "src/main.js"];
 
 const js = (await Promise.all(MODULES.map(read)))
   .map((src, i) => `// ---- ${MODULES[i]} ----\n` + src.replace(/^import .*$/gm, "").replace(/^export /gm, ""))
@@ -43,7 +43,7 @@ html = html
     () => `<script>window.__FISH_DATA__ = ${data};\n${externalIcons ? "" : `window.__BAIT_DATA__ = ${baits};\n`}window.__ICON_DATA__ = ${JSON.stringify(icons)};</script>\n<script type="module">\n${js}</script>`);
 
 // Web app manifest (home-screen install): copied with the icons it lists for --external-icons. The single file drops
-// it — an app can't be installed from a file opened from disk, and a data: manifest has no origin to resolve against.
+// it: an app can't be installed from a file opened from disk, and a data: manifest has no origin to resolve against.
 if (externalIcons) {
   const manifest = JSON.parse(await read("manifest.webmanifest"));
   await copyFile(new URL("manifest.webmanifest", root), new URL("dist/manifest.webmanifest", root));

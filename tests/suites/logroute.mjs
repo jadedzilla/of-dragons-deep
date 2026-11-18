@@ -16,7 +16,7 @@ export default async function (t) {
   const ds = await steps(d);
   t.check("without timed fish: step 1 says Next, no times anywhere", ds[0].when === "Next" && ds.slice(1).every(x => x.when === ""), ds.map(x => x.when));
   t.check("Include timed fish is off by default: no timed steps, a note says how many were left out", !(await d.isChecked("#lrTimed"))
-    && ds.every(x => x.kind !== "timed") && /^\d{3} timed fish not in the route — tick Include timed fish to add them\.$/.test(await text(d, ".lr-leftout")), await text(d, "#lrNotes"));
+    && ds.every(x => x.kind !== "timed") && /^\d{3} timed fish not in the route\. Tick Include timed fish to add them\.$/.test(await text(d, ".lr-leftout")), await text(d, "#lrNotes"));
   await d.check("#lrTimed");
   await d.waitForFunction(() => document.querySelector(".lr-step")?.classList.contains("timed"));
   t.check("ticking it adds timed fish (route re-planned) and drops the note", !(await d.$(".lr-leftout")));
@@ -60,7 +60,7 @@ export default async function (t) {
   await p.clock.setFixedTime(new Date((T0 + endsIn + 1) * 1000));
   await p.waitForFunction(id => !document.querySelector(`.lr-step[data-step="${id}"]`), firstUp.id);
   t.check("a step whose window closed is removed; the list refills; summary notes the miss",
-    await p.$$eval(".lr-step", l => l.length) === stepsBefore && /^\d+ timed fish missed (its|their) window — Re-plan to fit (it|them) back in\.$/.test(await text(p, ".lr-missed")) && /^1,517 fish left/.test(await text(p, "#lrSummary")));
+    await p.$$eval(".lr-step", l => l.length) === stepsBefore && /^\d+ timed fish missed (its|their) window\. Re-plan to fit (it|them) back in\.$/.test(await text(p, ".lr-missed")) && /^1,517 fish left/.test(await text(p, "#lrSummary")));
   await p.click("#lrRecalc");
   await p.waitForFunction(() => !document.querySelector(".lr-missed"));
   t.check("Re-plan clears the missed note", true);
@@ -121,7 +121,7 @@ export default async function (t) {
   await o.waitForSelector(".lr-step");
   const os = await steps(o);
   t.check("ocean only: 259 fish left, every step a voyage stop, the first labelled Next", /^259 fish left/.test(await text(o, "#lrSummary")) && os.every(x => x.kind === "ocean") && os[0].when === "Next"
-    && /^Ocean fishing from Limsa Lominsa Lower Decks \(Indigo route\) — stop Galadion Bay · \d+ fish$/.test(os[0].where), os.map(x => x.where));
+    && /^Ocean fishing from Limsa Lominsa Lower Decks \(Indigo route\), stop Galadion Bay · \d+ fish$/.test(os[0].where), os.map(x => x.where));
   t.check("ocean: spectral-current fish listed separately; time-of-day voyages named", await o.$$eval(".lr-sub", e => e.length) > 0
     && /need a voyage that reaches Galadion Bay then: .*(Day|Sunset|Night)/.test(await o.$eval(".lr-step .lr-notes", e => e.textContent)));
   t.noErrors(o, "ocean");

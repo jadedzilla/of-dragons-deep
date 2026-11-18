@@ -54,7 +54,7 @@ const lists = (raw, extra) => ({
   fetched: raw.fetched, patch: raw.patch, ...extra,
 });
 
-/** Returns { fish, spear, live, fetched, patch, error } — `live` false means the snapshot was used (`error` says why). */
+/** Returns { fish, spear, live, fetched, patch, error }. `live` false means the snapshot was used (`error` says why). */
 export async function loadFish() {
   try {
     return lists(await loadLive(), { live: true });

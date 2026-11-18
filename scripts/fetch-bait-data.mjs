@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// Builds data/baits.json: where to get each fishing bait — the vendors that sell it (NPC, zone, map coordinates,
+// Builds data/baits.json: where to get each fishing bait: the vendors that sell it (NPC, zone, map coordinates,
 // price) and who can craft it. Usage: npm run fetch-baits (network: raw.githubusercontent.com + v2.xivapi.com;
 // behind a proxy on Node ≥ 22.21 run with NODE_USE_ENV_PROXY=1).
-//   Baits, shops and NPC positions: FFXIV Teamcraft's data (baits.json, shops.json, npcs.json — ~27 MB, so they're
+//   Baits, shops and NPC positions: FFXIV Teamcraft's data (baits.json, shops.json, npcs.json, ~27 MB, so they're
 //   read here once rather than in the browser). Seasonal-event vendors are left out. Names, icons, zones and
 //   recipes: XIVAPI game data.
 // Output (compact; the app reads it on demand, the single-file build inlines it):

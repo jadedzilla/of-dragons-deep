@@ -2,7 +2,7 @@
 //   XIVAPI requests the app makes → the recorded response (exact URL) or, for `?rows=` lookups, the matching rows;
 //   XIVAPI images → a 1×1 transparent PNG; Teamcraft files → recorded; anything else off-site (fonts…) → aborted;
 //   unknown XIVAPI/Teamcraft URLs → 404, which the app handles like an outage.
-// A test can still override any URL with page.route() — page routes win over these context routes.
+// A test can still override any URL with page.route(); page routes win over these context routes.
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { canonical } from "./canonical.mjs";

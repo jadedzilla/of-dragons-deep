@@ -11,6 +11,7 @@
 // Ocean spots: IKDSpot rows give each route stop's normal (SpotMain) and spectral (SpotSub) FishingSpot and its fish;
 // the achievement's description names the stop and whether the spectral current is present.
 
+import { skeleton } from "./skeleton.js";
 import { XIVAPI, XIVAPI_SCHEMA } from "./fishsource.js";
 import { xivAsset } from "./teamcraft.js";
 import { noteObtained } from "./storage.js";
@@ -31,7 +32,7 @@ export async function loadAchievements({ fetchFn = fetch, signal } = {}) {
   };
   const results = [];
   let page = await get(`${XIVAPI}/search?sheets=Achievement&query=${encodeURIComponent(`AchievementCategory=${FISHER_CATEGORY}`)}`
-    // @as(raw): plain numbers — without it Key/Data expand the linked rows (~250 KB instead of ~50 KB)
+    // @as(raw): plain numbers; without it Key/Data expand the linked rows (~250 KB instead of ~50 KB)
     + `&limit=500&fields=Name,Description,Points,Type@as(raw),Key@as(raw),Data@as(raw),Order,Icon&${schema}`);
   results.push(...page.results);
   while (page.next) { page = await get(`${XIVAPI}/search?cursor=${encodeURIComponent(page.next)}&limit=500`); results.push(...page.results); }
@@ -106,9 +107,9 @@ export function achievementDone(a, ctx, seen = new Set()) {
 const SECTIONS = [
   ["log", "Fish log", "Tracked from the fish you've marked caught (Fish Guide and spearfishing log)."],
   ["big", "Big fish", "Tracked from the big fish you've marked caught."],
-  ["ocean", "Ocean Fishing", "Spot achievements (Denizens/Specters) are tracked from the ocean fish you've marked caught; voyage scores and bonuses aren't — mark those obtained yourself."],
-  ["milestones", "Fishing milestones", "The app can't count casts — mark these obtained yourself."],
-  ["other", "Other", "Not tracked — mark these obtained yourself."],
+  ["ocean", "Ocean Fishing", "Spot achievements (Denizens/Specters) are tracked from the ocean fish you've marked caught; voyage scores and bonuses aren't, so mark those obtained yourself."],
+  ["milestones", "Fishing milestones", "The app can't count casts, so mark these obtained yourself."],
+  ["other", "Other", "Not tracked, so mark these obtained yourself."],
 ];
 
 /**
@@ -128,7 +129,7 @@ export function createAchievements(root, { allFish, byId, isCaught, fishIcon, on
       </div>
     </div>
     <div class="ac-imported" id="acImported"></div>
-    <div class="ac-list" id="acList"><div class="empty-msg">Loading achievements…</div></div>
+    <div class="ac-list" id="acList">${skeleton("achievements", "Loading achievements…")}</div>
     <div class="tm-credit">Achievements from XIVAPI game data. Fish-based progress comes from the fish you've marked caught;
       everything else can be marked obtained by hand (saved in this browser).</div>`;
   const $a = s => root.querySelector(s);
@@ -201,7 +202,7 @@ export function createAchievements(root, { allFish, byId, isCaught, fishIcon, on
     $a("#acSummary").innerHTML = `<b>${nDone}</b> of ${data.achievements.length} obtained · <b>${ptsDone}</b> of ${pts} points`;
     $a("#acImported").textContent = imported.at ? `Last imported from the plugin ${new Date(imported.at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}.` : "";
     // Achievements obtained by completing other achievements are shown as a group: the meta achievement with its parts
-    // nested underneath (recursively — "A Fisher's Life for Me: Greater Eorzea" holds the three region ones). A part is
+    // nested underneath (recursively: "A Fisher's Life for Me: Greater Eorzea" holds the three region ones). A part is
     // listed only inside its group, not on its own.
     const parentOf = new Map();
     for (const a of data.achievements) {
@@ -240,7 +241,7 @@ export function createAchievements(root, { allFish, byId, isCaught, fishIcon, on
     }, err => {
       loading = null;
       list.innerHTML = `<div class="empty-msg">Couldn't load the achievements (${esc(err.message)}). <button type="button" class="btn" id="acRetry">Try again</button></div>`;
-      $a("#acRetry").addEventListener("click", () => { list.innerHTML = `<div class="empty-msg">Loading achievements…</div>`; load(); });
+      $a("#acRetry").addEventListener("click", () => { list.innerHTML = `${skeleton("achievements", "Loading achievements…")}`; load(); });
     });
     return loading;
   }

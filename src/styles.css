@@ -179,6 +179,35 @@ body{
 .legend span.off{visibility:hidden}
 .legend i{display:inline-block;width:8px;height:8px;margin-right:4px;vertical-align:middle}
 .legend i.check{width:13px;height:13px;margin-top:-2px;background:var(--caught-check) center/contain no-repeat}
+/* Loading placeholders (src/skeleton.js): shimmering shapes where content is on its way */
+.sk{display:block;border-radius:4px;background:linear-gradient(100deg,rgba(255,255,255,.04) 30%,rgba(241,220,160,.12) 50%,rgba(255,255,255,.04) 70%) 0 0/300% 100%;animation:sk-shine 1.5s linear infinite}
+@keyframes sk-shine{from{background-position:100% 0}to{background-position:0 0}}
+.sk-line{height:10px;margin:5px 0}
+.sk-line.sm{height:8px;opacity:.8}
+.sk-line.lg{height:14px;margin:4px 0 10px}
+.sk-line.bar{height:6px;margin-top:8px;border-radius:3px}
+.sk-inline{display:inline-block;height:10px;vertical-align:middle;max-width:100%}
+.sk-ic{flex:none;width:40px;height:40px;border-radius:5px}
+.sk-ic.lg{width:44px;height:44px}
+.sk-col{flex:1;min-width:0}
+.sk-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #2c2a22;border-radius:6px;margin-bottom:8px}
+.sk-row.tall{align-items:flex-start}
+.sk-row.inset{margin:10px 0 0;padding:8px 10px}
+.sk-pill{flex:none;width:76px;height:22px;border-radius:11px}
+.sk-sec{margin-bottom:18px}
+.sk-step{display:flex;gap:12px;padding:12px 14px;border:1px solid #2c2a22;border-radius:8px;margin-bottom:12px}
+.sk-num{flex:none;width:16px;height:20px}
+.sk-tile b,.sk-tile span{display:none}
+.sk-card{width:min(100%,1200px);aspect-ratio:16/9;max-height:70vh;border-radius:6px}
+.sk-vendor{padding:6px 0;border-bottom:1px solid #2c2a22}
+.tile.sk{border-color:transparent}
+.grid > .tile.sk:nth-child(n+11){animation-delay:.05s}.grid > .tile.sk:nth-child(n+31){animation-delay:.1s}.grid > .tile.sk:nth-child(n+61){animation-delay:.15s}
+/* fish icons not loaded yet (sprite sheet still on its way) shimmer behind the empty tile */
+.tile:has(> span.ic:not(.ready)),.fv-icon:has(> span.ic:not(.ready)),.tm-icon:has(> span.ic:not(.ready)),.ns-ficon:has(> span.ic:not(.ready)),
+.ac-f:has(> span.ic:not(.ready)),.gc-icon:has(> span.ic:not(.ready)),.gc-mini:has(> span.ic:not(.ready)){
+  background-image:linear-gradient(100deg,rgba(255,255,255,.04) 30%,rgba(241,220,160,.12) 50%,rgba(255,255,255,.04) 70%);background-size:300% 100%;animation:sk-shine 1.5s linear infinite}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+@media (prefers-reduced-motion:reduce){.sk,.tile:has(> span.ic:not(.ready)){animation:none}}
 .empty-msg{grid-column:1/-1;text-align:center;padding:40px 0;color:var(--muted);font-size:14px}
 
 /* import dialog */
@@ -286,7 +315,7 @@ body{
   /* one row: page numbers (5 slots), search icon, Edit, Import, Filter; an open search drops to its own row */
   .toolbar{flex-wrap:wrap;gap:6px 4px}
   /* the page slots share what's left of the row equally (capped at a normal button), so they always fit and keep
-     the same widths from page to page — the arrows never move */
+     the same widths from page to page, so the arrows never move */
   .pages{flex:1 1 0;min-width:0;gap:2px}
   .toolbar .spacer{display:none} /* the page numbers take the spare width instead */
   .pages > *{flex:1 1 0;min-width:0;max-width:32px;padding:0}

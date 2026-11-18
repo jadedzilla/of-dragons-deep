@@ -1,11 +1,12 @@
-// Share page: draws a card (PNG) of your progress in the app's look — caught fish totals (Fish Guide, spearfishing,
-// big fish, ocean fishing, per expansion) and achievements (obtained / points, recently obtained, closest to done) —
+// Share page: draws a card (PNG) of your progress in the app's look: caught fish totals (Fish Guide, spearfishing,
+// big fish, ocean fishing, per expansion) and achievements (obtained / points, recently obtained, closest to done),
 // to download, share (phone share sheet) or copy. Drawn on a <canvas>; achievement icons come from XIVAPI (CORS *).
 
+import { skeleton } from "./skeleton.js";
 import { achievementDone, achievementRequirement, getAchievements } from "./achievements.js";
 import { loadMarks, loadAchievementProgress, noteObtained } from "./storage.js";
 
-export const CARD = { w: 1200, h: 675, rows: 3 }; // 16:9 — fits Discord, X and phones
+export const CARD = { w: 1200, h: 675, rows: 3 }; // 16:9, fits Discord, X and phones
 const SITE = "ofdragonsdeep.jadedzilla.com";
 const C = { bg1: "#0d1220", bg2: "#22304f", panel: "rgba(22,26,38,.92)", gold: "#c9a95c", goldDim: "#7d6a3e", goldHi: "#f1dca0",
   text: "#e8e2d0", muted: "#9a937f", track: "rgba(0,0,0,.45)", green: "#66d36e" };
@@ -170,7 +171,7 @@ export async function drawShareCard(stats, { name = "", date = new Date() } = {}
       y += 44;
       text("Recently obtained", x, y, { size: 16, weight: 600, color: C.muted });
       y += 40;
-      if (!a.recent.length) { text("None yet — tick or import some on the Achievements page.", x, y - 10, { size: 16, color: C.muted }); y += 46; }
+      if (!a.recent.length) { text("None yet. Tick or import some on the Achievements page.", x, y - 10, { size: 16, color: C.muted }); y += 46; }
       a.recent.slice(0, L.rows).forEach((r, i) => { row(r, i, y); y += 46; });
       text("Almost there", x, y, { size: 16, weight: 600, color: C.muted });
       y += 40;
@@ -198,12 +199,12 @@ export const shareAlt = s => `Of Dragons Deep: ${n(s.fish.have)} / ${n(s.fish.to
 export function createShare(root, deps) {
   root.innerHTML = `
     <div class="sh-head">
-      <p class="ns-intro">A card of your progress to post anywhere — made from the fish you've marked caught and your achievements.</p>
+      <p class="ns-intro">A card of your progress to post anywhere, made from the fish you've marked caught and your achievements.</p>
       <div class="sh-controls">
         <input class="sh-name" id="shName" type="text" maxlength="40" placeholder="Character name (optional)" autocomplete="off" aria-label="Name on the card">
       </div>
     </div>
-    <div class="sh-preview" id="shPreview"><div class="empty-msg">Drawing your card…</div></div>
+    <div class="sh-preview" id="shPreview">${skeleton("share", "Drawing your card…")}</div>
     <div class="sh-actions">
       <button type="button" class="btn primary" id="shDownload" disabled>Download PNG</button>
       <button type="button" class="btn" id="shShare" hidden disabled>Share…</button>
@@ -253,7 +254,7 @@ export function createShare(root, deps) {
     catch (e) { if (e.name !== "AbortError") status.textContent = "Couldn't open the share sheet."; }
   });
   $s("#shCopy").addEventListener("click", async () => {
-    try { await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]); status.textContent = "Copied — paste it anywhere."; }
+    try { await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]); status.textContent = "Copied. Paste it anywhere."; }
     catch { status.textContent = "Couldn't copy the image here; use Download instead."; }
   });
 

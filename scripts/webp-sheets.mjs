@@ -3,7 +3,7 @@
 // data/icons.json at them. WebP at quality 0.82 is ~5× smaller (≈145 KB vs ≈750 KB per sheet) and visually
 // indistinguishable at the size tiles are shown, so pages load much faster.
 //
-// Node can't encode WebP itself, so this uses a headless Chromium via Playwright — a dev-only dependency that is
+// Node can't encode WebP itself, so this uses a headless Chromium via Playwright, a dev-only dependency that is
 // needed just for refreshing icons; the app itself has no dependencies.
 //   npm install && npx playwright install chromium   (once)
 //   npm run fetch-icons                              (runs fetch-icons.mjs, then this)
