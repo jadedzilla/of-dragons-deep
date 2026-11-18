@@ -163,8 +163,8 @@ export function Reveal({ fish, onClose, onOpenFish }) {
     if (!card) return;
     const box = card.getBoundingClientRect(), x = (e.clientX - box.left) / box.width, y = (e.clientY - box.top) / box.height;
     card.classList.add("tilting");
-    card.style.setProperty("--ry", `${((x - .5) * 26).toFixed(2)}deg`);
-    card.style.setProperty("--rx", `${((.5 - y) * 26).toFixed(2)}deg`);
+    card.style.setProperty("--ry", `${((x - .5) * 18).toFixed(2)}deg`); // up to ±9°
+    card.style.setProperty("--rx", `${((.5 - y) * 18).toFixed(2)}deg`);
     card.style.setProperty("--mx", `${(x * 100).toFixed(1)}%`);
     card.style.setProperty("--my", `${(y * 100).toFixed(1)}%`);
   }
