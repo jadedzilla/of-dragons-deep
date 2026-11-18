@@ -14,6 +14,10 @@ const CARDS = 10, STRIP = 60, FLIP_GAP = Math.round(FLIP_MS * FLIP_HALF); // ms 
  *  phones. Two layers of light rays (freshly randomised wedges at irregular angles, of varying width and length, with
  *  an empty core, fading in at the inner end and out at the tip) spin out from the bobber at (cx, cy) while a soft
  *  white bloom grows from it to cover the screen, holds, then fades to show the cards. */
+// the white flash (ms after the burst): starts, total length, and the share of it spent growing to cover the screen; it
+// starts dissolving the moment it has (no hold), and the bubbles start rising underneath it a little before, so they
+// emerge through the thinning white
+const FLASH_AT = 150, FLASH = 2000, FLASH_HOLD = .32, FLASH_FADES = FLASH_AT + FLASH * FLASH_HOLD;
 function burst(dialog, cx, cy) {
   const canvas = dialog.querySelector(".gc-boom"), ctx = canvas.getContext("2d");
   const dpr = Math.min(devicePixelRatio || 1, 2), w = innerWidth, h = innerHeight, vmax = Math.max(w, h);
@@ -31,8 +35,8 @@ function burst(dialog, cx, cy) {
     return { rays, unit: size * vmax / 2000, spin: spin * deg, alpha, rampIn };
   };
   const layers = [layer(13, "255,248,225", 1.7, 40, 1, .12), layer(7, "241,220,160", 1.84, -28, .85, .18)];
-  const RAYS = 1100, FLASH_AT = 150, FLASH = 1400, start = performance.now();
-  const easeOut = p => 1 - (1 - p) ** 3, easeIn = p => p ** 1.8;
+  const RAYS = 1100, start = performance.now();
+  const easeOut = p => 1 - (1 - p) ** 3, easeIn = p => p ** 1.8, smooth = p => p ** 3 * (p * (6 * p - 15) + 10); // smootherstep: eases in and out gently
   const frame = now => {
     if (!dialog.open || dialog.classList.contains("done")) return;
     const t = now - start;
@@ -40,6 +44,7 @@ function burst(dialog, cx, cy) {
     ctx.clearRect(0, 0, w, h);
     const p = Math.min(1, t / RAYS), e = easeOut(p);
     for (const L of layers) {
+      if (t >= FLASH_FADES) break; // the rays end while the screen is white, so only the bubbles come out of it
       const o = p < L.rampIn ? p / L.rampIn : p < .7 ? 1 : (1 - p) / .3;
       if (o <= 0 || e <= 0) continue;
       ctx.save();
@@ -51,9 +56,9 @@ function burst(dialog, cx, cy) {
       }
       ctx.restore();
     }
-    const q = (t - FLASH_AT) / FLASH; // the white bloom: grows (ease-in) to 45%, holds to 62%, fades out
-    if (q > 0) {
-      const R = 2 * vmax * (q < .45 ? easeIn(q / .45) : 1), o = q < .62 ? 1 : 1 - easeIn(Math.min(1, (q - .62) / .38));
+    const q = (t - FLASH_AT) / FLASH; // the white bloom: grows (ease-in) to full, then dissolves evenly (smootherstep) over
+    if (q > 0) {                       // the bubbles rising underneath it, so the flash turns into the bubbles
+      const R = 2 * vmax * (q < FLASH_HOLD ? easeIn(q / FLASH_HOLD) : 1), o = q < FLASH_HOLD ? 1 : 1 - smooth(Math.min(1, (q - FLASH_HOLD) / (1 - FLASH_HOLD)));
       if (R > 0 && o > 0) {
         const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
         g.addColorStop(0, "#fff"); g.addColorStop(.42, "#fffaf0"); g.addColorStop(.62, "rgba(255,250,240,0)");
@@ -67,7 +72,7 @@ function burst(dialog, cx, cy) {
 }
 
 /** Bubbles that float up the screen as the cards appear: random column, size, sway, speed and start. */
-const BUBBLE_DELAY = .3, BUBBLE_RISE = [.55, .95]; // s: latest start, rise time range; the cards flip once they've all gone
+const BUBBLE_DELAY = .35, BUBBLE_RISE = [.75, 1.2]; // s: latest start, rise time range; the cards flip once they've all gone
 function bubbles(n = 46) {
   const rnd = (a, b) => (a + Math.random() * (b - a)).toFixed(2);
   return Array.from({ length: n }, () => `<i style="left:${rnd(0, 100)}%;bottom:${rnd(5, 70)}vh;--s:${rnd(70, 240)}px;--d:${rnd(0, BUBBLE_DELAY)}s;--t:${rnd(...BUBBLE_RISE)}s;--x:${rnd(-30, 30)}px"><b></b></i>`).join("");
@@ -148,8 +153,8 @@ function swingLine(dialog) {
   requestAnimationFrame(frame);
 }
 
-/** deps: { fishIcon(f), esc(s) }. Returns { show(fish[]) → Promise (resolves when closed) }. */
-export function createGacha({ fishIcon, esc }) {
+/** deps: { fishIcon(f), esc(s), facts(f) → [[label, value]…], openFish(f) }. Returns { show(fish[]) → Promise (resolves when closed), close() }. */
+export function createGacha({ fishIcon, esc, facts, openFish }) {
   const dialog = document.querySelector("#gachaDialog");
   const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
   let finish = null, resolveClose = null, timers = [];
@@ -161,12 +166,82 @@ export function createGacha({ fishIcon, esc }) {
     stopTimers();
     if (dialog.open) dialog.close();
   }
-  dialog.addEventListener("close", () => { stopTimers(); resolveClose?.(); resolveClose = null; });
+  dialog.addEventListener("close", () => { stopTimers(); zoomed = null; resolveClose?.(); resolveClose = null; });
+  // Before the cards are showing a tap skips to the end. Once they are, only Close closes the screen: a tap on a card
+  // turns it over in the middle of the screen to show the fish's details, a tap there (or Esc) puts it back.
   dialog.addEventListener("click", e => {
     if (e.target.closest("#gcClose")) return close();
-    if (!isDone()) finish?.(); // first tap skips to the end
-    else if (!e.target.closest(".gc-card, .gc-strip")) close();
+    if (!isDone()) return finish?.();
+    if (zoomed) {
+      if (e.target.closest(".gc-details-btn")) return openFish?.(zoomed.fish);
+      return unzoom();
+    }
+    const card = e.target.closest(".gc-card");
+    if (card) zoom(card);
   });
+  dialog.addEventListener("cancel", e => {
+    if (!isDone()) return;
+    e.preventDefault();
+    if (zoomed) unzoom();
+  });
+
+  // hover: the card pivots toward the pointer like a real card in the hand, and a foil shine follows it
+  let hovered = null;
+  const untilt = card => { card.classList.remove("tilting"); for (const v of ["--rx", "--ry"]) card.style.removeProperty(v); };
+  dialog.addEventListener("pointermove", e => {
+    const card = isDone() && !zoomed && e.pointerType === "mouse" ? e.target.closest(".gc-card") : null;
+    if (hovered && hovered !== card) untilt(hovered);
+    hovered = card;
+    if (!card) return;
+    const box = card.getBoundingClientRect(), x = (e.clientX - box.left) / box.width, y = (e.clientY - box.top) / box.height;
+    card.classList.add("tilting");
+    card.style.setProperty("--ry", `${((x - .5) * 26).toFixed(2)}deg`);
+    card.style.setProperty("--rx", `${((.5 - y) * 26).toFixed(2)}deg`);
+    card.style.setProperty("--mx", `${(x * 100).toFixed(1)}%`);
+    card.style.setProperty("--my", `${(y * 100).toFixed(1)}%`);
+  });
+  dialog.addEventListener("pointerleave", () => { if (hovered) untilt(hovered); hovered = null; });
+
+  // a tapped card lifts out of the row, grows into the middle of the screen and turns over to its details
+  let zoomed = null, cardFish = new Map();
+  const ZOOM_MS = 700;
+  function zoom(card) {
+    const fish = cardFish.get(+card.dataset.id);
+    if (!fish) return;
+    if (hovered) { untilt(hovered); hovered = null; }
+    const layer = dialog.querySelector(".gc-zoom"), big = layer.querySelector(".gc-big");
+    big.className = `gc-big ${card.classList.contains("big") ? "big" : card.classList.contains("coll") ? "coll" : "plain"}`;
+    big.querySelector(".gc-face").innerHTML = card.querySelector(".gc-front").innerHTML;
+    big.querySelector(".gc-info").innerHTML = infoHtml(fish, card);
+    layer.hidden = false;
+    const from = card.getBoundingClientRect(), to = big.getBoundingClientRect();
+    const start = `translate(${from.left + from.width / 2 - (to.left + to.width / 2)}px, ${from.top + from.height / 2 - (to.top + to.height / 2)}px) scale(${from.width / to.width})`;
+    card.classList.add("lifted"); // the card's place stays empty while it's in the middle
+    zoomed = { card, fish, start };
+    if (reduced()) { big.classList.add("over"); layer.classList.add("on"); return; }
+    layer.classList.add("on");
+    big.animate([{ transform: start }, { transform: "none" }], { duration: ZOOM_MS, easing: "cubic-bezier(.2,.8,.25,1)" });
+    big.querySelector(".gc-big-inner").animate([{ transform: "none" }, { transform: "rotateY(180deg)" }], { duration: ZOOM_MS, delay: 120, easing: "cubic-bezier(.45,.05,.3,1)", fill: "backwards" });
+    big.classList.add("over");
+  }
+  function unzoom() {
+    const z = zoomed; if (!z) return;
+    zoomed = null;
+    const layer = dialog.querySelector(".gc-zoom"), big = layer.querySelector(".gc-big");
+    const done = () => { layer.hidden = true; big.classList.remove("over"); z.card.classList.remove("lifted"); };
+    layer.classList.remove("on");
+    if (reduced()) return done();
+    big.querySelector(".gc-big-inner").animate([{ transform: "rotateY(180deg)" }, { transform: "none" }], { duration: ZOOM_MS * .8, easing: "cubic-bezier(.45,.05,.3,1)" });
+    big.classList.remove("over");
+    big.animate([{ transform: "none" }, { transform: z.start }], { duration: ZOOM_MS * .8, delay: 80, easing: "cubic-bezier(.5,0,.75,.2)", fill: "forwards" })
+      .finished.then(a => { done(); big.getAnimations().forEach(x => x.cancel()); }, () => {});
+  }
+  /** The back of a zoomed card: the fish, its kind and the basic facts, and a link to the full fish view. */
+  const infoHtml = (f, card) => `
+    <div class="gc-info-head"><span class="gc-icon">${fishIcon(f)}</span><div><div class="gc-name">${esc(f.name)}</div>
+      <div class="gc-tag">${card.querySelector(".gc-tag").textContent}</div></div></div>
+    <dl class="gc-facts">${(facts?.(f) ?? []).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+    ${openFish ? `<button type="button" class="btn small gc-details-btn">More details</button>` : ""}`;
 
   function show(fish) {
     if (!fish.length) return Promise.resolve();
@@ -174,6 +249,7 @@ export function createGacha({ fishIcon, esc }) {
     const cards = sorted.slice(0, CARDS), rest = sorted.slice(CARDS);
     // the bite mark that pops out of the bobber, by the best fish caught (like the game's tugs): !!! big fish, !! collectable, ! otherwise
     const tier = Math.max(...fish.map(tierOf));
+    cardFish = new Map(cards.map(f => [f.id, f]));
     const strip = matchMedia("(max-width: 520px)").matches ? STRIP / 2 : STRIP; // small icons shown before "+N more"
     dialog.innerHTML = `
       <div class="gc-stage">
@@ -185,7 +261,7 @@ export function createGacha({ fishIcon, esc }) {
         <h2 class="gc-title">You caught <b id="gcCount">0</b> new fish!</h2>
         <div class="gc-cards">${cards.map((f, i) => `
           <div class="gc-card ${KIND[tierOf(f)]}" style="--i:${i}" data-id="${f.id}">
-            <div class="gc-inner">
+            <div class="gc-tilt"><div class="gc-inner">
               <div class="gc-back" aria-hidden="true"></div>
               <div class="gc-front">
                 <span class="gc-mark t${tierOf(f)}" aria-hidden="true">${bangs(tierOf(f))}</span>
@@ -193,12 +269,13 @@ export function createGacha({ fishIcon, esc }) {
                 <span class="gc-name">${f.big ? `<i class="tm-big"></i>` : ""}${esc(f.name)}</span>
                 <span class="gc-tag">${f.big ? "Big fish" : f.collectable ? "Collectable" : f.spear ? "Spearfish" : f.lvl > 1 ? `Lv ${f.lvl}` : "Ocean fishing"}</span>
               </div>
-            </div>
+            </div></div>
           </div>`).join("")}
         </div>
         ${rest.length ? `<div class="gc-strip">${rest.slice(0, strip).map(f => `<span class="gc-mini" title="${esc(f.name)}">${fishIcon(f)}</span>`).join("")}
           ${rest.length > strip ? `<span class="gc-more">+${(rest.length - strip).toLocaleString("en-US")} more</span>` : ""}</div>` : ""}
         <div class="gc-actions"><button type="button" class="btn primary" id="gcClose">Close</button><span class="gc-hint">Tap to skip</span></div>
+        <div class="gc-zoom" hidden><div class="gc-big"><div class="gc-big-inner"><div class="gc-face" aria-hidden="true"></div><div class="gc-info"></div></div></div></div>
       </div>`;
     dialog.className = "gacha-dialog";
     const count = dialog.querySelector("#gcCount"), total = fish.length;
@@ -235,9 +312,9 @@ export function createGacha({ fishIcon, esc }) {
       dialog.classList.add("reel", "boom");
       burst(dialog, r.left + r.width / 2, r.top + r.height / 2);
     });
-    const BUBBLES_AT = 4250, LAST_BUBBLE = BUBBLES_AT + (BUBBLE_DELAY + BUBBLE_RISE[1]) * 1000;
+    const BUBBLES_AT = 3250 + FLASH_FADES - 250, LAST_BUBBLE = BUBBLES_AT + (BUBBLE_DELAY + BUBBLE_RISE[1]) * 1000;
     later(BUBBLES_AT, () => dialog.classList.add("bubbles")); // as the white fades: big bubbles float up over the cards
-    later(4050, () => { dialog.classList.add("dealt"); countTo(2000 + cards.length * FLIP_GAP); }); // under the white
+    later(3250 + FLASH_AT + FLASH * .29, () => { dialog.classList.add("dealt"); countTo(2000 + cards.length * FLIP_GAP); }); // under the white
     const flips = () => { // the cards turn over one by one…
       cards.forEach((_, i) => later(i * FLIP_GAP, () => dialog.querySelectorAll(".gc-card")[i]?.classList.add("flipped")));
       later(cards.length * FLIP_GAP + 700, () => finish?.());

@@ -93,6 +93,20 @@ export default async function (t) {
     && document.querySelectorAll(".gc-card.flipped").length === 10) && reveal.cards.length === 10 && reveal.mini === fresh - 10
     && reveal.more === "" &&await text(p, "#gcCount") === String(fresh), reveal);
   await t.shot(p, "gacha");
+  // once the cards are showing, only Close closes: a tap beside the cards or Esc leaves the reveal open
+  await p.click("#gachaDialog .gc-title"); await p.keyboard.press("Escape");
+  t.check("cards showing: a tap beside them or Esc doesn't close the reveal", await p.$eval("#gachaDialog", d => d.open));
+  // a tapped card turns over in the middle of the screen to its details; a tap there puts it back
+  const first = await p.$eval(".gc-card", c => +c.dataset.id);
+  await p.click(".gc-card");
+  await p.waitForFunction(() => !document.querySelector(".gc-zoom").hidden && document.querySelector(".gc-card.lifted"));
+  const info = await p.$eval(".gc-info", e => e.textContent.replace(/\s+/g, " "));
+  t.check("tapped card: details in the middle (name, location, water, more details)", /Location/.test(info) && /Water|Size/.test(info) && /More details/.test(info)
+    && await p.evaluate(id => document.querySelector(".gc-info .gc-name").textContent === document.querySelector(`.gc-card[data-id="${id}"] .gc-name`).textContent, first), info);
+  await t.shot(p, "gacha-card");
+  await p.keyboard.press("Escape");
+  await p.waitForFunction(() => document.querySelector(".gc-zoom").hidden && !document.querySelector(".gc-card.lifted"));
+  t.check("Esc puts the card back, the reveal stays open", await p.$eval("#gachaDialog", d => d.open));
   await p.click("#gcClose");
   await p.waitForSelector("#toast.show");
   t.check("Close ends it and shows the notice", !(await p.$eval("#gachaDialog", d => d.open)) && new RegExp(`^Marked ${fresh} new fish`).test(await text(p, "#toast")), await text(p, "#toast"));

@@ -8,10 +8,46 @@ import { loadMarks, loadAchievementProgress, noteObtained } from "./storage.js";
 
 export const CARD = { w: 1200, h: 675, rows: 3 }; // 16:9, fits Discord, X and phones
 const SITE = "ofdragonsdeep.jadedzilla.com";
-// Clear Blue, as the app: navy glass, pale blue frame and accents, white text, gold titles
-const C = { bg1: "#06101f", bg2: "#123661", panel: "rgba(11,27,52,.92)", accent: "#4f9be0", accentDim: "#3d6e9f", accentHi: "#d9eeff",
-  text: "#f2f7ff", muted: "#a9bdd6", track: "rgba(0,10,26,.5)", green: "#66d36e", title: "#f1dca0", frame: "rgba(116,186,243,.35)", rule: "rgba(116,186,243,.45)" };
-const SERIF = '"Cinzel", Georgia, serif', SANS = '"Noto Sans", system-ui, sans-serif';
+// The card follows the app's light or dark mode: its colours are read from the page's CSS variables when it's drawn
+// (fallbacks: light mode). A sheet of paper with torn edges on a transparent background, in the app's three fonts.
+const SERIF = 'Neuton, Georgia, serif', NUM = 'Montserrat, "Noto Sans", sans-serif', SANS = '"Rethink Sans", "Noto Sans", system-ui, sans-serif';
+function palette() {
+  const css = getComputedStyle(document.documentElement), v = (name, d) => css.getPropertyValue(name).trim() || d;
+  const dark = document.documentElement.dataset.theme === "dark";
+  return {
+    dark, paper: v("--card", "#e0ded7"), edge: dark ? "#3a3833" : "#f3f1ea",
+    text: v("--text", "#2b2b2b"), strong: v("--accent-hi", "#171717"), muted: v("--muted", "#637185"), line: v("--line", "rgba(0,0,0,.09)"),
+    fill: v("--accent", "#333333"), track: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)", green: v("--caught", "#2f8f3a"),
+    well: dark ? "rgba(0,0,0,.3)" : "rgba(0,0,0,.08)",
+  };
+}
+let C = palette();
+
+/** The page's paper texture (the data: URI behind body::before), as an image; null if there's none. */
+function paperTexture() {
+  const m = /url\("?(data:[^")]+)"?\)/.exec(getComputedStyle(document.body, "::before").backgroundImage || "");
+  if (!m) return Promise.resolve(null);
+  return new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = m[1]; });
+}
+
+/** A torn edge: points along a side with a small, ragged jitter (seeded, so the same card tears the same way). */
+function tornPath(g, x, y, w, h, amp, seed) {
+  let t = seed;
+  const rnd = () => (t = (t * 16807) % 2147483647) / 2147483647;
+  const side = (x0, y0, x1, y1, nx, ny) => {
+    const len = Math.hypot(x1 - x0, y1 - y0), steps = Math.round(len / 11);
+    let drift = 0;
+    for (let i = 0; i <= steps; i++) {
+      drift = drift * .8 + (rnd() - .5) * amp * .7;              // slow wander of the tear
+      const d = drift + (rnd() - .5) * amp * .18 + (rnd() < .03 ? amp * .35 : 0); // a little fine fibre, now and then a shallow nick
+      const f = i / steps;
+      g.lineTo(x0 + (x1 - x0) * f + nx * d, y0 + (y1 - y0) * f + ny * d);
+    }
+  };
+  g.beginPath(); g.moveTo(x, y);
+  side(x, y, x + w, y, 0, 1); side(x + w, y, x + w, y + h, -1, 0); side(x + w, y + h, x, y + h, 0, -1); side(x, y + h, x, y, 1, 0);
+  g.closePath();
+}
 const NAME_KEY = "odd-share-name";
 
 /** The numbers on the card: { fish, spear, big, ocean, expansions: [{ name, have, total }], ach } (ach null if unavailable). */
@@ -77,7 +113,10 @@ export async function drawShareCard(stats, { name = "", date = new Date() } = {}
   const c = document.createElement("canvas");
   c.width = W; c.height = H;
   const g = c.getContext("2d");
-  try { await Promise.all([document.fonts.load(`700 40px Cinzel`), document.fonts.load(`400 20px "Noto Sans"`), document.fonts.load(`600 20px "Noto Sans"`)]); } catch { /* system fonts */ }
+  C = palette();
+  try { await Promise.all([document.fonts.load(`400 40px Neuton`), document.fonts.load(`italic 400 20px Neuton`), document.fonts.load(`500 20px Montserrat`),
+    document.fonts.load(`400 20px "Rethink Sans"`), document.fonts.load(`600 20px "Rethink Sans"`)]); } catch { /* system fonts */ }
+  const texture = await paperTexture();
 
   const font = (size, weight = 400, family = SANS) => { g.font = `${weight} ${size}px ${family}`; };
   const text = (s, x, y, { size = 20, weight = 400, family = SANS, color = C.text, align = "left", max } = {}) => {
@@ -91,30 +130,33 @@ export async function drawShareCard(stats, { name = "", date = new Date() } = {}
     rrect(x, y, w, h, h / 2); g.fillStyle = C.track; g.fill();
     if (f > 0) {
       rrect(x, y, Math.max(h, w * Math.min(1, f)), h, h / 2);
-      const grad = g.createLinearGradient(x, 0, x + w, 0);
-      if (done) { grad.addColorStop(0, "#4d9e55"); grad.addColorStop(1, "#9be3a0"); } else { grad.addColorStop(0, C.accent); grad.addColorStop(1, C.accentHi); }
-      g.fillStyle = grad; g.fill();
+      g.fillStyle = done ? C.green : C.fill; g.fill();
     }
   };
   const heading = (s, x, y) => {
-    text(s.toUpperCase(), x, y, { size: 22, weight: 700, family: SERIF, color: C.title });
+    text(s, x, y, { size: 30, family: SERIF, color: C.strong });
   };
 
-  // background + window
-  const bg = g.createRadialGradient(W / 2, 0, 0, W / 2, 0, H * 1.1);
-  bg.addColorStop(0, C.bg2); bg.addColorStop(0.6, C.bg1);
-  g.fillStyle = bg; g.fillRect(0, 0, W, H);
-  const M = 24;
-  rrect(M, M, W - 2 * M, H - 2 * M, 18); g.fillStyle = C.panel; g.fill();
-  g.lineWidth = 3; g.strokeStyle = C.accentDim; g.stroke();
-  rrect(M + 6, M + 6, W - 2 * M - 12, H - 2 * M - 12, 14); g.lineWidth = 1; g.strokeStyle = C.frame; g.stroke();
+  // a sheet of paper with torn edges (a pale torn fringe peeking out under the sheet) on a fully transparent
+  // background (no shadow), so the card sits cleanly on whatever it's posted on
+  const grain = (alpha, contrast) => {
+    if (!texture) return;
+    g.save(); g.globalCompositeOperation = "soft-light"; g.globalAlpha = alpha; if (contrast) g.filter = `contrast(${contrast})`;
+    const s = Math.max(W / texture.width, H / texture.height);
+    g.drawImage(texture, (W - texture.width * s) / 2, (H - texture.height * s) / 2, texture.width * s, texture.height * s);
+    g.restore();
+  };
+  const M = 26;
+  tornPath(g, M - 3, M - 3, W - 2 * M + 6, H - 2 * M + 6, 7, 1234567); g.fillStyle = C.edge; g.fill();
+  tornPath(g, M, M, W - 2 * M, H - 2 * M, 6, 7654321); g.fillStyle = C.paper; g.fill();
+  g.save(); g.clip(); grain(C.dark ? .9 : .8, C.dark ? 2 : 0); g.restore();
 
   // header
   const P = M + 36;
-  text("OF DRAGONS DEEP", P, P + 34, { size: 40, weight: 700, family: SERIF, color: C.title });
+  text("Of Dragons Deep", P, P + 38, { size: 50, family: SERIF, color: C.strong });
   const sub = [name.trim(), date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })].filter(Boolean).join(" · ");
   text(sub, W - P, P + 30, { size: 20, color: C.muted, align: "right", max: W / 2 - P });
-  g.fillStyle = C.rule; g.fillRect(P, P + 56, W - 2 * P, 1);
+  g.fillStyle = C.line; g.fillRect(P, P + 58, W - 2 * P, 1);
 
   // two columns: fish on the left, achievements on the right
   const top = P + 92, colGap = 48;
@@ -126,10 +168,10 @@ export async function drawShareCard(stats, { name = "", date = new Date() } = {}
     const { x, w } = fishBox; let y = fishBox.y;
     heading("Fish caught", x, y);
     y += 62;
-    text(n(stats.fish.have), x, y, { size: 56, weight: 700, family: SERIF, color: C.text });
-    font(56, 700, SERIF); const bigW = g.measureText(n(stats.fish.have)).width;
+    text(n(stats.fish.have), x, y, { size: 54, weight: 500, family: NUM, color: C.strong });
+    font(54, 500, NUM); const bigW = g.measureText(n(stats.fish.have)).width;
     text(`/ ${n(stats.fish.total)} Fish Guide`, x + bigW + 12, y, { size: 22, color: C.muted });
-    text(`${pct(stats.fish.have, stats.fish.total)}%`, x + w, y, { size: 30, weight: 700, family: SERIF, color: C.title, align: "right" });
+    text(`${pct(stats.fish.have, stats.fish.total)}%`, x + w, y, { size: 28, weight: 500, family: NUM, color: C.strong, align: "right" });
     y += 18; bar(x, y, w, 14, stats.fish.have / stats.fish.total, stats.fish.have === stats.fish.total);
     y += 40;
     for (const [label, s] of [["Spearfishing", stats.spear], ["Big fish", stats.big], ["Ocean fishing", stats.ocean]]) {
@@ -157,24 +199,24 @@ export async function drawShareCard(stats, { name = "", date = new Date() } = {}
       text("Couldn't load achievements right now.", x, y + 50, { size: 19, color: C.muted });
     } else {
       y += 50;
-      text(`${n(a.have)} / ${n(a.total)}`, x, y, { size: 34, weight: 700, family: SERIF });
+      text(`${n(a.have)} / ${n(a.total)}`, x, y, { size: 32, weight: 500, family: NUM, color: C.strong });
       text(`${n(a.points)} / ${n(a.totalPoints)} points`, x + w, y, { size: 19, color: C.muted, align: "right" });
       y += 14; bar(x, y, w, 10, a.have / a.total, a.have === a.total);
       const icons = await Promise.all([...a.recent.slice(0, L.rows), ...a.almost.slice(0, L.rows)].map(r => loadImage(r.icon)));
       const row = (r, i, yy, extra) => {
         const icon = icons[i], s = 40;
-        rrect(x, yy - 30, s, s, 6); g.fillStyle = "rgba(0,0,0,.35)"; g.fill();
-        if (icon) { g.save(); rrect(x, yy - 30, s, s, 6); g.clip(); g.drawImage(icon, x, yy - 30, s, s); g.restore(); }
-        text(r.name, x + s + 14, yy - 6, { size: 18, weight: 600, color: C.text, max: w - s - 14 - 40 });
+        rrect(x, yy - 30, s, s, 3); g.fillStyle = C.well; g.fill();
+        if (icon) { g.save(); rrect(x, yy - 30, s, s, 3); g.clip(); g.drawImage(icon, x, yy - 30, s, s); g.restore(); }
+        text(r.name, x + s + 14, yy - 6, { size: 18, weight: 500, family: NUM, color: C.strong, max: w - s - 14 - 40 });
         text(`${r.points} pts`, x + w, yy - 6, { size: 14, color: C.muted, align: "right" });
         extra?.(x + s + 14, yy + 4, w - s - 14);
       };
       y += 44;
-      text("Recently obtained", x, y, { size: 16, weight: 600, color: C.muted });
+      text("Recently obtained", x, y, { size: 19, family: SERIF, color: C.muted });
       y += 40;
       if (!a.recent.length) { text("None yet. Tick or import some on the Achievements page.", x, y - 10, { size: 16, color: C.muted }); y += 46; }
       a.recent.slice(0, L.rows).forEach((r, i) => { row(r, i, y); y += 46; });
-      text("Almost there", x, y, { size: 16, weight: 600, color: C.muted });
+      text("Almost there", x, y, { size: 19, family: SERIF, color: C.muted });
       y += 40;
       const off = Math.min(a.recent.length, L.rows);
       if (!a.almost.length) text("Nothing in progress yet.", x, y - 10, { size: 16, color: C.muted });

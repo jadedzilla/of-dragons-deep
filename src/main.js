@@ -250,6 +250,15 @@ const aquariumText = a => a ? `${a.water}, tier ${a.size} tanks and up (size ${[
 const LOADING = Symbol("loading");
 const LATER = { Canvas: ` id="fvCanvas" class="pending"`, "Best bait": ` id="fvBait" class="pending fv-bait"`,
   Hookset: ` id="fvHook" class="pending"`, Tug: ` id="fvTug" class="pending"` };
+/** The facts about a fish that need no loading (also on the back of a card in the import reveal). */
+const basicFacts = f => [
+  ["Location", f.zone + (f.zone !== f.region ? ", " + f.region : "")],
+  [f.spear ? "Size" : "Water", f.water],
+  f.cat !== OCEAN_FISHING ? ["Level", String(f.lvl)] : null,
+  [f.cat === OCEAN_FISHING ? "Category" : "Expansion", CATEGORIES[f.cat]],
+  ["Aquarium", aquariumText(f.aquarium)],
+].filter(Boolean);
+
 function openFishView(f) {
   viewing = f.id;
   $("#fvName").textContent = f.name;
@@ -260,15 +269,13 @@ function openFishView(f) {
     f.collectable ? `<span class="coll">Collectable</span>` : "",
     f.spear ? `<span>Spearfishing</span>` : "",
   ].join("");
+  const [location, water, ...more] = basicFacts(f), aquarium = more.pop();
   const facts = [
-    ["Location", f.zone + (f.zone !== f.region ? ", " + f.region : "")],
-    [f.spear ? "Size" : "Water", f.water],
-    f.cat !== OCEAN_FISHING ? ["Level", String(f.lvl)] : null,
-    [f.cat === OCEAN_FISHING ? "Category" : "Expansion", CATEGORIES[f.cat]],
+    location, water, ...more,
     f.spear ? null : ["Best bait", LOADING], // these three are filled in from Teamcraft's data below
     f.spear ? null : ["Hookset", LOADING],
     f.spear ? null : ["Tug", LOADING],
-    ["Aquarium", aquariumText(f.aquarium)],
+    aquarium,
     ["Canvas", LOADING], // filled in from the description below
     ["Status", caught.has(f.id) ? "Caught" : "Not yet caught"],
     ["Item ID", String(f.id)],
@@ -624,7 +631,7 @@ function route() {
 window.addEventListener("hashchange", route);
 
 initBaitView({ esc }); // clicking a bait anywhere shows where to get it
-const gacha = createGacha({ fishIcon, esc }); // gacha-style reveal of new fish after an import
+const gacha = createGacha({ fishIcon, esc, facts: basicFacts, openFish: openFishView }); // gacha-style reveal of new fish after an import
 
 /* ---------- Start ---------- */
 setMode(mode);

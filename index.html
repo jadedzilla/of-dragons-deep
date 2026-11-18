@@ -7,14 +7,16 @@
 <link rel="icon" type="image/png" href="public/neptodragon-icon-clean-512x.png">
 <!-- added to the home screen: open full screen like an app (no address bar) -->
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#06101f">
+<meta name="theme-color" content="#c9c8c4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Dragons Deep">
 <link rel="apple-touch-icon" href="public/app-icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Sans:wght@400;600&family=Montserrat:ital,wght@0,500;1,500&family=Rethink+Sans:ital,wght@0,400;0,600;1,400&family=Neuton:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<script>/* light or dark: the saved choice, else the device's setting; set before the first paint */try{document.documentElement.dataset.theme=localStorage.getItem("odd-theme")||(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark")}catch{document.documentElement.dataset.theme="dark"}</script>
 <link rel="stylesheet" href="src/styles.css">
 </head>
 <body>
@@ -28,6 +30,7 @@
 <div class="window">
   <div class="titlebar">
     <h1>Of Dragons Deep</h1>
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="Switch between light and dark mode" title="Light / dark mode"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
     <div class="progress"><b id="caughtCount">0</b> / <span id="totalCount">0</span> caught</div>
   </div>
   <div class="body">
@@ -139,6 +142,14 @@
 <div class="tooltip" id="tooltip"></div>
 <div class="toast import-result" id="toast" role="status" aria-live="polite"></div>
 <footer class="credit">created with 🐟 by jadedzilla</footer>
+<script>
+// Light / dark mode switch in the title bar; the choice is remembered (odd-theme)
+document.querySelector("#themeBtn").addEventListener("click", () => {
+  const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("odd-theme", next); } catch {}
+});
+</script>
 <script>
 // Until the app has loaded the fish list and started, show the page in the address with a loading placeholder
 // (instead of the Fish Guide's). The app replaces it when the page is ready.
