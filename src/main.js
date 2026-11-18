@@ -257,7 +257,7 @@ function openFishView(f) {
   $("#fvTags").innerHTML = [
     caught.has(f.id) ? `<span class="caught">✓ Caught</span>` : "",
     f.big ? `<span class="big">◆ Big fish</span>` : "",
-    f.collectable ? `<span>Collectable</span>` : "",
+    f.collectable ? `<span class="coll">Collectable</span>` : "",
     f.spear ? `<span>Spearfishing</span>` : "",
   ].join("");
   const facts = [

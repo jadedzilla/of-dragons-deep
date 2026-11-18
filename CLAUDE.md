@@ -51,7 +51,7 @@ Writing tests: `export default async t => {…}` with `t.page({ width, height, p
 - `src/skeleton.js`: loading placeholders, shimmering shapes in the layout of the content that's on its way (`skeleton(kind, label)`, `skInline()`; CSS `.sk`), with the loading message kept for screen readers (`.sr-only`)
 - `src/icons.js`: loads the icon manifest and renders sprite-sheet icons (SVG placeholder if an icon is missing)
 - `src/storage.js`: per-browser localStorage: caught set (key `odd-caught-v2`, game item ids), the last tab (`odd-tab`), achievement marks/progress, and when achievements were first seen obtained (`odd-achievements-seen-v1`)
-- `src/styles.css`: all styles; theme colours are CSS variables in `:root`
+- `src/styles.css`: all styles. Theme tokens are CSS variables in `:root` (colours, surfaces like `--control-bg` / `--card-bg` / `--inset-bg`, `--display` / `--sans`, radii `--r-sm` 4 / `--r` 6 / `--r-lg` 10 / `--r-pill`); use them instead of raw values. One style per kind of thing: list cards (timers, achievements, route steps) share `--card-bg` and turn green (`--caught-bg`) when live or done; rows inside a card or dialog (route fish, vendors) are inset rows; all dialogs share one shell; Cinzel for titles (20 window, 18 dialog, 15 section, 13 sub-heading) and big numbers (18); text sizes 11/12/13
 - `scripts/fetch-fish-data.mjs`: refreshes the fallback snapshot using `src/fishsource.js`
 - `scripts/fetch-icons.mjs`: icon downloader (writes PNG sheets); `scripts/webp-sheets.mjs`: converts them to WebP via headless Chromium; `scripts/png.mjs`: tiny PNG decode/encode used to pack sheets
 - `scripts/build.mjs`, `scripts/serve.mjs`: build and dev server
