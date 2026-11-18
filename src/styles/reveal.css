@@ -14,13 +14,13 @@
 .gc-splash,.gc-ripple{position:absolute;left:50%;top:calc(62% + 8px);width:150px;height:44px;margin:-22px 0 0 -75px;border-radius:50%;opacity:0}
 .gc-splash.back,.gc-ripple.back{clip-path:inset(0 0 50% 0)} /* far half: behind the bobber */
 .gc-splash.front,.gc-ripple.front{clip-path:inset(50% 0 0 0)} /* near half: in front of it */
-.gc-splash{border:3px solid rgba(190,220,255,.8);animation:gc-splash .8s ease-out .88s} /* landing splash */
-.gc-ripple{border:2px solid rgba(150,195,255,.5);animation:gc-ripple 1.8s ease-out infinite;animation-delay:calc(1s + var(--k) * .6s)}
+.gc-splash{border:3px solid rgba(232,226,208,.8);animation:gc-splash .8s ease-out .88s} /* landing splash */
+.gc-ripple{border:2px solid rgba(232,226,208,.45);animation:gc-ripple 1.8s ease-out infinite;animation-delay:calc(1s + var(--k) * .6s)}
 .gc-float{position:absolute;left:50%;top:62%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;animation:gc-float 1.6s ease-in-out infinite;
   background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.75),rgba(255,255,255,0) 28%),linear-gradient(#d8392b 0 46%,#2a1a14 46% 54%,#f1ece0 54%);
   box-shadow:0 0 26px rgba(241,220,160,.35),inset -6px -8px 12px rgba(0,0,0,.35)}
 .gc-float::after{content:"";position:absolute;left:-3px;right:-3px;bottom:-3px;height:40%;border-radius:0 0 50% 50%/0 0 100% 100%; /* underwater part */
-  background:linear-gradient(rgba(44,90,150,.5),rgba(18,36,66,.85));border-top:2px solid rgba(150,195,255,.55)}
+  background:linear-gradient(rgba(44,43,39,.55),rgba(10,10,9,.88));border-top:2px solid rgba(232,226,208,.45)} /* the backdrop's own dark */
 .gc-stick{position:absolute;left:50%;bottom:calc(100% - 4px);width:6px;height:34px;margin-left:-3px;border-radius:3px 3px 0 0;background:linear-gradient(var(--accent-hi) 0 24%,#3a2a1c 24%)}
 /* under the water: the shadow of a short length of line from the bobber's bottom to the hook, blurred like the fish's (hangs from the float, so
    it rocks and dips with it); the fish strikes at the hook */
@@ -70,6 +70,8 @@
 .done .gc-bob{display:none}
 /* bubbles floating up over the cards as they appear after the flash (rise on <i>, sway on <b>) */
 .gc-bubbles{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;display:none}
+.gc-motes{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;opacity:0;transition:opacity 1.6s ease} /* drifting motes behind the cards: motes() */
+.dealt .gc-motes{opacity:1}
 .bubbles .gc-bubbles{display:block}
 .gc-bubbles i{position:absolute;width:min(var(--s),42vw);aspect-ratio:1;margin-left:calc(min(var(--s),42vw) / -2);opacity:0;animation:gc-bubble-rise var(--t) cubic-bezier(.3,.15,.7,.85) var(--d) forwards}
 .gc-bubbles b{display:block;width:100%;height:100%;border-radius:50%;filter:blur(calc(min(var(--s),42vw) / 26)); /* out of focus, right by the camera: bigger = closer = blurrier */

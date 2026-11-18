@@ -6,7 +6,7 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { basicFacts } from "../../lib/fishFacts.js";
 import { FishIcon } from "../FishIcon.jsx";
-import { FLASH, FLASH_AT, FLASH_FADES, burst, swingLine } from "./effects.js";
+import { FLASH, FLASH_AT, FLASH_FADES, burst, motes, swingLine } from "./effects.js";
 
 // Each card starts to flip when the one before is edge-on: the flip (1.05 s, cubic-bezier(.3,1.3,.5,1)) passes 90° at 13.5%.
 const FLIP_GAP = Math.round(1050 * .135);
@@ -85,6 +85,7 @@ export function Reveal({ fish, onClose, onOpenFish }) {
     const finish = () => { // jump to the end
       timers.forEach(clearTimeout);
       dialog.classList.add("reel", "dealt", "done");
+      motes(dialog, reduced());
       dialog.querySelectorAll(".gc-card").forEach(c => c.classList.add("flipped"));
       setCount(total);
     };
@@ -104,7 +105,7 @@ export function Reveal({ fish, onClose, onOpenFish }) {
     });
     const BUBBLES_AT = 3250 + FLASH_FADES - 250, LAST_BUBBLE = BUBBLES_AT + (BUBBLE_DELAY + BUBBLE_RISE[1]) * 1000;
     later(BUBBLES_AT, () => dialog.classList.add("bubbles"));
-    later(3250 + FLASH_AT + FLASH * .29, () => { dialog.classList.add("dealt"); countTo(2000 + Math.min(fish.length, CARDS) * FLIP_GAP); });
+    later(3250 + FLASH_AT + FLASH * .29, () => { dialog.classList.add("dealt"); motes(dialog); countTo(2000 + Math.min(fish.length, CARDS) * FLIP_GAP); });
     const flips = () => {
       const els = dialog.querySelectorAll(".gc-card");
       els.forEach((c, i) => later(i * FLIP_GAP, () => c.classList.add("flipped")));
@@ -194,6 +195,7 @@ export function Reveal({ fish, onClose, onOpenFish }) {
           <span className="gc-float"><span className="gc-stick" /><Tackle /></span><Rings side="front" />
           <span className={`gc-bang t${tier}`}><Bangs n={tier} /></span>
         </div>
+        <canvas className="gc-motes" aria-hidden="true" />
         <canvas className="gc-boom" aria-hidden="true" />
         <Bubbles />
         <h2 className="gc-title">You caught <b id="gcCount" ref={countRef}>0</b> new fish!</h2>
