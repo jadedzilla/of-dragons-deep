@@ -1,28 +1,38 @@
 :root{
   /* Theme tokens: use these by role instead of raw values, so every page looks the same.
      Colours */
-  --bg1:#0d1220; --bg-lift:#22304f;                /* page, and the glow at the top of it */
-  --panel:rgba(22,26,38,.92);                      /* the window */
-  --panel-deep:#161a26;                            /* dialogs, the filter panel, the tooltip, the notice */
-  --input:#10131c;                                 /* text fields */
-  --gold:#c9a95c; --gold-dim:#7d6a3e; --gold-hi:#f1dca0; --gold-pale:#fff3cf; --on-gold:#1b1608;
-  --text:#e8e2d0; --text-soft:rgba(232,226,208,.85); --muted:#9a937f; --placeholder:#6b6556;
-  --line:#2c2a22;                                  /* hairlines and the edges of inset rows */
-  --border:#4a4434;                                /* controls (buttons, inputs, page numbers) and cards */
-  --tile:#2a3044; --tile-hi:#3a4360;
+  /* Clear Blue, after FFXIV's HUD theme: navy glass, pale blue frames and accents, white text */
+  --bg1:#06101f; --bg-lift:#123661;                /* page, and the glow at the top of it */
+  --panel:rgba(9,23,45,.92);                       /* the window */
+  --panel-deep:#0e2240;                            /* dialogs, the filter panel, the tooltip, the notice */
+  --input:#071527;                                 /* text fields */
+  --accent:#74baf3; --accent-dim:#3d6e9f; --accent-hi:#d9eeff; --accent-pale:#ffffff; --on-accent:#06182e;
+  --accent-glow:rgba(116,186,243,.45);             /* the soft glow on what's selected or hovered */
+  --text:#f2f7ff; --text-soft:rgba(242,247,255,.9); --muted:#a9bdd6; --placeholder:#6a82a3;
+  --gold:#e2c27a; --gold-hi:#f1dca0;                /* gold accents: titles, headings, big numbers, the NEXT label */
+  --line:rgba(140,190,240,.16);                    /* hairlines and the edges of inset rows */
+  --border:#3c638c;                                /* controls (buttons, inputs, page numbers) and cards */
+  --tile:#1b3355; --tile-hi:#284a73;
+  /* what a fish is, the same everywhere (tiles, tags, timers, the import reveal): big fish gold, collectables blue,
+     the rest silver */
+  --big:#f1dca0; --big-dim:#7d6a3e; --big-glow:rgba(241,220,160,.65);
+  --coll:#7fb7ff; --coll-glow:rgba(127,183,255,.55);
+  --plain:#e4e9f0; --plain-glow:rgba(225,232,242,.45);
   --caught:#66d36e; --caught-hi:#9be3a0; --caught-line:rgba(102,211,110,.55); --caught-bg:linear-gradient(160deg,rgba(60,96,70,.5),rgba(42,54,52,.55));
-  --info:#8fc7ea; --info-line:rgba(95,180,232,.5);   /* collectables, ocean/spectral notes, "from the game" */
+  --info:#8fc7ea; --info-line:rgba(95,180,232,.5);   /* ocean/spectral notes, "from the game" */
   --warn:#e6c08a; --warn-line:#a8763a;
   --danger-fill:linear-gradient(180deg,#e0866a,#b4513a); --danger-line:#f0a58c; --on-danger:#1b0b06;
   /* Surfaces */
-  --control-bg:linear-gradient(180deg,#3a4058,#232839); /* buttons, page numbers, the collapsed search */
-  --gold-fill:linear-gradient(180deg,var(--gold-hi),var(--gold)); /* the selected page, page number, primary button, Edit on */
-  --card-bg:linear-gradient(160deg,rgba(42,44,52,.55),rgba(24,26,32,.6)); /* a list card: timer, achievement, route step */
-  --inset-bg:rgba(0,0,0,.28);                      /* a row inside a card or dialog: route fish, vendors, notes */
-  --well-bg:rgba(0,0,0,.35);                       /* recessed areas: the grid, the share preview */
-  --frame:0 0 0 1px #000,0 0 0 3px rgba(201,169,92,.18); /* the double gold frame of the window and dialogs */
+  --control-bg:linear-gradient(180deg,#30609a,#183660); /* buttons, page numbers, the collapsed search */
+  --nav-bg:linear-gradient(180deg,rgba(48,96,154,.5),rgba(20,48,88,.55)); /* page tabs and window tabs at rest */
+  --accent-fill:linear-gradient(180deg,#c9e8ff,var(--accent)); /* the selected page, page number, primary button, Edit on */
+  --card-bg:linear-gradient(160deg,rgba(36,72,120,.42),rgba(9,25,48,.66)); /* a list card: timer, achievement, route step */
+  --inset-bg:rgba(0,10,26,.35);                    /* a row inside a card or dialog: route fish, vendors, notes */
+  --well-bg:rgba(0,10,26,.4);                      /* recessed areas: the grid, the share preview */
+  --frame:0 0 0 1px #000,0 0 0 3px rgba(116,186,243,.2); /* the double pale blue frame of the window and dialogs */
   --shadow-window:0 18px 40px rgba(0,0,0,.6); --shadow-dialog:0 18px 40px rgba(0,0,0,.7); --shadow-float:0 8px 24px rgba(0,0,0,.6);
-  --glow-title:0 0 8px rgba(241,220,160,.35),0 1px 0 #000;
+  --glow-title:0 0 8px rgba(241,220,160,.3),0 1px 0 #000;
+  --shimmer:linear-gradient(100deg,rgba(255,255,255,.04) 30%,rgba(160,210,255,.14) 50%,rgba(255,255,255,.04) 70%); /* loading placeholders */
   /* Type: Cinzel for titles and big numbers, Noto Sans for everything else; sizes 11/12/13/15/18/20 */
   --display:Cinzel,serif; --sans:"Noto Sans",sans-serif;
   /* Shape */
@@ -45,15 +55,15 @@ body{
 .topnav a{
   padding:7px 14px;border-radius:var(--r);text-decoration:none;
   font:700 13px var(--display);letter-spacing:.08em;color:var(--muted);
-  background:linear-gradient(180deg,rgba(58,64,88,.55),rgba(35,40,57,.55));border:1px solid var(--border);
+  background:var(--nav-bg);border:1px solid var(--border);
   transition:color .12s,border-color .12s;
 }
-.topnav a:hover{color:var(--text);border-color:var(--gold-dim)}
-.topnav a[aria-current]{color:var(--on-gold);background:var(--gold-fill);border-color:var(--gold-hi);text-shadow:none}
+.topnav a:hover{color:var(--text);border-color:var(--accent-dim)}
+.topnav a[aria-current]{color:var(--on-accent);background:var(--accent-fill);border-color:var(--accent-hi);text-shadow:none;box-shadow:0 0 10px var(--accent-glow)}
 
 .window{
   position:relative;width:100%;max-width:720px;background:var(--panel);
-  border:1px solid var(--gold-dim);border-radius:var(--r-lg);
+  border:1px solid var(--accent-dim);border-radius:var(--r-lg);
   box-shadow:var(--frame),var(--shadow-window),inset 0 1px 0 rgba(255,255,255,.06);
 }
 /* Fishing / Spearfishing tabs hanging from the bottom-left of the window, like in-game window tabs.
@@ -63,19 +73,19 @@ body{
 .tab{
   margin-top:3px;height:30px;padding:0 16px;cursor:pointer;
   font:700 12px var(--display);letter-spacing:.08em;color:var(--muted);
-  background:linear-gradient(0deg,#1a1f2e,#141824);border:1px solid var(--border);border-top:0;border-radius:0 0 var(--r) var(--r);
+  background:linear-gradient(0deg,var(--panel-deep),#0a1a33);border:1px solid var(--border);border-top:0;border-radius:0 0 var(--r) var(--r);
   box-shadow:0 6px 12px rgba(0,0,0,.45);transition:color .12s,border-color .12s;
 }
-.tab:hover{color:var(--text);border-color:var(--gold-dim)}
+.tab:hover{color:var(--text);border-color:var(--accent-dim)}
 .tab.active{
-  margin-top:-1px;height:34px;color:var(--gold-hi);cursor:default;
-  background:linear-gradient(0deg,#1d2232,var(--panel) 70%);border-color:var(--gold-dim);
-  text-shadow:0 0 8px rgba(241,220,160,.3);box-shadow:0 0 0 1px #000,0 8px 16px rgba(0,0,0,.5);clip-path:inset(1px -20px -20px -20px);
+  margin-top:-1px;height:34px;color:var(--accent-hi);cursor:default;
+  background:linear-gradient(0deg,#123058,var(--panel) 70%);border-color:var(--accent-dim);
+  text-shadow:0 0 8px rgba(160,210,255,.4);box-shadow:0 0 0 1px #000,0 8px 16px rgba(0,0,0,.5);clip-path:inset(1px -20px -20px -20px);
 }
 .titlebar{
   display:flex;align-items:center;justify-content:space-between;
-  padding:10px 16px;border-bottom:1px solid var(--gold-dim);
-  background:linear-gradient(180deg,rgba(201,169,92,.18),rgba(201,169,92,0));
+  padding:10px 16px;border-bottom:1px solid rgba(226,194,122,.45); /* a thin gold rule under the title */
+  background:linear-gradient(180deg,rgba(116,186,243,.22),rgba(116,186,243,0));
   border-radius:var(--r-lg) var(--r-lg) 0 0;
 }
 .titlebar h1{
@@ -94,11 +104,11 @@ body{
   font:600 13px var(--sans);font-variant-numeric:tabular-nums;color:var(--muted);
   background:var(--control-bg);border:1px solid var(--border);
 }
-.pg:hover{color:var(--gold-hi);border-color:var(--gold-hi)}
+.pg:hover{color:var(--accent-hi);border-color:var(--accent-hi);box-shadow:0 0 8px rgba(116,186,243,.35)}
 .pg:disabled{opacity:.35;cursor:default}
 .pg.arrow{min-width:24px;padding:0 4px}
 .pages .gap{color:var(--muted);align-self:center;min-width:30px;text-align:center;font-size:12px} /* same width as a page button */
-.pg.active{color:var(--on-gold);background:var(--gold-fill);border-color:var(--gold-hi)}
+.pg.active{color:var(--on-accent);background:var(--accent-fill);border-color:var(--accent-hi);box-shadow:0 0 10px var(--accent-glow)}
 .search{
   --icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239a937f' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-4-4'/%3E%3C/svg%3E");
   flex:0 1 200px;min-width:0;height:30px;padding:0 10px 0 28px;border-radius:var(--r-pill);
@@ -106,14 +116,14 @@ body{
   border:1px solid var(--border);color:var(--text);font:13px var(--sans);outline:none;
   transition:flex-basis .18s,min-width .18s,background-position .18s,border-color .12s;
 }
-.search:focus{border-color:var(--gold)}
+.search:focus{border-color:var(--accent)}
 .search::placeholder{color:var(--placeholder)}
 /* Collapsed to a round icon button while empty and not focused; clicking it focuses the input, which expands it. */
 .search:not(:focus):placeholder-shown{
   flex:0 1 30px;min-width:30px;width:30px;padding:0;cursor:pointer; /* keep shrink on: while the width animates down, the box must not push the buttons */
   background:var(--icon) no-repeat center,var(--control-bg);
 }
-.search:not(:focus):placeholder-shown:hover{border-color:var(--gold-hi)}
+.search:not(:focus):placeholder-shown:hover{border-color:var(--accent-hi)}
 .search:not(:focus):placeholder-shown::placeholder{color:transparent}
 .spacer{flex:1}
 .filter-btn{
@@ -121,7 +131,7 @@ body{
   font:600 13px var(--sans);color:var(--text);
   background:var(--control-bg);border:1px solid var(--border);
 }
-.filter-btn:hover,.filter-btn.open{border-color:var(--gold-hi);color:var(--gold-hi)}
+.filter-btn:hover,.filter-btn.open{border-color:var(--accent-hi);color:var(--accent-hi);box-shadow:0 0 8px rgba(116,186,243,.35)}
 /* Toolbar buttons are icon-only; the label slides out on mouse hover or keyboard focus (not on touch screens,
    where :hover would stick after a tap). */
 .toolbar .filter-btn{padding:0 9px;gap:0}
@@ -129,22 +139,22 @@ body{
   transition:max-width .22s ease,opacity .18s ease,margin-left .22s ease}
 @media (hover:hover){.toolbar .filter-btn:hover .label{max-width:80px;opacity:1;margin-left:6px}}
 .toolbar .filter-btn:focus-visible .label{max-width:80px;opacity:1;margin-left:6px}
-.filter-btn .count{background:var(--gold);color:var(--on-gold);border-radius:var(--r-pill);padding:0 6px;font-size:11px;display:none}
+.filter-btn .count{background:var(--accent);color:var(--on-accent);border-radius:var(--r-pill);padding:0 6px;font-size:11px;display:none}
 .filter-btn .count.on{display:inline;margin-left:5px}
 
 .filter-panel{
   position:absolute;top:calc(100% + 8px);right:0;z-index:5;width:250px;padding:12px 14px;display:none;
-  background:var(--panel-deep);border:1px solid var(--gold-dim);border-radius:var(--r);box-shadow:var(--shadow-float);
+  background:var(--panel-deep);border:1px solid var(--accent-dim);border-radius:var(--r);box-shadow:var(--shadow-float);
 }
 .filter-panel.open{display:block}
 .filter-panel h3{margin:8px 0 6px;font:700 13px var(--display);letter-spacing:.06em;color:var(--gold)}
 .filter-panel h3:first-child{margin-top:0}
 .filter-panel label{display:flex;align-items:center;gap:8px;font-size:13px;padding:2px 0;cursor:pointer}
-.filter-panel input{accent-color:var(--gold)}
+.filter-panel input{accent-color:var(--accent)}
 .filter-panel .n{margin-left:auto;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
 .filter-panel .reset{margin-top:10px;width:100%;height:26px;border-radius:var(--r);cursor:pointer;
   background:transparent;border:1px solid var(--border);color:var(--muted);font:12px var(--sans)}
-.filter-panel .reset:hover{color:var(--gold-hi);border-color:var(--gold-hi)}
+.filter-panel .reset:hover{color:var(--accent-hi);border-color:var(--accent-hi)}
 
 /* grid */
 .grid{
@@ -165,14 +175,14 @@ body{
 .tile .ic.instant{transition:filter .12s} /* sheet was already loaded or arrived quickly: no fade */
 .tile:has(.ic){overflow:hidden}
 .grid.editing .tile:not(.empty){cursor:pointer}
-.grid.editing .tile:hover{transform:translateY(-1px);border-color:var(--gold-hi)}
-.grid.editing{border-color:var(--gold-dim);box-shadow:0 0 0 1px rgba(201,169,92,.35),0 0 12px rgba(201,169,92,.15)}
+.grid.editing .tile:hover{transform:translateY(-1px);border-color:var(--accent-hi)}
+.grid.editing{border-color:var(--accent-dim);box-shadow:0 0 0 1px var(--accent-glow),0 0 14px rgba(116,186,243,.25)}
 /* edit toggle */
-.edit-btn.on{color:var(--on-gold);background:var(--gold-fill);border-color:var(--gold-hi)}
-.edit-btn.on:hover{color:var(--on-gold);filter:brightness(1.08)}
-#hint b{color:var(--gold-hi);font-weight:600}
+.edit-btn.on{color:var(--on-accent);background:var(--accent-fill);border-color:var(--accent-hi);box-shadow:0 0 10px var(--accent-glow)}
+.edit-btn.on:hover{color:var(--on-accent);filter:brightness(1.08)}
+#hint b{color:var(--text);font-weight:600}
 .tile:not(.caught):hover .ic,.tile:not(.caught):hover svg{filter:grayscale(.4) brightness(.8)}
-.tile.caught{border-color:var(--gold)}
+.tile.caught{border-color:var(--accent)}
 .tile.caught svg,.tile.caught .ic{filter:none}
 .tile.caught::after{ /* green checkmark, bottom-right */
   content:"";position:absolute;right:1px;bottom:1px;width:17px;height:17px;
@@ -180,21 +190,21 @@ body{
 }
 .tile.big::before{
   content:"";position:absolute;left:3px;top:3px;width:7px;height:7px;transform:rotate(45deg);
-  background:var(--gold-hi);box-shadow:0 0 0 1px #000;
+  background:var(--big);box-shadow:0 0 0 1px #000;
 }
 .tile.empty{background:rgba(255,255,255,.025);border-color:var(--line);box-shadow:none}
 
 .tooltip{
   position:fixed;pointer-events:none;z-index:10;display:none;max-width:220px;
   padding:6px 10px;border-radius:var(--r);font-size:12px;line-height:1.45;
-  background:var(--panel-deep);border:1px solid var(--gold-dim);box-shadow:var(--shadow-float);
+  background:var(--panel-deep);border:1px solid var(--accent-dim);box-shadow:var(--shadow-float);
 }
-.tooltip .n{font-weight:600;color:var(--gold-hi);font-size:13px}
+.tooltip .n{font-weight:600;color:var(--text);font-size:13px}
 .tooltip .m{color:var(--muted)}
-.tooltip .t{color:var(--gold)}
+.tooltip .t{color:var(--accent)}
 .footer .note{font-size:11px;margin-top:2px}
 .footer .note.offline{color:var(--warn)}
-.footer .showing{color:var(--gold)}
+.footer .showing{color:var(--accent)}
 .footer{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font-size:12px;color:var(--muted)}
 .footer > :first-child{flex:1;min-width:0}
 .legend{flex:none} /* fixed width, so the legend never shifts with the text beside it (e.g. when switching tabs) */
@@ -203,7 +213,7 @@ body{
 .legend i{display:inline-block;width:8px;height:8px;margin-right:4px;vertical-align:middle}
 .legend i.check{width:13px;height:13px;margin-top:-2px;background:var(--caught-check) center/contain no-repeat}
 /* Loading placeholders (src/skeleton.js): shimmering shapes where content is on its way */
-.sk{display:block;border-radius:var(--r-sm);background:linear-gradient(100deg,rgba(255,255,255,.04) 30%,rgba(241,220,160,.12) 50%,rgba(255,255,255,.04) 70%) 0 0/300% 100%;animation:sk-shine 1.5s linear infinite}
+.sk{display:block;border-radius:var(--r-sm);background:var(--shimmer) 0 0/300% 100%;animation:sk-shine 1.5s linear infinite}
 @keyframes sk-shine{from{background-position:100% 0}to{background-position:0 0}}
 .sk-line{height:10px;margin:5px 0}
 .sk-line.sm{height:8px;opacity:.8}
@@ -228,7 +238,7 @@ body{
 /* fish icons not loaded yet (sprite sheet still on its way) shimmer behind the empty tile */
 .tile:has(> span.ic:not(.ready)),.fv-icon:has(> span.ic:not(.ready)),.tm-icon:has(> span.ic:not(.ready)),.ns-ficon:has(> span.ic:not(.ready)),
 .ac-f:has(> span.ic:not(.ready)),.gc-icon:has(> span.ic:not(.ready)),.gc-mini:has(> span.ic:not(.ready)){
-  background-image:linear-gradient(100deg,rgba(255,255,255,.04) 30%,rgba(241,220,160,.12) 50%,rgba(255,255,255,.04) 70%);background-size:300% 100%;animation:sk-shine 1.5s linear infinite}
+  background-image:var(--shimmer);background-size:300% 100%;animation:sk-shine 1.5s linear infinite}
 .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 @media (prefers-reduced-motion:reduce){.sk,.tile:has(> span.ic:not(.ready)){animation:none}}
 .empty-msg{grid-column:1/-1;text-align:center;padding:40px 0;color:var(--muted);font-size:13px}
@@ -237,31 +247,31 @@ body{
 /* dialogs (Import, confirmations, the fish view, the bait view) share one shell: the window's frame on the deeper panel */
 .import-dialog,.fish-dialog{
   width:min(480px,calc(100vw - 32px));padding:16px 18px 18px;color:var(--text);
-  background:var(--panel-deep);border:1px solid var(--gold-dim);border-radius:var(--r-lg);
+  background:var(--panel-deep);border:1px solid var(--accent-dim);border-radius:var(--r-lg);
   box-shadow:var(--frame),var(--shadow-dialog);
 }
 .import-dialog::backdrop,.fish-dialog::backdrop{background:rgba(5,8,15,.65)}
 .import-dialog h2{margin:0 0 6px;font:700 18px/1.25 var(--display);letter-spacing:.04em;color:var(--gold-hi);text-shadow:var(--glow-title)}
 .import-dialog .hint{margin:0 0 10px;font-size:12px;color:var(--muted);line-height:1.5}
-.import-dialog code{color:var(--gold-hi);background:var(--well-bg);padding:1px 4px;border-radius:var(--r-sm)}
+.import-dialog code{color:var(--accent-hi);background:var(--well-bg);padding:1px 4px;border-radius:var(--r-sm)}
 .import-dialog textarea{
   width:100%;resize:vertical;min-height:90px;padding:8px 10px;border-radius:var(--r);outline:none;
   background:var(--input);border:1px solid var(--border);color:var(--text);font:13px/1.4 ui-monospace,Consolas,monospace;
 }
-.import-dialog textarea:focus{border-color:var(--gold)}
+.import-dialog textarea:focus{border-color:var(--accent)}
 .import-dialog .modes label{display:flex;align-items:center;gap:8px;font-size:13px;padding:2px 0;cursor:pointer}
-.import-dialog input[type=radio]{accent-color:var(--gold)}
+.import-dialog input[type=radio]{accent-color:var(--accent)}
 .import-result{font-size:12px;line-height:1.5;margin-top:10px;overflow-wrap:anywhere;padding:8px 10px;border-radius:var(--r);background:var(--inset-bg);border:1px solid var(--line)}
 .import-result:empty{display:none}
 .import-result.ok{border-color:var(--info-line)}
 .import-result.warn{border-color:var(--warn-line);color:var(--warn)}
-.import-result b{color:var(--gold-hi)}
+.import-result b{color:var(--text)}
 .import-result .sub{margin-top:4px;color:var(--muted)}
 /* fish detail view (click/tap a fish while Edit is off) */
 .fish-dialog{width:min(420px,calc(100vw - 32px))}
 .fish-dialog:focus{outline:none}
 .fv-head{display:flex;align-items:center;gap:14px;padding-right:22px;position:relative}
-.fv-icon{flex:none;width:80px;height:80px;border-radius:var(--r);overflow:hidden;border:1px solid var(--gold-dim);
+.fv-icon{flex:none;width:80px;height:80px;border-radius:var(--r);overflow:hidden;border:1px solid var(--accent-dim);
   background:linear-gradient(160deg,var(--tile-hi),var(--tile));display:flex;align-items:center;justify-content:center;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px #000}
 /* Fish icons outside the grid (fish view, timers, Log Route, achievements, the import reveal): sprite icons fade in when
@@ -276,19 +286,19 @@ body{
 /* tags: small pills with a border in their meaning's colour (fish view tags, achievement points) */
 .fv-tags{display:flex;flex-wrap:wrap;gap:4px}
 .fv-tags span{font-size:11px;padding:1px 7px;border-radius:var(--r-pill);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
-.fv-tags .big{border-color:var(--gold-dim);color:var(--gold-hi)}
-.fv-tags .coll{border-color:var(--info-line);color:var(--info)}
+.fv-tags .big{border-color:var(--big-dim);color:var(--big)}
+.fv-tags .coll{border-color:var(--coll-glow);color:var(--coll)}
 .fv-tags .caught{border-color:var(--caught-line);color:var(--caught-hi)}
 .fv-x{position:absolute;top:-6px;right:-8px;width:28px;height:28px;border:0;background:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer} /* the dialogs' close button */
-.fv-x:hover{color:var(--gold-hi)}
-.fv-facts{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;margin:14px 0 0;padding:12px 0 0;border-top:1px solid var(--line);font-size:13px}
+.fv-x:hover{color:var(--accent-hi)}
+.fv-facts{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;margin:14px 0 0;padding:12px 0 0;border-top:1px solid rgba(226,194,122,.3);font-size:13px}
 .fv-facts dt{color:var(--muted)}
 .fv-facts dd{margin:0;overflow-wrap:anywhere}
 .fv-facts dd.pending{color:var(--muted);font-style:italic}
 .fv-bait{line-height:1.9}
 .fv-bait-item{white-space:nowrap}
 .fv-bait-item img{width:20px;height:20px;border-radius:var(--r-sm);vertical-align:-5px;margin-right:4px}
-.fv-arrow{color:var(--gold-dim);margin:0 2px}
+.fv-arrow{color:var(--accent-dim);margin:0 2px}
 .fv-or{color:var(--muted);font-size:12px}
 .fv-spots{color:var(--muted);font-size:12px;font-style:italic}
 .fv-desc{margin-top:12px;padding:8px 10px;border-radius:var(--r);background:var(--inset-bg);border:1px solid var(--line);font-size:13px;line-height:1.55}
@@ -304,22 +314,22 @@ body{
 }
 .toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
 .toast-x{position:absolute;top:4px;right:6px;width:24px;height:24px;border:0;background:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer}
-.toast-x:hover{color:var(--gold-hi)}
+.toast-x:hover{color:var(--accent-hi)}
 .import-dialog .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
-/* buttons: one family. Default, primary (gold, once per view), danger (red), small */
+/* buttons: one family. Default, primary (pale blue, once per view), danger (red), small */
 .btn{
   height:30px;padding:0 14px;border-radius:var(--r);cursor:pointer;font:600 13px var(--sans);
   color:var(--text);background:var(--control-bg);border:1px solid var(--border);
 }
-.btn:hover{border-color:var(--gold-hi);color:var(--gold-hi)}
-.btn.primary{color:var(--on-gold);background:var(--gold-fill);border-color:var(--gold-hi)}
-.btn.primary:hover{color:var(--on-gold);filter:brightness(1.08)}
+.btn:hover{border-color:var(--accent-hi);color:var(--accent-hi);box-shadow:0 0 8px rgba(116,186,243,.35)}
+.btn.primary{color:var(--on-accent);background:var(--accent-fill);border-color:var(--accent-hi);box-shadow:0 0 10px var(--accent-glow)}
+.btn.primary:hover{color:var(--on-accent);filter:brightness(1.08)}
 .btn.small{height:26px;padding:0 10px;font-size:12px}
 .bulk{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .bulk[hidden]{display:none}
 .confirm-dialog{width:min(400px,calc(100vw - 32px))}
 .confirm-dialog .hint{font-size:13px;color:var(--text);margin-bottom:14px}
-.confirm-dialog .hint b{color:var(--gold-hi)}
+.confirm-dialog .hint b{color:var(--text)}
 .btn.danger{background:var(--danger-fill);border-color:var(--danger-line);color:var(--on-danger)}
 .btn.danger:hover{color:var(--on-danger);filter:brightness(1.08)}
 
@@ -366,7 +376,7 @@ body{
 .tm-clock b{font:700 18px var(--display);color:var(--gold-hi);letter-spacing:.06em;margin-left:4px;font-variant-numeric:tabular-nums} /* big numbers: Cinzel 18 gold */
 .tm-search{flex:0 1 200px}
 .tm-opt{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap}
-.tm-opt input{accent-color:var(--gold)}
+.tm-opt input{accent-color:var(--accent)}
 .tm-summary{font-size:12px;color:var(--muted);margin:2px 0 12px}
 /* list cards (timers, achievements, route steps): the same card, 6px apart; live/done ones turn green */
 .tm-list{display:flex;flex-direction:column;gap:6px;min-height:120px}
@@ -375,19 +385,19 @@ body{
   font:13px var(--sans);color:var(--text);cursor:pointer;
   background:var(--card-bg);border:1px solid var(--line);border-radius:var(--r);
 }
-.tm-row:hover{border-color:var(--gold-dim)}
+.tm-row:hover{border-color:var(--accent-dim)}
 .tm-row.up{border-color:var(--caught-line);background:var(--caught-bg)}
 .tm-icon{width:44px;height:44px;border-radius:var(--r);overflow:hidden;display:flex;align-items:center;justify-content:center}
 .tm-icon svg{width:80%;height:80%}
 .tm-main{display:flex;flex-direction:column;gap:2px;min-width:0}
-.tm-name{font-weight:600;color:var(--gold-hi);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tm-big{display:inline-block;width:7px;height:7px;margin:0 6px 1px 1px;transform:rotate(45deg);background:var(--gold-hi);box-shadow:0 0 0 1px #000}
+.tm-name{font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tm-big{display:inline-block;width:7px;height:7px;margin:0 6px 1px 1px;transform:rotate(45deg);background:var(--big);box-shadow:0 0 0 1px #000}
 .tm-zone{font-size:12px;color:var(--muted)}
 .tm-cond{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:12px;color:var(--muted)}
 .tm-hours{font-variant-numeric:tabular-nums}
 .tm-weather{display:inline-flex;align-items:center;gap:3px}
 .tm-w{width:20px;height:20px}
-.tm-arrow{margin:0 2px;color:var(--gold-dim)}
+.tm-arrow{margin:0 2px;color:var(--accent-dim)}
 .tm-wn{font-style:italic}
 .tm-status{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;font-size:12px;color:var(--muted);white-space:nowrap}
 .tm-status b{color:var(--text);font-variant-numeric:tabular-nums}
@@ -395,11 +405,11 @@ body{
 .tm-at{font-size:11px}
 /* Log Route page (some .ns-* helpers shared) */
 .ns-intro{font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.5}
-.ns-intro b{color:var(--gold-hi);font-weight:600}
+.ns-intro b{color:var(--text);font-weight:600}
 .ns-list{display:flex;flex-direction:column;gap:12px;min-height:120px}
 .ns-rank{font:700 18px var(--display);color:var(--gold);min-width:18px;text-align:center;line-height:44px}
 .ns-ficon{flex:none;width:40px;height:40px;padding:0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.ns-ficon:hover{border-color:var(--gold-dim)}
+.ns-ficon:hover{border-color:var(--accent-dim)}
 .ns-ficon svg{width:80%;height:80%}
 .ns-mark{flex:none}
 .ns-item{white-space:nowrap;color:var(--text)}
@@ -423,30 +433,30 @@ body{
 .lr-actions{display:flex;flex-wrap:wrap;gap:8px}
 .lr-about summary{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer;list-style:none}
 .lr-about summary::-webkit-details-marker{display:none}
-.lr-about summary::before{content:"";width:5px;height:5px;border-right:1.5px solid var(--gold);border-bottom:1.5px solid var(--gold);transform:rotate(-45deg);transition:transform .15s ease}
+.lr-about summary::before{content:"";width:5px;height:5px;border-right:1.5px solid var(--accent);border-bottom:1.5px solid var(--accent);transform:rotate(-45deg);transition:transform .15s ease}
 .lr-about[open] summary::before{transform:rotate(45deg)}
-.lr-about summary:hover{color:var(--gold-hi)}
+.lr-about summary:hover{color:var(--accent-hi)}
 .lr-about .ns-intro{margin:6px 0 0}
 @media (max-width:520px){.lr-stat{min-width:0}.lr-actions .btn{padding:0 10px}#lrGbrAll{display:none} /* GatherBuddy is a PC plugin: desktop only */}
 @media (max-width:350px){.lr-stat:first-child{flex-basis:100%}}
 .lr-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .lr-step{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 10px;border-radius:var(--r);border:1px solid var(--line);background:var(--card-bg)}
-.lr-step.timed{border-color:var(--gold-dim)}
+.lr-step.timed{border-color:var(--accent-dim)}
 .lr-step.up{border-color:var(--caught-line);background:var(--caught-bg)}
 .lr-step .ns-rank{line-height:22px}
 .lr-body{min-width:0}
 .lr-when{font-size:11px;color:var(--gold);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
 .lr-where{font-size:13px;color:var(--text)}
-.lr-where b{color:var(--gold-hi);font-weight:600}
+.lr-where b{color:var(--text);font-weight:600}
 .lr-notes{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.6}
-.lr-notes b{color:var(--gold-hi);font-weight:600}
+.lr-notes b{color:var(--text);font-weight:600}
 .lr-sub{margin-top:8px;font-size:12px;color:var(--info);font-weight:600}
 /* inset rows (fish in a route step, vendors in the bait view): flat dark rows inside a card or dialog, 4px apart */
 .lr-fish{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
 .lr-f{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:var(--r);background:var(--inset-bg);border:1px solid var(--line)}
 .lr-f .ns-ficon{width:34px;height:34px}
 .lr-fmain{flex:1;min-width:0;font-size:12px;line-height:1.55}
-.lr-fname{color:var(--gold-hi);font-weight:600;font-size:13px}
+.lr-fname{color:var(--text);font-weight:600;font-size:13px}
 .lr-tags{font-weight:400;font-size:12px;color:var(--info)}
 .lr-bait{color:var(--text)}
 .lr-f .ns-mark{padding:0 8px}
@@ -454,25 +464,25 @@ body{
 .lr-copy{width:13px;height:13px;margin-right:5px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linejoin:round}
 /* Bait chips (open the bait view) and the bait view */
 .bait-link{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:left;
-  text-decoration:underline dotted rgba(201,169,92,.6);text-underline-offset:3px}
-.bait-link:hover{color:var(--gold-hi);text-decoration-color:var(--gold-hi)}
+  text-decoration:underline dotted rgba(116,186,243,.6);text-underline-offset:3px}
+.bait-link:hover{color:var(--accent-hi);text-decoration-color:var(--accent-hi)}
 .bait-link img{cursor:pointer}
 .bv-body h3{margin:14px 0 6px;font:700 13px var(--display);letter-spacing:.06em;color:var(--gold)} /* sub-headings (bait view, filter panel): Cinzel 13 gold */
 .bv-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
 .bv-list li{display:grid;grid-template-columns:1fr auto;gap:0 10px;padding:6px 8px;border-radius:var(--r);background:var(--inset-bg);border:1px solid var(--line);font-size:13px}
-.bv-npc{font-weight:600;color:var(--gold-hi)}
+.bv-npc{font-weight:600;color:var(--text)}
 .bv-where{grid-column:1;color:var(--muted);font-size:12px}
 .bv-xy{white-space:nowrap}
 .bv-price{grid-column:2;grid-row:1 / span 2;align-self:center;white-space:nowrap;color:var(--text);font-size:13px;font-variant-numeric:tabular-nums}
 .bv-price img{width:16px;height:16px;vertical-align:-3px;margin-right:3px}
 .bv-more{margin-top:4px}
-.bv-more summary{cursor:pointer;font-size:12px;color:var(--gold);padding:2px 0}
+.bv-more summary{cursor:pointer;font-size:12px;color:var(--accent);padding:2px 0}
 .bv-more .bv-list{margin-top:4px}
 .bv-note{margin-top:12px;font-size:12px;color:var(--muted)}
 .bv-body .loading{color:var(--muted);font-style:italic;font-size:13px;margin-top:10px}
 /* Gacha reveal of new fish after an import */
 .gacha-dialog{width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;background:transparent;color:var(--text);overflow:auto}
-.gacha-dialog::backdrop{background:radial-gradient(ellipse at center,rgba(34,48,79,.92),rgba(5,8,15,.97));animation:gc-fade .3s ease}
+.gacha-dialog::backdrop{background:radial-gradient(ellipse at center,rgba(18,54,97,.92),rgba(4,10,22,.97));animation:gc-fade .3s ease}
 .gc-stage{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));cursor:pointer}
 /* the bobber (line from the rod above): cast out, lands with a splash, floats with ripples, gets a bite (dips twice),
    then is reeled back in across the water while the screen fades over to the cards */
@@ -488,7 +498,7 @@ body{
   box-shadow:0 0 26px rgba(241,220,160,.35),inset -6px -8px 12px rgba(0,0,0,.35)}
 .gc-float::after{content:"";position:absolute;left:-3px;right:-3px;bottom:-3px;height:40%;border-radius:0 0 50% 50%/0 0 100% 100%; /* underwater part */
   background:linear-gradient(rgba(44,90,150,.5),rgba(18,36,66,.85));border-top:2px solid rgba(150,195,255,.55)}
-.gc-stick{position:absolute;left:50%;bottom:calc(100% - 4px);width:6px;height:34px;margin-left:-3px;border-radius:3px 3px 0 0;background:linear-gradient(var(--gold-hi) 0 24%,#3a2a1c 24%)}
+.gc-stick{position:absolute;left:50%;bottom:calc(100% - 4px);width:6px;height:34px;margin-left:-3px;border-radius:3px 3px 0 0;background:linear-gradient(var(--accent-hi) 0 24%,#3a2a1c 24%)}
 /* under the water: the shadow of a short length of line from the bobber's bottom to the hook, blurred like the fish's (hangs from the float, so
    it rocks and dips with it); the fish strikes at the hook */
 .gc-tackle{position:absolute;left:50%;top:calc(100% - 4px);width:24px;height:56px;margin-left:-12px;overflow:visible;filter:blur(2px);opacity:.85;pointer-events:none}
@@ -516,7 +526,7 @@ body{
 .gc-bang b,.gc-mark b{display:block;width:.4em;height:1em;font-size:48px;opacity:0;transform:scale(0);transform-origin:50% 90%}
 .gc-bang svg,.gc-mark svg{display:block;width:100%;height:100%;overflow:visible}
 .gc-bang .o,.gc-mark .o{fill:var(--lo)}.gc-bang .i,.gc-mark .i{fill:var(--hi)}.gc-bang .g,.gc-mark .g{fill:#fff;opacity:.85}
-.gc-bang.t1 b,.gc-mark.t1 b{--lo:#a9cbff;--hi:#f4f9ff;filter:drop-shadow(0 0 5px rgba(160,200,255,.95)) drop-shadow(0 0 12px rgba(160,200,255,.6))}
+.gc-bang.t1 b,.gc-mark.t1 b{--lo:#b9c3d0;--hi:#ffffff;filter:drop-shadow(0 0 5px rgba(225,232,242,.95)) drop-shadow(0 0 12px rgba(225,232,242,.6))}
 .gc-bang.t2 b,.gc-mark.t2 b{--lo:#6fa6ff;--hi:#d3e6ff;filter:drop-shadow(0 0 5px rgba(127,183,255,.95)) drop-shadow(0 0 12px rgba(127,183,255,.65))}
 .gc-bang.t3 b,.gc-mark.t3 b{--lo:#e0bb63;--hi:#fff4d2;filter:drop-shadow(0 0 5px rgba(241,220,160,1)) drop-shadow(0 0 13px rgba(241,220,160,.7))}
 .bite .gc-bang b{animation:gc-pop .5s cubic-bezier(.3,1.7,.5,1) forwards;animation-delay:calc(var(--j) * 90ms)}
@@ -543,7 +553,7 @@ body{
   border:2px solid rgba(210,234,255,.85);
   background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.85) 0 9%,rgba(255,255,255,0) 18%),radial-gradient(circle,rgba(175,212,255,.3) 45%,rgba(190,222,255,.55)); /* milky enough to veil the cards */
   animation:gc-bubble-sway calc(var(--t) / 2.5) ease-in-out var(--d) infinite alternate}
-.gc-title{margin:0;font:700 22px var(--display);letter-spacing:.05em;color:var(--gold-hi);text-align:center;text-shadow:0 0 12px rgba(241,220,160,.4);opacity:0;transition:opacity .8s}
+.gc-title{margin:0;font:700 22px var(--display);letter-spacing:.05em;color:var(--gold-hi);text-align:center;text-shadow:0 0 12px rgba(241,220,160,.35);opacity:0;transition:opacity .8s}
 .dealt .gc-title{opacity:1}
 .gc-title b{font-variant-numeric:tabular-nums}
 .gc-cards{position:relative;z-index:1;display:flex;flex-wrap:wrap;justify-content:center;gap:12px;max-width:760px} /* over the departing bobber */
@@ -552,22 +562,22 @@ body{
 .gc-inner{position:relative;width:100%;height:100%;-webkit-transform-style:preserve-3d;transform-style:preserve-3d;transition:transform 1.05s cubic-bezier(.3,1.3,.5,1)}
 .gc-card.flipped .gc-inner{transform:rotateY(180deg)}
 .gc-back,.gc-front{position:absolute;inset:0;border-radius:10px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.gc-back{transform:translateZ(1px);background:repeating-linear-gradient(45deg,#2a3044 0 8px,#232839 8px 16px);border:2px solid var(--gold-dim);box-shadow:inset 0 0 0 4px rgba(0,0,0,.35)}
+.gc-back{transform:translateZ(1px);background:repeating-linear-gradient(45deg,#16345c 0 8px,#112a4c 8px 16px);border:2px solid #5f93c6;box-shadow:inset 0 0 0 4px rgba(0,10,26,.35),0 0 12px rgba(116,186,243,.2)}
 .gc-back::after{content:"🐟";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;opacity:.6}
 .gc-front{transform:rotateY(180deg) translateZ(1px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;text-align:center;
-  background:linear-gradient(160deg,#252b3d,#161a26);border:2px solid #8a93a8;box-shadow:0 0 18px rgba(170,180,200,.25)}
-.gc-card.big .gc-front{border-color:var(--gold-hi);box-shadow:0 0 26px rgba(241,220,160,.65),inset 0 0 18px rgba(241,220,160,.18)}
-.gc-card.coll .gc-front{border-color:#7fb7ff;box-shadow:0 0 22px rgba(127,183,255,.5)}
+  background:linear-gradient(160deg,#3a4656,#1c2430);border:2px solid var(--plain);box-shadow:0 0 18px var(--plain-glow)} /* a normal fish: silver */
+.gc-card.big .gc-front{background:linear-gradient(160deg,#2a3e5e,#14233d);border-color:var(--big);box-shadow:0 0 26px var(--big-glow),inset 0 0 18px rgba(241,220,160,.18)}
+.gc-card.coll .gc-front{background:linear-gradient(160deg,#1e4677,#0d2240);border-color:var(--coll);box-shadow:0 0 22px var(--coll-glow),inset 0 0 16px rgba(127,183,255,.12)}
 .gc-card.big.flipped .gc-front{animation:gc-shine 1.6s ease-in-out .5s infinite alternate}
-.gc-icon{width:64px;height:64px;border-radius:var(--r);overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
+.gc-icon{width:64px;height:64px;border-radius:var(--r);overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid rgba(140,190,240,.3)}
 .gc-icon svg,.gc-mini svg{width:80%;height:80%}
-.gc-name{font-weight:600;font-size:13px;color:var(--gold-hi);line-height:1.25}
+.gc-name{font-weight:600;font-size:13px;color:var(--text);line-height:1.25}
 .gc-tag{font-size:11px;color:var(--muted)}
-.gc-card.big .gc-tag{color:var(--gold-hi)}
-.gc-card.coll .gc-tag{color:#9cc7ff}
+.gc-card.big .gc-tag{color:var(--big)}
+.gc-card.coll .gc-tag{color:var(--coll)}
 .gc-strip{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;max-width:760px;opacity:0;transition:opacity .4s}
 .done .gc-strip{opacity:1}
-.gc-mini{width:30px;height:30px;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--line)}
+.gc-mini{width:30px;height:30px;border-radius:var(--r-sm);overflow:hidden;border:1px solid rgba(140,190,240,.3)}
 .gc-more{margin-left:6px;font-size:13px;color:var(--muted)}
 .gc-actions{display:flex;align-items:center;gap:12px;min-height:32px}
 .gc-actions .btn{display:none}
@@ -621,7 +631,7 @@ body{
 .sh-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
 .sh-name{flex:1 1 220px;min-width:0;height:30px;padding:0 12px;border-radius:var(--r);outline:none;background:var(--input);border:1px solid var(--border);color:var(--text);font:13px var(--sans)}
 .sh-name::placeholder{color:var(--placeholder)}
-.sh-name:focus{border-color:var(--gold)}
+.sh-name:focus{border-color:var(--accent)}
 .sh-preview{display:flex;justify-content:center;padding:8px;border-radius:var(--r);background:var(--well-bg);border:1px solid var(--line);min-height:120px}
 .sh-preview img{display:block;max-width:100%;height:auto;max-height:70vh;border-radius:var(--r);box-shadow:var(--shadow-float)}
 .sh-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
@@ -638,11 +648,11 @@ body{
 .ac-list{display:flex;flex-direction:column;gap:12px;min-height:120px}
 .ac-section > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:4px 2px;border-radius:var(--r);user-select:none}
 .ac-section > summary::-webkit-details-marker{display:none}
-.ac-section > summary::before{content:"";flex:none;width:7px;height:7px;margin:0 3px 0 2px;border-right:2px solid var(--gold);border-bottom:2px solid var(--gold);transform:rotate(-45deg);transition:transform .15s ease}
+.ac-section > summary::before{content:"";flex:none;width:7px;height:7px;margin:0 3px 0 2px;border-right:2px solid var(--accent);border-bottom:2px solid var(--accent);transform:rotate(-45deg);transition:transform .15s ease}
 .ac-section[open] > summary::before{transform:rotate(45deg) translate(-2px,-2px)}
-.ac-section > summary:hover h3{color:var(--gold-pale)}
+.ac-section > summary:hover h3{color:var(--accent-pale)}
 .ac-section:not([open]){padding-bottom:2px;border-bottom:1px solid var(--line)}
-.ac-section h3{margin:0;font:700 15px var(--display);letter-spacing:.05em;color:var(--gold-hi);display:flex;align-items:baseline;gap:10px} /* section headings: Cinzel 15 gold-hi */
+.ac-section h3{margin:0;font:700 15px var(--display);letter-spacing:.05em;color:var(--gold-hi);display:flex;align-items:baseline;gap:10px} /* section headings: Cinzel 15 gold */
 .ac-count{font:600 12px/1 var(--sans);color:var(--muted);letter-spacing:0;font-variant-numeric:tabular-nums}
 .ac-note{font-size:12px;color:var(--muted);margin:2px 0 6px}
 .ac-all{font-size:12px;color:var(--muted);font-style:italic;padding:6px 2px}
@@ -653,28 +663,28 @@ body{
 .ac-icon img{display:block;width:100%;height:100%}
 .ac-row:not(.done) .ac-icon img{filter:grayscale(.85) brightness(.7)}
 .ac-main{min-width:0}
-.ac-name{font-weight:600;color:var(--gold-hi)}
-.ac-pts{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:var(--r-pill);border:1px solid var(--gold-dim);font-size:11px;line-height:1.2;color:var(--muted);font-weight:400;font-variant-numeric:tabular-nums}
+.ac-name{font-weight:600;color:var(--text)}
+.ac-pts{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:var(--r-pill);border:1px solid var(--accent-dim);font-size:11px;line-height:1.2;color:var(--muted);font-weight:400;font-variant-numeric:tabular-nums}
 .ac-desc{font-size:12px;color:var(--text-soft);margin-top:2px}
 .ac-progress{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .ac-bar{flex:1;max-width:260px;height:6px;border-radius:var(--r-pill);background:rgba(0,0,0,.45);border:1px solid var(--line);overflow:hidden}
-.ac-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-hi))}
+.ac-bar i{display:block;height:100%;background:linear-gradient(90deg,#4f9be0,var(--accent-hi))}
 .ac-row.done .ac-bar i{background:linear-gradient(90deg,#4d9e55,var(--caught-hi))}
 .ac-fish{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
 .ac-f{width:30px;height:30px;padding:0;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;background:none;cursor:pointer;opacity:.4;display:flex;align-items:center;justify-content:center}
 .ac-f.caught{opacity:1;border-color:var(--caught-line)}
-.ac-f:hover{opacity:1;border-color:var(--gold-dim)}
+.ac-f:hover{opacity:1;border-color:var(--accent-dim)}
 .ac-f svg{width:80%;height:80%}
 .ac-group{margin-top:6px}
 .ac-group > summary{list-style:none;cursor:pointer;display:block}
 .ac-group > summary::-webkit-details-marker{display:none}
-.ac-group > summary > .ac-row{position:relative;margin-top:0;padding-right:30px;border-color:var(--gold-dim)}
+.ac-group > summary > .ac-row{position:relative;margin-top:0;padding-right:30px;border-color:var(--accent-dim)}
 .ac-group > summary > .ac-row.done{border-color:var(--caught-line)}
-.ac-group > summary:hover > .ac-row{border-color:var(--gold)}
+.ac-group > summary:hover > .ac-row{border-color:var(--accent)}
 .ac-group:not([open]) > summary > .ac-row{border-style:dashed}
-.ac-chev{position:absolute;top:14px;right:13px;width:7px;height:7px;border-right:2px solid var(--gold);border-bottom:2px solid var(--gold);transform:rotate(45deg);transition:transform .15s ease}
+.ac-chev{position:absolute;top:14px;right:13px;width:7px;height:7px;border-right:2px solid var(--accent);border-bottom:2px solid var(--accent);transform:rotate(45deg);transition:transform .15s ease}
 .ac-group:not([open]) > summary .ac-chev{transform:rotate(-45deg)}
-.ac-children{margin:4px 0 0 22px;padding-left:10px;border-left:2px solid rgba(201,169,92,.35);display:flex;flex-direction:column}
+.ac-children{margin:4px 0 0 22px;padding-left:10px;border-left:2px solid rgba(116,186,243,.35);display:flex;flex-direction:column}
 .ac-row.ac-sub{grid-template-columns:34px 1fr auto}
 .ac-row.ac-sub .ac-icon{width:34px;height:34px}
 .ac-row.ac-sub .ac-name{font-size:13px}
@@ -682,10 +692,10 @@ body{
 .ac-status{font-size:12px;white-space:nowrap;color:var(--muted)}
 .ac-done{color:var(--caught-hi);font-weight:600}
 .ac-mark{display:flex;align-items:center;gap:6px;cursor:pointer}
-.ac-mark input{accent-color:var(--gold)}
+.ac-mark input{accent-color:var(--accent)}
 .tm-row.caught .tm-name::after{content:"  ✓";color:var(--caught)}
 .tm-credit{margin-top:12px;font-size:12px;color:var(--muted);line-height:1.5}
-.tm-credit a{color:var(--gold)}
+.tm-credit a{color:var(--accent)}
 @media (max-width:520px){
   .topnav{padding:0}
   .topnav{gap:4px}
@@ -699,3 +709,4 @@ body{
   .topnav{gap:3px}
   .topnav a{font-size:10px;letter-spacing:0;padding:7px 2px} /* the only size off the scale: five names must fit a 320px phone */
 }
+

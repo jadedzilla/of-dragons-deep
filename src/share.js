@@ -8,8 +8,9 @@ import { loadMarks, loadAchievementProgress, noteObtained } from "./storage.js";
 
 export const CARD = { w: 1200, h: 675, rows: 3 }; // 16:9, fits Discord, X and phones
 const SITE = "ofdragonsdeep.jadedzilla.com";
-const C = { bg1: "#0d1220", bg2: "#22304f", panel: "rgba(22,26,38,.92)", gold: "#c9a95c", goldDim: "#7d6a3e", goldHi: "#f1dca0",
-  text: "#e8e2d0", muted: "#9a937f", track: "rgba(0,0,0,.45)", green: "#66d36e" };
+// Clear Blue, as the app: navy glass, pale blue frame and accents, white text, gold titles
+const C = { bg1: "#06101f", bg2: "#123661", panel: "rgba(11,27,52,.92)", accent: "#4f9be0", accentDim: "#3d6e9f", accentHi: "#d9eeff",
+  text: "#f2f7ff", muted: "#a9bdd6", track: "rgba(0,10,26,.5)", green: "#66d36e", title: "#f1dca0", frame: "rgba(116,186,243,.35)", rule: "rgba(116,186,243,.45)" };
 const SERIF = '"Cinzel", Georgia, serif', SANS = '"Noto Sans", system-ui, sans-serif';
 const NAME_KEY = "odd-share-name";
 
@@ -91,12 +92,12 @@ export async function drawShareCard(stats, { name = "", date = new Date() } = {}
     if (f > 0) {
       rrect(x, y, Math.max(h, w * Math.min(1, f)), h, h / 2);
       const grad = g.createLinearGradient(x, 0, x + w, 0);
-      if (done) { grad.addColorStop(0, "#4d9e55"); grad.addColorStop(1, "#9be3a0"); } else { grad.addColorStop(0, C.gold); grad.addColorStop(1, C.goldHi); }
+      if (done) { grad.addColorStop(0, "#4d9e55"); grad.addColorStop(1, "#9be3a0"); } else { grad.addColorStop(0, C.accent); grad.addColorStop(1, C.accentHi); }
       g.fillStyle = grad; g.fill();
     }
   };
   const heading = (s, x, y) => {
-    text(s.toUpperCase(), x, y, { size: 22, weight: 700, family: SERIF, color: C.goldHi });
+    text(s.toUpperCase(), x, y, { size: 22, weight: 700, family: SERIF, color: C.title });
   };
 
   // background + window
@@ -105,15 +106,15 @@ export async function drawShareCard(stats, { name = "", date = new Date() } = {}
   g.fillStyle = bg; g.fillRect(0, 0, W, H);
   const M = 24;
   rrect(M, M, W - 2 * M, H - 2 * M, 18); g.fillStyle = C.panel; g.fill();
-  g.lineWidth = 3; g.strokeStyle = C.goldDim; g.stroke();
-  rrect(M + 6, M + 6, W - 2 * M - 12, H - 2 * M - 12, 14); g.lineWidth = 1; g.strokeStyle = "rgba(201,169,92,.35)"; g.stroke();
+  g.lineWidth = 3; g.strokeStyle = C.accentDim; g.stroke();
+  rrect(M + 6, M + 6, W - 2 * M - 12, H - 2 * M - 12, 14); g.lineWidth = 1; g.strokeStyle = C.frame; g.stroke();
 
   // header
   const P = M + 36;
-  text("OF DRAGONS DEEP", P, P + 34, { size: 40, weight: 700, family: SERIF, color: C.goldHi });
+  text("OF DRAGONS DEEP", P, P + 34, { size: 40, weight: 700, family: SERIF, color: C.title });
   const sub = [name.trim(), date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })].filter(Boolean).join(" · ");
   text(sub, W - P, P + 30, { size: 20, color: C.muted, align: "right", max: W / 2 - P });
-  g.fillStyle = "rgba(201,169,92,.45)"; g.fillRect(P, P + 56, W - 2 * P, 1);
+  g.fillStyle = C.rule; g.fillRect(P, P + 56, W - 2 * P, 1);
 
   // two columns: fish on the left, achievements on the right
   const top = P + 92, colGap = 48;
@@ -128,7 +129,7 @@ export async function drawShareCard(stats, { name = "", date = new Date() } = {}
     text(n(stats.fish.have), x, y, { size: 56, weight: 700, family: SERIF, color: C.text });
     font(56, 700, SERIF); const bigW = g.measureText(n(stats.fish.have)).width;
     text(`/ ${n(stats.fish.total)} Fish Guide`, x + bigW + 12, y, { size: 22, color: C.muted });
-    text(`${pct(stats.fish.have, stats.fish.total)}%`, x + w, y, { size: 30, weight: 700, family: SERIF, color: C.goldHi, align: "right" });
+    text(`${pct(stats.fish.have, stats.fish.total)}%`, x + w, y, { size: 30, weight: 700, family: SERIF, color: C.title, align: "right" });
     y += 18; bar(x, y, w, 14, stats.fish.have / stats.fish.total, stats.fish.have === stats.fish.total);
     y += 40;
     for (const [label, s] of [["Spearfishing", stats.spear], ["Big fish", stats.big], ["Ocean fishing", stats.ocean]]) {
@@ -164,7 +165,7 @@ export async function drawShareCard(stats, { name = "", date = new Date() } = {}
         const icon = icons[i], s = 40;
         rrect(x, yy - 30, s, s, 6); g.fillStyle = "rgba(0,0,0,.35)"; g.fill();
         if (icon) { g.save(); rrect(x, yy - 30, s, s, 6); g.clip(); g.drawImage(icon, x, yy - 30, s, s); g.restore(); }
-        text(r.name, x + s + 14, yy - 6, { size: 18, weight: 600, color: C.goldHi, max: w - s - 14 - 40 });
+        text(r.name, x + s + 14, yy - 6, { size: 18, weight: 600, color: C.text, max: w - s - 14 - 40 });
         text(`${r.points} pts`, x + w, yy - 6, { size: 14, color: C.muted, align: "right" });
         extra?.(x + s + 14, yy + 4, w - s - 14);
       };
