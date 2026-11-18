@@ -58,7 +58,7 @@ export function burst(dialog, cx, cy) {
   requestAnimationFrame(frame);
 }
 
-/** Soft glowing motes drifting up behind the cards (on the dialog's .gc-motes canvas): paper white with a little of the
+/** Small points of light drifting up behind the cards (on the dialog's .gc-motes canvas): paper white with a little of the
  *  tiers' gold and blue, swaying and twinkling, thickest around the middle of the screen. Still with reduced motion. */
 export function motes(dialog, still = false) {
   const canvas = dialog.querySelector(".gc-motes");
@@ -71,8 +71,8 @@ export function motes(dialog, still = false) {
   const COLORS = ["244,242,236", "244,242,236", "244,242,236", "226,194,122", "143,184,234"];
   const rnd = (a, b) => a + Math.random() * (b - a);
   const middle = () => .5 + (Math.random() + Math.random() + Math.random() - 1.5) / 3; // 0–1, mostly near .5
-  const make = y => ({ x: middle(), y: y ?? Math.random(), r: rnd(.8, 2.6), vy: rnd(.006, .02), sway: rnd(6, 22), phase: rnd(0, 6.3),
-    tw: rnd(.6, 1.6), a: rnd(.25, .8), c: COLORS[Math.floor(Math.random() * COLORS.length)] });
+  const make = y => ({ x: middle(), y: y ?? Math.random(), r: rnd(.5, 1.3), vy: rnd(.006, .02), sway: rnd(6, 22), phase: rnd(0, 6.3),
+    tw: rnd(.6, 1.6), a: rnd(.4, .95), c: COLORS[Math.floor(Math.random() * COLORS.length)] });
   const dots = Array.from({ length: Math.round(Math.min(110, w * h / 9000)) }, () => make());
   const draw = t => {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -80,10 +80,8 @@ export function motes(dialog, still = false) {
     for (const d of dots) {
       const x = d.x * w + Math.sin(t * .0004 + d.phase) * d.sway, y = d.y * h;
       const a = d.a * (.55 + .45 * Math.sin(t * .001 * d.tw + d.phase)); // twinkle
-      const g = ctx.createRadialGradient(x, y, 0, x, y, d.r * 4);
-      g.addColorStop(0, `rgba(${d.c},${a})`); g.addColorStop(.25, `rgba(${d.c},${a * .6})`); g.addColorStop(1, `rgba(${d.c},0)`);
-      ctx.fillStyle = g;
-      ctx.fillRect(x - d.r * 4, y - d.r * 4, d.r * 8, d.r * 8);
+      ctx.fillStyle = `rgba(${d.c},${a})`;
+      ctx.beginPath(); ctx.arc(x, y, d.r, 0, Math.PI * 2); ctx.fill();
     }
   };
   if (still) return draw(0);
