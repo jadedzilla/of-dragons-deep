@@ -51,7 +51,7 @@
 .fv-arrow{color:var(--accent-dim);margin:0 2px}
 .fv-or{color:var(--muted);font-size:12px}
 .fv-spots{color:var(--muted);font-size:12px;font-style:italic}
-.fv-desc{margin-top:12px;padding:8px 10px;background:var(--inset-bg);font-size:13px;line-height:1.55} /* an inset box, like the route and bait rows */
+.fv-desc{margin-top:12px;padding:8px 10px;background:var(--inset-bg);border:1px solid var(--line);font-size:13px;line-height:1.55}
 .fv-desc:empty{display:none}
 .fv-desc .note{margin-top:6px;color:var(--muted);font-size:12px}
 .fv-desc .loading{color:var(--muted);font-style:italic}
