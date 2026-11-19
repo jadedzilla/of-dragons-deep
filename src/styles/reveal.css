@@ -96,14 +96,17 @@
 /* a card: the paper sheet (texture over the face colour), square corners, a soft drop shadow; its kind shows as a thin border
    in its colour all the way round and the same colour in its label */
 .gc-back,.gc-front,.gc-face,.gc-info{position:absolute;inset:0;border-radius:var(--r);background:var(--face);
-  box-shadow:0 10px 24px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06);backface-visibility:hidden;-webkit-backface-visibility:hidden}
+  box-shadow:0 10px 24px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06);backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  isolation:isolate} /* its own layer, so the texture below stays on the card even where it isn't 3D-turned */
 /* the paper texture on the card, under its content (each face is its own stacking context) */
 :is(.gc-back,.gc-front,.gc-face,.gc-info)::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
   background:var(--paper-tex) center/360px;mix-blend-mode:soft-light}
 .gc-back{transform:translateZ(1px);outline:1px solid color-mix(in srgb,var(--text) 22%,transparent);outline-offset:-8px} /* a fine frame inset on the back */
 .gc-back::after{content:"🐟";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;opacity:.75}
-.gc-front,.gc-face{transform:rotateY(180deg) translateZ(1px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;text-align:center;
-  border:1.5px solid var(--plain)} /* a normal fish: silver */
+.gc-front,.gc-face{transform:rotateY(180deg) translateZ(1px);border:1.5px solid var(--plain)} /* a normal fish: silver */
+/* the card's layout; the zoomed card's front is the same layout at the clicked card's size, scaled up (--k) */
+.gc-front,.gc-face-in{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;text-align:center}
+.gc-face-in{position:absolute;left:0;top:0;width:var(--cw);height:var(--ch);transform:scale(var(--k,1));transform-origin:0 0}
 .big :is(.gc-front,.gc-face,.gc-info){border-color:var(--big)}
 .coll :is(.gc-front,.gc-face,.gc-info){border-color:var(--coll)}
 /* a foil shine, like a trading card: a soft glare and faint rainbow bands that follow the pointer (--mx/--my), brighter
@@ -132,12 +135,8 @@
 .gc-big.over .gc-big-inner,.gc-big.over .gc-info{transform:none} /* turned over: the details lie flat (Safari mis-aims clicks on doubly rotated faces) */
 .gc-big :is(.gc-face,.gc-info){backface-visibility:visible;-webkit-backface-visibility:visible} /* shown or hidden by turn() and .over instead */
 .gc-big.over .gc-face,.gc-big:not(.over) .gc-info{visibility:hidden}
-.gc-face{transform:none;gap:16px;padding:20px}
-.gc-face .gc-icon{width:46%;height:auto;aspect-ratio:1}
-.gc-face .gc-name{font-size:22px}
-.gc-face .gc-tag{font-size:15px}
-.gc-face .gc-mark{top:-14px;right:4px}
-.gc-face .gc-mark b{font-size:56px;opacity:1;transform:none}
+.gc-face{transform:none}
+.gc-face .gc-mark b{opacity:1;transform:none}
 .gc-info{transform:rotateY(180deg) translateZ(1px);display:flex;flex-direction:column;gap:14px;padding:20px;text-align:left;border:1.5px solid var(--plain);color:var(--text);cursor:default}
 .gc-info-head{display:flex;align-items:center;gap:12px}
 .gc-info-head .gc-icon{width:56px;height:56px;flex:none}
@@ -191,7 +190,7 @@
 @keyframes gc-splash{from{transform:scale(.3);opacity:1}to{transform:scale(1.8);opacity:0;border-width:1px}}
 @keyframes gc-deal{to{opacity:1;transform:none}}
 @keyframes gc-shine{from{box-shadow:0 10px 24px rgba(0,0,0,.45),0 0 14px rgba(226,194,122,.35)}to{box-shadow:0 10px 24px rgba(0,0,0,.45),0 0 28px rgba(226,194,122,.7)}}
-@media (max-width:520px){.gc-mark{top:-6px;right:1px}.gc-mark b{font-size:22px}.gc-stage{gap:12px}.gc-card{width:min(30vw,110px);height:124px}.gc-front{gap:5px;padding:6px}.gc-icon{width:44px;height:44px}
+@media (max-width:520px){.gc-mark{top:-6px;right:1px}.gc-mark b{font-size:22px}.gc-stage{gap:12px}.gc-card{width:min(30vw,110px);height:124px}.gc-front,.gc-face-in{gap:5px;padding:6px}.gc-icon{width:44px;height:44px}
   .gc-name{font-size:12px}.gc-tag{font-size:10px}.gc-title{font-size:18px}.gc-cards{gap:8px}.gc-mini{width:26px;height:26px}}
 @media (hover:none){.gc-front::after,.gc-face::after{opacity:.25}} /* touch: a still sheen, no pointer to follow */
 @media (prefers-reduced-motion:reduce){.gc-bubbles{display:none!important}.gacha-dialog *,.gacha-dialog::backdrop{animation:none!important;transition:none!important}

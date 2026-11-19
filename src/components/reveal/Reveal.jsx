@@ -146,7 +146,13 @@ export function Reveal({ fish, onClose, onOpenFish }) {
   useLayoutEffect(() => {
     if (!zoom) return;
     const layer = ref.current.querySelector(".gc-zoom"), big = layer.querySelector(".gc-big");
+    // an exact enlargement of the clicked card: its shape, and its front's layout scaled up
+    const cw = zoom.card.offsetWidth, ch = zoom.card.offsetHeight;
+    big.style.aspectRatio = `${cw} / ${ch}`;
     const from = zoom.card.getBoundingClientRect(), to = big.getBoundingClientRect();
+    big.style.setProperty("--cw", `${cw}px`);
+    big.style.setProperty("--ch", `${ch}px`);
+    big.style.setProperty("--k", to.width / cw);
     zoomRef.current = `translate(${from.left + from.width / 2 - (to.left + to.width / 2)}px, ${from.top + from.height / 2 - (to.top + to.height / 2)}px) scale(${from.width / to.width})`;
     zoom.card.classList.add("lifted"); // its place stays empty while it's in the middle
     big.classList.remove("fade");
@@ -240,7 +246,7 @@ export function Reveal({ fish, onClose, onOpenFish }) {
         <div className="gc-actions"><button type="button" className="btn primary" id="gcClose">Close</button><span className="gc-hint">Tap to skip</span></div>
         <div className="gc-zoom" hidden={!zoom}>
           <div className={`gc-big ${zoom?.kind ?? "plain"}`}><div className="gc-big-inner">
-            <div className="gc-face" aria-hidden="true">{zoom && <CardFace f={zoom.fish} />}</div>
+            <div className="gc-face" aria-hidden="true">{zoom && <div className="gc-face-in"><CardFace f={zoom.fish} /></div>}</div>
             <div className="gc-info">{zoom && <CardInfo f={zoom.fish} onDetails={() => onOpenFish(zoom.fish)} />}</div>
           </div></div>
         </div>
