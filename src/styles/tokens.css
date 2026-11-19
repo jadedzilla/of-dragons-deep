@@ -23,6 +23,7 @@ html[data-theme=light]{
   /* accent: charcoal in light mode, paper in dark mode (selected page, page number, buttons) */
   --accent:#333333; --accent-dim:#9b9890; --accent-hi:#171717; --accent-pale:#000; --accent-fill:#333333;
   --on-accent:#ffffff;
+  --search-icon-on-accent:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-4-4'/%3E%3C/svg%3E"); /* the magnifier on a filled (accent) search button */
   /* what a fish is (gold big fish, blue collectables, silver the rest) and states */
   --big:#a77d22; --coll:#3e6cb3; --coll-glow:rgba(62,108,179,.45); --plain:#8a929c; --caught:#2f8f3a;
   --caught-hi:#2f8f3a; --caught-line:rgba(47,143,58,.45); --caught-bg:#dce5d6; --info:#3e6cb3;
@@ -46,6 +47,7 @@ html[data-theme=dark],.gacha-dialog{
   /* accent: charcoal in light mode, paper in dark mode (selected page, page number, buttons) */
   --accent:#e0ded7; --accent-dim:#6d6a62; --accent-hi:#f4f2ec; --accent-pale:#fff; --accent-fill:#e0ded7;
   --on-accent:#171717;
+  --search-icon-on-accent:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23171717' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-4-4'/%3E%3C/svg%3E"); /* the magnifier on a filled (accent) search button */
   /* what a fish is (gold big fish, blue collectables, silver the rest) and states */
   --big:#e2c27a; --coll:#8fb8ea; --coll-glow:rgba(143,184,234,.45); --plain:#c8ccd2; --caught:#7fc98a;
   --caught-hi:#9be3a0; --caught-line:rgba(127,201,138,.45); --caught-bg:#24302a; --info:#8fb8ea;

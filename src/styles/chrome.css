@@ -54,7 +54,9 @@ html[data-theme=light] .theme-btn .sun,html[data-theme=dark] .theme-btn .moon{di
 .tm-clock b,.lr-stat b,.ns-rank{font-family:var(--title-sans);font-weight:500;color:var(--accent-hi);letter-spacing:0}
 
 /* dialogs, menus, notice: the same flat card, raised */
-.import-dialog,.fish-dialog,.filter-panel,.tooltip,.toast{background:var(--panel-deep);border:0;border-radius:0;color:var(--text);box-shadow:var(--shadow-dialog)}
+.import-dialog,.fish-dialog,.filter-panel,.tooltip,.toast{background:var(--panel-deep);border-radius:0;color:var(--text);box-shadow:var(--shadow-dialog)}
+.import-dialog,.filter-panel,.toast{border:0}
+.fish-dialog,.tooltip{border:1px solid var(--sheet-line)} /* the same hairline edge as the page sheets */
 
 /* each page's content stands apart from the title and page: one raised sheet holding it (for the Fish Guide: toolbar, grid and footer) (a shade
    lighter than the cards, with a hairline edge and a deeper shadow); the grid sits recessed in it; the Fishing /

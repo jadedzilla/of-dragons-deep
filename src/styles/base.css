@@ -34,8 +34,8 @@ body{font-family:var(--sans);color:var(--text);display:flex;flex-direction:colum
 .search:focus{border-color:var(--accent)}
 .search::placeholder{color:var(--placeholder)}
 /* Collapsed to a round icon button while empty and not focused; clicking it focuses the input, which expands it. */
-.search:not(:focus):placeholder-shown{flex:0 1 30px;min-width:30px;width:30px;padding:0;cursor:pointer; /* keep shrink on: while the width animates down, the box must not push the buttons */background:var(--icon) no-repeat center,var(--control-bg);background-color:var(--card-bg);border-color:transparent;box-shadow:var(--card-shadow);}
-.search:not(:focus):placeholder-shown:hover{border-color:var(--accent-hi)}
+.search:not(:focus):placeholder-shown{flex:0 1 30px;min-width:30px;width:30px;padding:0;cursor:pointer; /* keep shrink on: while the width animates down, the box must not push the buttons */background:var(--search-icon-on-accent) no-repeat center,var(--accent-fill);border-color:transparent;box-shadow:none;} /* filled like Edit, Import and Filter */
+.search:not(:focus):placeholder-shown:hover{opacity:.85}
 .search:not(:focus):placeholder-shown::placeholder{color:transparent}
 .spacer{flex:1}
 .filter-btn{height:30px;padding:0 12px;cursor:pointer;display:flex;align-items:center;gap:6px;font:600 13px var(--sans);}
