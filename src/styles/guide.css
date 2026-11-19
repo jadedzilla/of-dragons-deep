@@ -7,7 +7,7 @@
 .tile .ic.ready{opacity:1}
 .tile .ic.instant{transition:filter .12s} /* sheet was already loaded or arrived quickly: no fade */
 .tile:has(.ic){overflow:hidden}
-.grid.editing .tile:not(.empty){cursor:pointer}
+.tile[data-id]{cursor:pointer} /* a fish opens its details, or toggles caught in Edit mode */
 .grid.editing .tile:hover{border-color:var(--accent);transform:none;}
 .grid.editing{border-color:var(--accent-dim);box-shadow:0 0 0 2px var(--big),var(--card-shadow);}
 /* edit toggle */

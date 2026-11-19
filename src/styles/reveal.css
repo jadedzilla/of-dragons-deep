@@ -120,8 +120,9 @@
 .gc-big.shining .gc-face::after{opacity:1;transition:none} /* zoomed from a hovered card: starts with its shine… */
 .gc-big.fade .gc-face::after{opacity:0;transition:opacity .45s ease-out} /* …and the foil fades out as it zooms */
 .gc-card.big.flipped .gc-front{animation:gc-shine 1.6s ease-in-out .5s infinite alternate}
-.gc-icon{width:64px;height:64px;border-radius:var(--r);overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--tile)}
+.gc-icon{width:64px;height:64px;border-radius:5px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--tile)}
 .gc-icon svg,.gc-mini svg{width:80%;height:80%}
+.gc-icon .ic{transform:scale(1.08)} /* the icon art's darker rim falls just outside the rounded frame */
 .gc-name{font:500 13px/1.25 var(--title-sans);color:var(--text)}
 .gc-tag{font:italic 500 11px var(--title-sans);color:var(--muted)} /* like the Carrd's "Vol. 1" */
 .big .gc-tag{color:var(--big)}
