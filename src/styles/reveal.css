@@ -113,6 +113,7 @@
     linear-gradient(118deg,transparent 22%,rgba(255,120,190,.16) 34%,rgba(120,210,255,.16) 46%,rgba(150,255,170,.14) 56%,rgba(255,230,120,.16) 66%,transparent 78%) var(--mx,28%) var(--my,18%)/240% 240%;
   mix-blend-mode:screen}
 .gc-card.tilting .gc-front::after{opacity:1;transition:opacity .15s}
+.gc-big:not(.fade) .gc-face::after{transition:opacity .3s ease-out .3s} /* returning: fades back in once the front faces you again */
 .gc-big.shining .gc-face::after{opacity:1;transition:none} /* zoomed from a hovered card: starts with its shine… */
 .gc-big.fade .gc-face::after{opacity:0;transition:opacity .45s ease-out} /* …and the foil fades out as it zooms */
 .gc-card.big.flipped .gc-front{animation:gc-shine 1.6s ease-in-out .5s infinite alternate}
@@ -192,7 +193,7 @@
 @keyframes gc-shine{from{box-shadow:0 10px 24px rgba(0,0,0,.45),0 0 14px rgba(226,194,122,.35)}to{box-shadow:0 10px 24px rgba(0,0,0,.45),0 0 28px rgba(226,194,122,.7)}}
 @media (max-width:520px){.gc-mark{top:-6px;right:1px}.gc-mark b{font-size:22px}.gc-stage{gap:12px}.gc-card{width:min(30vw,110px);height:124px}.gc-front{gap:5px;padding:6px}.gc-icon{width:44px;height:44px}
   .gc-name{font-size:12px}.gc-tag{font-size:10px}.gc-title{font-size:18px}.gc-cards{gap:8px}.gc-mini{width:26px;height:26px}}
-@media (hover:none){.gc-front::after{opacity:.25}} /* touch: a still sheen, no pointer to follow */
+@media (hover:none){.gc-front::after,.gc-face::after{opacity:.25}} /* touch: a still sheen, no pointer to follow */
 @media (prefers-reduced-motion:reduce){.gc-bubbles{display:none!important}.gacha-dialog *,.gacha-dialog::backdrop{animation:none!important;transition:none!important}
   /* without the deal / pop animations, show the cards and their marks as they end up */
   .dealt .gc-card,.gc-card.flipped .gc-mark b{opacity:1;transform:none}}

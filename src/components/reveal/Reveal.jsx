@@ -168,6 +168,7 @@ export function Reveal({ fish, onClose, onOpenFish }) {
     const layer = ref.current.querySelector(".gc-zoom"), big = layer.querySelector(".gc-big");
     const done = () => { layer.hidden = true; leaving.current = false; big.classList.remove("over", "shining", "fade"); z.card.classList.remove("lifted"); setZoom(null); }; // hidden before the animations are cancelled, so it never pops back to full size
     layer.classList.remove("on");
+    big.classList.remove("fade", "shining"); // the foil fades back in as it returns, matching the card in the row
     if (reduced()) return done();
     leaving.current = true;
     turn(big, false, { duration: ZOOM_MS * .8 });
