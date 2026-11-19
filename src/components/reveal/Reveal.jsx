@@ -149,8 +149,11 @@ export function Reveal({ fish, onClose, onOpenFish }) {
     const from = zoom.card.getBoundingClientRect(), to = big.getBoundingClientRect();
     zoomRef.current = `translate(${from.left + from.width / 2 - (to.left + to.width / 2)}px, ${from.top + from.height / 2 - (to.top + to.height / 2)}px) scale(${from.width / to.width})`;
     zoom.card.classList.add("lifted"); // its place stays empty while it's in the middle
+    big.classList.remove("fade");
     big.classList.toggle("shining", !!zoom.shine);
     if (zoom.shine) { big.style.setProperty("--mx", zoom.shine.mx); big.style.setProperty("--my", zoom.shine.my); }
+    getComputedStyle(big.querySelector(".gc-face"), "::after").opacity; // start from that, then fade it out
+    big.classList.add("fade");
     layer.classList.add("on");
     if (!reduced()) {
       big.animate([{ transform: zoomRef.current }, { transform: "none" }], { duration: ZOOM_MS, easing: "cubic-bezier(.2,.8,.25,1)" });
@@ -163,7 +166,7 @@ export function Reveal({ fish, onClose, onOpenFish }) {
     const z = zoom;
     if (!z || leaving.current) return;
     const layer = ref.current.querySelector(".gc-zoom"), big = layer.querySelector(".gc-big");
-    const done = () => { layer.hidden = true; leaving.current = false; big.classList.remove("over", "shining"); z.card.classList.remove("lifted"); setZoom(null); }; // hidden before the animations are cancelled, so it never pops back to full size
+    const done = () => { layer.hidden = true; leaving.current = false; big.classList.remove("over", "shining", "fade"); z.card.classList.remove("lifted"); setZoom(null); }; // hidden before the animations are cancelled, so it never pops back to full size
     layer.classList.remove("on");
     if (reduced()) return done();
     leaving.current = true;
@@ -195,7 +198,7 @@ export function Reveal({ fish, onClose, onOpenFish }) {
     if (zoom) return e.target.closest(".gc-big") ? undefined : unzoom(); // a click beside the card puts it back
     const card = e.target.closest(".gc-card");
     if (!card) return;
-    // a hovered card's bright foil carries over to the zoomed card, where the pointer had it
+    // the zoomed card starts with the card's foil (a hovered card's bright one, where the pointer had it), then it fades
     const shine = hovered.current === card ? { mx: card.style.getPropertyValue("--mx"), my: card.style.getPropertyValue("--my") } : null;
     if (hovered.current) { untilt(hovered.current); hovered.current = null; }
     const f = cards.find(x => x.id === +card.dataset.id);
