@@ -39,3 +39,20 @@ test("without achievements the card still shows the fish", async ({ page }) => {
   await openApp(page, { path: "#share" });
   await expect(page.locator("#shImg")).toHaveAttribute("alt", /spearfish, \d+ \/ \d+ big fish$/);
 });
+
+test("redraws the card in the new colours when the theme is switched", async ({ page }) => {
+  await openApp(page, { path: "#share", storage: { "odd-theme": "light" } });
+  const img = page.locator("#shImg");
+  await expect(img).toBeVisible();
+  const paper = () => img.evaluate(i => new Promise(res => {
+    const read = () => { const c = document.createElement("canvas"); c.width = i.naturalWidth; c.height = i.naturalHeight;
+      const g = c.getContext("2d"); g.drawImage(i, 0, 0); res([...g.getImageData(600, 640, 1, 1).data].slice(0, 3)); };
+    i.complete ? read() : i.addEventListener("load", read, { once: true });
+  }));
+  const light = await paper();
+  const src = await img.getAttribute("src");
+  await page.locator("#themeBtn").click();
+  await expect(img).not.toHaveAttribute("src", src);
+  const dark = await paper();
+  expect(dark[0]).toBeLessThan(light[0] - 50); // the paper went dark
+});

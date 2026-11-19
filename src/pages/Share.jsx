@@ -3,6 +3,7 @@ import { useApp } from "../context.js";
 import { CATEGORIES, OCEAN_FISHING } from "../lib/fishData.js";
 import { drawShareCard, shareAlt, shareStats } from "../lib/shareCard.js";
 import { KEYS, readRaw, writeRaw } from "../lib/storage.js";
+import { useTheme } from "../hooks/useTheme.js";
 import { Skeleton } from "../components/Skeleton.jsx";
 
 const fileName = () => `of-dragons-deep-${new Date().toISOString().slice(0, 10)}.png`;
@@ -32,7 +33,8 @@ export function Share({ active }) {
 
   const [wasActive, setWasActive] = useState(false);
   if (active !== wasActive) { setWasActive(active); setStatus(""); if (active) setBusy(true); }
-  useEffect(() => { if (active) draw(name); }, [active]); // eslint-disable-line react-hooks/exhaustive-deps -- redrawn each time the page is shown
+  const theme = useTheme();
+  useEffect(() => { if (active) draw(name); }, [active, theme]); // eslint-disable-line react-hooks/exhaustive-deps -- redrawn when shown and when the mode changes
   const typing = useRef(null);
   const rename = v => {
     setName(v);

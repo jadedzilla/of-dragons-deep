@@ -28,7 +28,7 @@ html[data-theme=light]{
   --caught-hi:#2f8f3a; --caught-line:rgba(47,143,58,.45); --caught-bg:#dce5d6; --info:#3e6cb3;
   --info-line:rgba(62,108,179,.4); --warn:#9a6214; --warn-line:#c99b56;
   /* depth */
-  --shadow-dialog:0 1rem 2.5rem rgba(0,0,0,.18); --shadow-float:0 .5rem 1.75rem rgba(0,0,0,.12);
+  --shadow-dialog:0 1rem 2.5rem rgba(0,0,0,.18); --shadow-float:0 .5rem 1.75rem rgba(0,0,0,.12); --shadow-drop:drop-shadow(0 .5rem 1rem rgba(0,0,0,.18));
   --shimmer:linear-gradient(100deg,rgba(0,0,0,.04) 30%,rgba(0,0,0,.09) 50%,rgba(0,0,0,.04) 70%);
 }
 html[data-theme=dark],.gacha-dialog{
@@ -51,7 +51,7 @@ html[data-theme=dark],.gacha-dialog{
   --caught-hi:#9be3a0; --caught-line:rgba(127,201,138,.45); --caught-bg:#24302a; --info:#8fb8ea;
   --info-line:rgba(143,184,234,.4); --warn:#e6c08a; --warn-line:#a8763a;
   /* depth */
-  --shadow-dialog:0 1rem 2.5rem rgba(0,0,0,.6); --shadow-float:0 .5rem 1.75rem rgba(0,0,0,.5);
+  --shadow-dialog:0 1rem 2.5rem rgba(0,0,0,.6); --shadow-float:0 .5rem 1.75rem rgba(0,0,0,.5); --shadow-drop:drop-shadow(0 .5rem 1rem rgba(0,0,0,.6));
   --shimmer:linear-gradient(100deg,rgba(255,255,255,.03) 30%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.03) 70%);
 }
 *{box-sizing:border-box}
