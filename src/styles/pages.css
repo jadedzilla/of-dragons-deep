@@ -12,7 +12,7 @@
 .tm-row{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:10px;width:100%;padding:8px 10px;text-align:left;font:13px var(--sans);color:var(--text);cursor:pointer;}
 .tm-row:hover{border-color:var(--accent-dim)}
 .tm-row.up{border-color:var(--caught-line);}
-.tm-icon{width:44px;height:44px;border-radius:var(--r);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.tm-icon{width:44px;height:44px;border-radius:var(--r-icon);overflow:hidden;display:flex;align-items:center;justify-content:center}
 .tm-icon svg{width:80%;height:80%}
 .tm-main{display:flex;flex-direction:column;gap:2px;min-width:0}
 .tm-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -33,7 +33,7 @@
 .ns-intro b{color:var(--text);font-weight:600}
 .ns-list{display:flex;flex-direction:column;gap:12px;min-height:120px}
 .ns-rank{font:700 18px var(--display);min-width:18px;text-align:center;line-height:44px;}
-.ns-ficon{flex:none;width:40px;height:40px;padding:0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.ns-ficon{flex:none;width:40px;height:40px;padding:0;border:1px solid var(--line);border-radius:var(--r-icon);overflow:hidden;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .ns-ficon:hover{border-color:var(--accent-dim)}
 .ns-ficon svg{width:80%;height:80%}
 .ns-mark{flex:none}

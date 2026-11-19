@@ -23,10 +23,11 @@
 .fish-dialog{width:min(420px,calc(100vw - 32px))}
 .fish-dialog:focus{outline:none}
 .fv-head{display:flex;align-items:center;gap:14px;padding-right:22px;position:relative}
-.fv-icon{flex:none;width:80px;height:80px;border-radius:var(--r);overflow:hidden;background:linear-gradient(160deg,var(--tile-hi),var(--tile));display:flex;align-items:center;justify-content:center;border:0;box-shadow:none;}
+.fv-icon{flex:none;width:80px;height:80px;border-radius:var(--r-icon);overflow:hidden;background:linear-gradient(160deg,var(--tile-hi),var(--tile));display:flex;align-items:center;justify-content:center;border:0;box-shadow:none;}
 /* Fish icons outside the grid (fish view, timers, Log Route, achievements, the import reveal): sprite icons fade in when
    their sheet has loaded (.ready), at once if it was already there (.instant); XIVAPI fallback <img>s show as they load */
-.fv-icon .ic,.tm-icon .ic,.ns-ficon .ic,.ac-f .ic,.gc-icon .ic,.gc-mini .ic{display:block;width:100%;height:100%;background-repeat:no-repeat;opacity:0;transition:opacity .3s ease}
+.fv-icon .ic,.tm-icon .ic,.ns-ficon .ic,.ac-f .ic,.gc-icon .ic,.gc-mini .ic{display:block;width:100%;height:100%;background-repeat:no-repeat;transform:scale(var(--icon-zoom));opacity:0;transition:opacity .3s ease}
+.fv-icon > img{display:block;width:100%;height:100%;transform:scale(var(--icon-zoom))} /* the bait view's icon */
 .fv-icon .ic.ready,.tm-icon .ic.ready,.ns-ficon .ic.ready,.ac-f .ic.ready,.gc-icon .ic.ready,.gc-mini .ic.ready,
 .ns-ficon img.ic,.ac-f img.ic,.gc-icon img.ic,.gc-mini img.ic{opacity:1}
 .fv-icon .ic.instant,.tm-icon .ic.instant,.ns-ficon .ic.instant,.ac-f .ic.instant{transition:none}

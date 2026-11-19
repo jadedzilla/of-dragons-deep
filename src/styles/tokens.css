@@ -2,7 +2,8 @@
   /* Theme tokens: use these by role instead of raw values, so both modes stay consistent. Colours are per mode below;
      these are shared. Fonts: Neuton (titles, headings), Montserrat (names, numbers, navigation), Rethink Sans (text). */
   --display:Neuton,Georgia,serif; --title-sans:Montserrat,"Noto Sans",sans-serif; --sans:"Rethink Sans","Noto Sans",sans-serif;
-  --r-sm:2px; --r:3px; --r-lg:3px; --r-pill:999px;
+  --r-sm:2px; --r:3px; --r-lg:3px; --r-pill:999px; --r-icon:5px; /* fish and game icon frames */
+  --icon-zoom:1.08; /* icon art enlarged in its frame, so the art's darker rim falls just outside */
   --on-danger:#1b0b06;
   /* the paper texture: the Carrd's background photo, used exactly as it is (src/assets/bg.jpg) */
   --paper-tex:url("../assets/bg.jpg");
