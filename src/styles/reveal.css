@@ -108,10 +108,11 @@
 .coll :is(.gc-front,.gc-face,.gc-info){border-color:var(--coll)}
 /* a foil shine, like a trading card: a soft glare and faint rainbow bands that follow the pointer (--mx/--my), brighter
    while hovered */
-.gc-front::after,.gc-face::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:.35;transition:opacity .4s;
+.gc-front::after,.gc-face::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .4s;
   background:radial-gradient(circle at var(--mx,28%) var(--my,18%),rgba(255,255,255,.5),rgba(255,255,255,0) 48%),
     linear-gradient(118deg,transparent 22%,rgba(255,120,190,.16) 34%,rgba(120,210,255,.16) 46%,rgba(150,255,170,.14) 56%,rgba(255,230,120,.16) 66%,transparent 78%) var(--mx,28%) var(--my,18%)/240% 240%;
   mix-blend-mode:screen}
+.gc-card.flipped .gc-front::after,.gc-face::after{opacity:.35;transition:opacity .5s ease .45s} /* only once the front faces you */
 .gc-card.tilting .gc-front::after{opacity:1;transition:opacity .15s}
 .gc-card.big.flipped .gc-front{animation:gc-shine 1.6s ease-in-out .5s infinite alternate}
 .gc-icon{width:64px;height:64px;border-radius:var(--r);overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--tile)}

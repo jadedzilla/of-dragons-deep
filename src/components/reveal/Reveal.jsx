@@ -138,7 +138,7 @@ export function Reveal({ fish, onClose, onOpenFish }) {
       });
       if (over && performance.now() < bubblesDone) later(100, waitForBubbles); else flips();
     };
-    later(BUBBLES_AT + 900, waitForBubbles);
+    later(Math.max(BUBBLES_AT + 900, 3250 + FLASH_AT + FLASH), waitForBubbles); // and once the flash has fully gone, so no white veil fades off the turned cards
     return ctl.current.stop;
   }, [fish]);
 
@@ -161,7 +161,7 @@ export function Reveal({ fish, onClose, onOpenFish }) {
     const z = zoom;
     if (!z || leaving.current) return;
     const layer = ref.current.querySelector(".gc-zoom"), big = layer.querySelector(".gc-big");
-    const done = () => { leaving.current = false; big.classList.remove("over"); z.card.classList.remove("lifted"); setZoom(null); };
+    const done = () => { layer.hidden = true; leaving.current = false; big.classList.remove("over"); z.card.classList.remove("lifted"); setZoom(null); }; // hidden before the animations are cancelled, so it never pops back to full size
     layer.classList.remove("on");
     if (reduced()) return done();
     leaving.current = true;
