@@ -17,6 +17,7 @@
 .tile:not(.caught):hover .ic,.tile:not(.caught):hover svg{filter:grayscale(.4) brightness(.8)}
 
 .tile.caught svg,.tile.caught .ic{filter:none}
+.tile.caught:hover svg,.tile.caught:hover .ic{filter:brightness(1.18)} /* the hover highlight for fish already in full colour */
 .tile.caught::after{ /* green checkmark, bottom-right */
   content:"";position:absolute;right:1px;bottom:1px;width:17px;height:17px;
   background:var(--caught-check) center/contain no-repeat;filter:drop-shadow(0 0 2px rgba(102,211,110,.45));
