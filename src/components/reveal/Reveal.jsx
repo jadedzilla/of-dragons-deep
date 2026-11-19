@@ -1,7 +1,8 @@
 // Gacha-style reveal of newly caught fish after an import: a bobber is cast out, a fish's shadow strikes the hook (a
 // ! / !! / !!! bite mark by the best fish), it's yanked in as rays burst out and white floods the screen, bubbles rise
 // through the fading white, then up to 10 new fish flip over as cards (the rest as a strip of icons). A tap skips to the
-// end; once the cards show only Close closes. Cards tilt toward a mouse pointer; a tapped card turns over to its details.
+// end; once the cards show only Close closes. Cards tilt toward a mouse pointer; a tapped card turns over to its details
+// (a tap beside it puts it back).
 // The phases are classes on the dialog (rise, bite, reel, boom, bubbles, dealt, done), set from timers.
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { basicFacts } from "../../lib/fishFacts.js";
@@ -32,6 +33,8 @@ function turn(big, toDetails, timing) {
     { visibility: shownFirst ? "hidden" : "visible", offset: .5 }, { visibility: shownFirst ? "hidden" : "visible" }];
   big.querySelector(".gc-face").animate(swap(toDetails), timing);
   big.querySelector(".gc-info").animate(swap(!toDetails), timing);
+  // while turning, the details face is the card's back; once over it lies flat (.over in reveal.css)
+  if (toDetails) big.querySelector(".gc-info").animate([{ transform: "rotateY(180deg) translateZ(1px)" }, { transform: "rotateY(180deg) translateZ(1px)" }], timing);
 }
 
 /** One exclamation mark like the game's: a chunky bar over a dot, with a glowing core and a highlight. */
@@ -187,7 +190,7 @@ export function Reveal({ fish, onClose, onOpenFish }) {
   function onClick(e) {
     if (e.target.closest("#gcClose")) return ref.current.close();
     if (!ctl.current.isDone?.()) return ctl.current.finish?.();
-    if (zoom) return e.target.closest(".gc-details-btn") ? onOpenFish(zoom.fish) : unzoom();
+    if (zoom) return e.target.closest(".gc-big") ? undefined : unzoom(); // a click beside the card puts it back
     const card = e.target.closest(".gc-card");
     if (!card) return;
     if (hovered.current) { untilt(hovered.current); hovered.current = null; }
@@ -230,7 +233,7 @@ export function Reveal({ fish, onClose, onOpenFish }) {
         <div className="gc-zoom" hidden={!zoom}>
           <div className={`gc-big ${zoom?.kind ?? "plain"}`}><div className="gc-big-inner">
             <div className="gc-face" aria-hidden="true">{zoom && <CardFace f={zoom.fish} />}</div>
-            <div className="gc-info">{zoom && <CardInfo f={zoom.fish} />}</div>
+            <div className="gc-info">{zoom && <CardInfo f={zoom.fish} onDetails={() => onOpenFish(zoom.fish)} />}</div>
           </div></div>
         </div>
       </div>}
@@ -246,9 +249,9 @@ const CardFace = ({ f }) => <>
 </>;
 
 /** The back of a zoomed card: the fish, its kind, the basic facts and a link to the full fish view. */
-const CardInfo = ({ f }) => <>
+const CardInfo = ({ f, onDetails }) => <>
   <div className="gc-info-head"><span className="gc-icon"><FishIcon fish={f} /></span>
     <div><div className="gc-name">{f.name}</div><div className="gc-tag">{tagOf(f)}</div></div></div>
   <dl className="gc-facts">{basicFacts(f).map(([k, v]) => <Fragment key={k}><dt>{k}</dt><dd>{v}</dd></Fragment>)}</dl>
-  <button type="button" className="btn small gc-details-btn">More details</button>
+  <button type="button" className="btn small gc-details-btn" onClick={e => { e.stopPropagation(); onDetails(); }}>More details</button>
 </>;

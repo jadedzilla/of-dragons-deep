@@ -26,6 +26,8 @@ test("an import plays the reveal, then shows the summary", async ({ page }) => {
   await reveal.locator(".gc-card").first().click();               // a card turns over to its details
   await expect(reveal.locator(".gc-zoom")).toHaveClass(/on/);
   await expect(reveal.locator(".gc-info .gc-facts")).toContainText("Location");
+  await reveal.locator(".gc-info .gc-facts").click();            // clicking the card itself keeps it open
+  await expect(reveal.locator(".gc-zoom")).toHaveClass(/on/);
   await reveal.locator(".gc-details-btn").click();
   await expect(page.locator("#fishDialog")).toBeVisible();
   await page.locator("#fvClose").click();

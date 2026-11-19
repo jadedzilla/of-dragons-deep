@@ -6,7 +6,7 @@
 /* the cards are sheets of dark-mode paper */
 :is(.gc-card,.gc-big){--face:var(--sheet);--plain:#c8ccd2}
 .gacha-dialog::backdrop{background:radial-gradient(ellipse at center,#2c2b27,#0a0a09);animation:gc-fade .3s ease} /* opaque, so the page behind (light or dark) never shows */
-.gc-stage{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));cursor:pointer}
+.gc-stage{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom))}
 /* the bobber (line from the rod above): cast out, lands with a splash, floats with ripples, gets a bite (dips twice),
    then is reeled back in across the water while the screen fades over to the cards */
 .gc-bob{position:fixed;inset:0;margin:auto;width:160px;height:160px;pointer-events:none; /* centred on screen */
@@ -121,11 +121,11 @@
 .big .gc-tag{color:var(--big)}
 .coll .gc-tag{color:var(--coll)}
 /* the tapped card, in the middle of the screen: the same card, bigger, turned over to the fish's details */
-.gc-zoom{position:fixed;inset:0;z-index:6;display:grid;place-items:center;background:rgba(0,0,0,0);transition:background .4s;perspective:1400px;cursor:pointer}
+.gc-zoom{position:fixed;inset:0;z-index:6;display:grid;place-items:center;background:rgba(0,0,0,0);transition:background .4s;perspective:1400px}
 .gc-zoom.on{background:rgba(0,0,0,.55)}
 .gc-big{position:relative;width:min(300px,78vw,calc(80dvh * 130 / 170));aspect-ratio:130/170;transform-style:preserve-3d}
 .gc-big-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d}
-.gc-big.over .gc-big-inner{transform:rotateY(180deg)}
+.gc-big.over .gc-big-inner,.gc-big.over .gc-info{transform:none} /* turned over: the details lie flat (Safari mis-aims clicks on doubly rotated faces) */
 .gc-big :is(.gc-face,.gc-info){backface-visibility:visible;-webkit-backface-visibility:visible} /* shown or hidden by turn() and .over instead */
 .gc-big.over .gc-face,.gc-big:not(.over) .gc-info{visibility:hidden}
 .gc-face{transform:none;gap:16px;padding:20px}
