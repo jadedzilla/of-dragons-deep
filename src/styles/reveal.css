@@ -25,15 +25,15 @@
 /* under the water: the shadow of a short length of line from the bobber's bottom to the hook, blurred like the fish's (hangs from the float, so
    it rocks and dips with it); the fish strikes at the hook */
 .gc-tackle{position:absolute;left:50%;top:calc(100% - 4px);width:24px;height:56px;margin-left:-12px;overflow:visible;filter:blur(2px);opacity:.85;pointer-events:none}
-.gc-tackle .ln{fill:none;stroke:rgba(2,6,14,.85);stroke-width:1.8}
-.gc-tackle .hk{fill:none;stroke:rgba(2,6,14,.95);stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
+.gc-tackle .ln{fill:none;stroke:rgba(10,10,9,.85);stroke-width:1.8}
+.gc-tackle .hk{fill:none;stroke:rgba(10,10,9,.95);stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
 .gc-line{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible} /* the line: a rope drawn by swingLine() in gacha.js */
 .gc-line path{fill:none;stroke-width:1.3;stroke-linecap:round}
 .done .gc-line{display:none}
 /* a fish's shadow: a vague, blurry dark shape that swims up from the deep (swaying, tail beating) under the bobber,
    its head ending just beneath it; it darts up with each dip of the bite and is yanked out with it */
 .gc-fish{position:absolute;left:38px;top:204px;width:84px;height:210px;opacity:0;pointer-events:none;transform-origin:50% 10%;filter:blur(5px)}
-.gc-fish svg{display:block;width:100%;height:100%;fill:rgba(2,6,14,.9);overflow:visible}
+.gc-fish svg{display:block;width:100%;height:100%;fill:rgba(10,10,9,.9);overflow:visible}
 /* swimming: the body bends off the head and the tail off the body, a beat behind, so a wave runs down the fish */
 .gc-fish g{transform-box:view-box}
 .gc-fish .f-head{transform-origin:30px 40px;animation:gc-sway 1.4s ease-in-out infinite alternate}
