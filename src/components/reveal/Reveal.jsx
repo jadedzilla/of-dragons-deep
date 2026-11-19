@@ -19,6 +19,21 @@ const rank = f => (f.big ? 2 : 0) + (f.collectable ? 1 : 0);
 const tagOf = f => f.big ? "Big fish" : f.collectable ? "Collectable" : f.spear ? "Spearfish" : f.lvl > 1 ? `Lv ${f.lvl}` : "Ocean fishing";
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+/** Turns the zoomed card over (toDetails) or back. The faces swap exactly when it's edge-on, instead of relying on
+ *  backface-visibility, which Safari gets wrong for the turned-over face (it showed a blank card). */
+function turn(big, toDetails, timing) {
+  const [a, b] = toDetails ? [0, 180] : [180, 0];
+  big.querySelector(".gc-big-inner").animate([
+    { transform: `rotateY(${a}deg)`, easing: "cubic-bezier(.5,0,1,1)" },     // speeds up to edge-on…
+    { transform: "rotateY(90deg)", offset: .5, easing: "cubic-bezier(0,0,.3,1)" }, // …then settles
+    { transform: `rotateY(${b}deg)` },
+  ], timing);
+  const swap = shownFirst => [{ visibility: shownFirst ? "visible" : "hidden" }, { visibility: shownFirst ? "visible" : "hidden", offset: .5 },
+    { visibility: shownFirst ? "hidden" : "visible", offset: .5 }, { visibility: shownFirst ? "hidden" : "visible" }];
+  big.querySelector(".gc-face").animate(swap(toDetails), timing);
+  big.querySelector(".gc-info").animate(swap(!toDetails), timing);
+}
+
 /** One exclamation mark like the game's: a chunky bar over a dot, with a glowing core and a highlight. */
 const Bang = () => (
   <svg viewBox="0 0 40 100" aria-hidden="true">
@@ -134,7 +149,7 @@ export function Reveal({ fish, onClose, onOpenFish }) {
     layer.classList.add("on");
     if (!reduced()) {
       big.animate([{ transform: zoomRef.current }, { transform: "none" }], { duration: ZOOM_MS, easing: "cubic-bezier(.2,.8,.25,1)" });
-      big.querySelector(".gc-big-inner").animate([{ transform: "none" }, { transform: "rotateY(180deg)" }], { duration: ZOOM_MS, delay: 120, easing: "cubic-bezier(.45,.05,.3,1)", fill: "backwards" });
+      turn(big, true, { duration: ZOOM_MS, delay: 120, fill: "backwards" });
     }
     big.classList.add("over");
   }, [zoom]);
@@ -147,7 +162,7 @@ export function Reveal({ fish, onClose, onOpenFish }) {
     layer.classList.remove("on");
     if (reduced()) return done();
     leaving.current = true;
-    big.querySelector(".gc-big-inner").animate([{ transform: "rotateY(180deg)" }, { transform: "none" }], { duration: ZOOM_MS * .8, easing: "cubic-bezier(.45,.05,.3,1)" });
+    turn(big, false, { duration: ZOOM_MS * .8 });
     big.classList.remove("over");
     big.animate([{ transform: "none" }, { transform: zoomRef.current }], { duration: ZOOM_MS * .8, delay: 80, easing: "cubic-bezier(.5,0,.75,.2)", fill: "forwards" })
       .finished.then(() => { done(); big.getAnimations().forEach(a => a.cancel()); }, () => {});

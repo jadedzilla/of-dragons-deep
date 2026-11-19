@@ -126,6 +126,8 @@
 .gc-big{position:relative;width:min(300px,78vw,calc(80dvh * 130 / 170));aspect-ratio:130/170;transform-style:preserve-3d}
 .gc-big-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d}
 .gc-big.over .gc-big-inner{transform:rotateY(180deg)}
+.gc-big :is(.gc-face,.gc-info){backface-visibility:visible;-webkit-backface-visibility:visible} /* shown or hidden by turn() and .over instead */
+.gc-big.over .gc-face,.gc-big:not(.over) .gc-info{visibility:hidden}
 .gc-face{transform:none;gap:16px;padding:20px}
 .gc-face .gc-icon{width:46%;height:auto;aspect-ratio:1}
 .gc-face .gc-name{font-size:22px}
