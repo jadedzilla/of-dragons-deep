@@ -113,6 +113,7 @@
     linear-gradient(118deg,transparent 22%,rgba(255,120,190,.16) 34%,rgba(120,210,255,.16) 46%,rgba(150,255,170,.14) 56%,rgba(255,230,120,.16) 66%,transparent 78%) var(--mx,28%) var(--my,18%)/240% 240%;
   mix-blend-mode:screen}
 .gc-card.tilting .gc-front::after{opacity:1;transition:opacity .15s}
+.gc-big.shining .gc-face::after{opacity:1;transition:none} /* zoomed from a hovered card: its shine carries straight over */
 .gc-card.big.flipped .gc-front{animation:gc-shine 1.6s ease-in-out .5s infinite alternate}
 .gc-icon{width:64px;height:64px;border-radius:var(--r);overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--tile)}
 .gc-icon svg,.gc-mini svg{width:80%;height:80%}
