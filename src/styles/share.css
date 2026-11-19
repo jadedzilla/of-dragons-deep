@@ -2,7 +2,7 @@
 .sh-head{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
 .sh-head .ns-intro{margin:0}
 .sh-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
-.sh-name{flex:1 1 220px;min-width:0;height:30px;padding:0 12px;border-radius:var(--r);outline:none;background:var(--input);border:1px solid var(--border);color:var(--text);font:13px var(--sans)}
+.sh-name{flex:1 1 220px;min-width:0;height:30px;padding:0 12px;border-radius:var(--r-pill);outline:none;background:var(--input);border:1px solid var(--border);color:var(--text);font:13px var(--sans)}
 .sh-name::placeholder{color:var(--placeholder)}
 .sh-name:focus{border-color:var(--accent)}
 .sh-preview{display:flex;justify-content:center;padding:8px;border-radius:var(--r);background:var(--well-bg);min-height:120px;border:0;}

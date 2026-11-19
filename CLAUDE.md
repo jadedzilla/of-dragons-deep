@@ -120,7 +120,7 @@ After the Carrd **A Fisher's Guide to Eorzea**:
 - **Controls:** current page and page number are a filled pill; Edit / Import / Filter / theme are round filled icon buttons; primary buttons filled; other buttons outlined in ink and fill on hover; danger is red. Edit on is gold.
 - **Fish kinds:** big fish gold, collectables blue, caught / up now green, other reveal cards silver.
 - **Tokens:** colours, fonts and radii are CSS variables in `src/styles/tokens.css` (per mode); use them, not raw values. One rule per selector.
-- **Consistency:** every fish or game icon frame rounds at `--r-icon` with its art enlarged by `--icon-zoom` (hides the art's darker rim); every floating panel (dialogs, filter panel, tooltip, notice) has the sheets' hairline edge (`--sheet-line`); the pointer cursor shows only on things that can be clicked.
+- **Consistency:** every fish or game icon frame rounds at `--r-icon`; every floating panel (dialogs, filter panel, tooltip, notice) has the sheets' hairline edge (`--sheet-line`); the pointer cursor shows only on things that can be clicked.
 
 ## Tests
 

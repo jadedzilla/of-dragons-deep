@@ -1,8 +1,8 @@
 /* Gacha reveal of new fish after an import */
-/* the same in both modes: dark-mode tokens (tokens.css), with a brighter glow and silver on the backdrop. The whole screen
+/* the same in both modes: dark-mode tokens (tokens.css), with a brighter silver on the backdrop. The whole screen
    is tappable: no blue tap flash or text selection on phones */
 .gacha-dialog{width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;background:transparent;color:var(--text);overflow:auto;
-  -webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;--coll-glow:rgba(143,184,234,.55);--plain:#dcdfe4}
+  -webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;--plain:#dcdfe4}
 /* the cards are sheets of dark-mode paper */
 :is(.gc-card,.gc-big){--face:var(--sheet);--plain:#c8ccd2}
 .gacha-dialog::backdrop{background:radial-gradient(ellipse at center,#2c2b27,#0a0a09);animation:gc-fade .3s ease} /* opaque, so the page behind (light or dark) never shows */

@@ -13,7 +13,7 @@
 .import-dialog textarea:focus{border-color:var(--accent)}
 .import-dialog .modes label{display:flex;align-items:center;gap:8px;font-size:13px;padding:2px 0;cursor:pointer}
 .import-dialog input[type=radio]{accent-color:var(--accent)}
-.import-result{font-size:12px;line-height:1.5;margin-top:10px;overflow-wrap:anywhere;padding:8px 10px;border-radius:var(--r);background:var(--inset-bg);border:1px solid var(--line)}
+.import-result{font-size:12px;line-height:1.5;margin-top:10px;overflow-wrap:anywhere;padding:8px 10px;background:var(--inset-bg);border:1px solid var(--line)}
 .import-result:empty{display:none}
 .import-result.ok{border-color:var(--info-line)}
 .import-result.warn{border-color:var(--warn-line);color:var(--warn)}
@@ -26,8 +26,7 @@
 .fv-icon{flex:none;width:80px;height:80px;border-radius:var(--r-icon);overflow:hidden;background:linear-gradient(160deg,var(--tile-hi),var(--tile));display:flex;align-items:center;justify-content:center;border:0;box-shadow:none;}
 /* Fish icons outside the grid (fish view, timers, Log Route, achievements, the import reveal): sprite icons fade in when
    their sheet has loaded (.ready), at once if it was already there (.instant); XIVAPI fallback <img>s show as they load */
-.fv-icon .ic,.tm-icon .ic,.ns-ficon .ic,.ac-f .ic,.gc-icon .ic,.gc-mini .ic{display:block;width:100%;height:100%;background-repeat:no-repeat;transform:scale(var(--icon-zoom));opacity:0;transition:opacity .3s ease}
-.fv-icon > img{display:block;width:100%;height:100%;transform:scale(var(--icon-zoom))} /* the bait view's icon */
+.fv-icon .ic,.tm-icon .ic,.ns-ficon .ic,.ac-f .ic,.gc-icon .ic,.gc-mini .ic{display:block;width:100%;height:100%;background-repeat:no-repeat;opacity:0;transition:opacity .3s ease}
 .fv-icon .ic.ready,.tm-icon .ic.ready,.ns-ficon .ic.ready,.ac-f .ic.ready,.gc-icon .ic.ready,.gc-mini .ic.ready,
 .ns-ficon img.ic,.ac-f img.ic,.gc-icon img.ic,.gc-mini img.ic{opacity:1}
 .fv-icon .ic.instant,.tm-icon .ic.instant,.ns-ficon .ic.instant,.ac-f .ic.instant{transition:none}
@@ -40,7 +39,7 @@
 .fv-tags .big{border-color:var(--big);color:var(--big);}
 .fv-tags .coll{border-color:var(--coll);color:var(--coll);}
 .fv-tags .caught{border-color:var(--caught-line);color:var(--caught-hi)}
-.fv-x{position:absolute;top:-6px;right:-8px;width:28px;height:28px;border:0;background:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer} /* the dialogs' close button */
+.fv-x{position:absolute;top:-6px;right:-8px;width:28px;height:28px;border:0;background:none;color:var(--muted);font:22px/1 var(--sans);cursor:pointer} /* the dialogs' close button */
 .fv-x:hover{color:var(--accent-hi)}
 .fv-facts{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;margin:14px 0 0;padding:12px 0 0;border-top:1px solid rgba(226,194,122,.3);font-size:13px;border-top-color:var(--line);}
 .fv-facts dt{color:var(--muted)}
@@ -52,7 +51,7 @@
 .fv-arrow{color:var(--accent-dim);margin:0 2px}
 .fv-or{color:var(--muted);font-size:12px}
 .fv-spots{color:var(--muted);font-size:12px;font-style:italic}
-.fv-desc{margin-top:12px;padding:8px 10px;border-radius:var(--r);background:var(--inset-bg);border:1px solid var(--line);font-size:13px;line-height:1.55}
+.fv-desc{margin-top:12px;padding:8px 10px;background:var(--inset-bg);font-size:13px;line-height:1.55} /* an inset box, like the route and bait rows */
 .fv-desc:empty{display:none}
 .fv-desc .note{margin-top:6px;color:var(--muted);font-size:12px}
 .fv-desc .loading{color:var(--muted);font-style:italic}

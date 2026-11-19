@@ -6,7 +6,7 @@
 .tm-search{flex:0 1 200px}
 .tm-opt{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap}
 .tm-opt input{accent-color:var(--accent)}
-.tm-summary{font-size:12px;color:var(--muted);margin:2px 0 12px}
+.tm-summary{font-size:13px;color:var(--muted);margin:2px 0 12px} /* like the Achievements summary */
 /* list cards (timers, achievements, route steps): the same card, 6px apart; live/done ones turn green */
 .tm-list{display:flex;flex-direction:column;gap:6px;min-height:120px}
 .tm-row{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:10px;width:100%;padding:8px 10px;text-align:left;font:13px var(--sans);color:var(--text);cursor:pointer;}
@@ -56,11 +56,11 @@
 .lr-missed b{color:var(--warn)}
 .lr-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:8px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-color:var(--line);}
 .lr-actions{display:flex;flex-wrap:wrap;gap:8px}
-.lr-about summary{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer;list-style:none}
-.lr-about summary::-webkit-details-marker{display:none}
-.lr-about summary::before{content:"";width:5px;height:5px;border-right:1.5px solid var(--accent);border-bottom:1.5px solid var(--accent);transform:rotate(-45deg);transition:transform .15s ease}
-.lr-about[open] summary::before{transform:rotate(45deg)}
-.lr-about summary:hover{color:var(--accent-hi)}
+.lr-about summary,.bv-more summary{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer;list-style:none}
+.lr-about summary::-webkit-details-marker,.bv-more summary::-webkit-details-marker{display:none}
+.lr-about summary::before,.bv-more summary::before{content:"";width:5px;height:5px;border-right:1.5px solid var(--accent);border-bottom:1.5px solid var(--accent);transform:rotate(-45deg);transition:transform .15s ease}
+.lr-about[open] summary::before,.bv-more[open] summary::before{transform:rotate(45deg)}
+.lr-about summary:hover,.bv-more summary:hover{color:var(--accent-hi)} /* "show more" toggles: one style */
 .lr-about .ns-intro{margin:6px 0 0}
 @media (max-width:520px){.lr-stat{min-width:0}.lr-actions .btn{padding:0 10px}#lrGbrAll{display:none} /* GatherBuddy is a PC plugin: desktop only */}
 @media (max-width:350px){.lr-stat:first-child{flex-basis:100%}}
@@ -99,7 +99,7 @@
 .bv-price{grid-column:2;grid-row:1 / span 2;align-self:center;white-space:nowrap;color:var(--text);font-size:13px;font-variant-numeric:tabular-nums}
 .bv-price img{width:16px;height:16px;vertical-align:-3px;margin-right:3px}
 .bv-more{margin-top:4px}
-.bv-more summary{cursor:pointer;font-size:12px;color:var(--accent);padding:2px 0}
+.bv-more summary{padding:2px 0}
 .bv-more .bv-list{margin-top:4px}
 .bv-note{margin-top:12px;font-size:12px;color:var(--muted)}
 .bv-body .loading{color:var(--muted);font-style:italic;font-size:13px;margin-top:10px}

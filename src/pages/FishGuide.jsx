@@ -165,7 +165,7 @@ function FilterPanel({ ref, open, list, filters, hasBig, onChange }) {
       <h3>Type</h3>
       <label hidden={!hasBig}><input type="checkbox" id="bigOnly" checked={filters.bigOnly} onChange={e => onChange({ bigOnly: e.target.checked })} /> Big fish only</label>
       <label><input type="checkbox" id="collOnly" checked={filters.collOnly} onChange={e => onChange({ collOnly: e.target.checked })} /> Collectables only</label>
-      <button className="reset" id="resetFilters" type="button" onClick={() => onChange({ ...NO_FILTERS, cats: allCats() })}>Reset filters</button>
+      <button className="btn small reset" id="resetFilters" type="button" onClick={() => onChange({ ...NO_FILTERS, cats: allCats() })}>Reset filters</button>
     </div>
   );
 }
