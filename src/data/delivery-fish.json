@@ -1,0 +1,7 @@
+{
+  "about": "Custom delivery fish that only bite once their client is unlocked. Hand-kept (the game data doesn't mark them); item id: name.",
+  "clients": {
+    "Nitowikwe": { "44334": "Oily Ropefish", "44335": "Yak Awak Core", "44336": "Inktopus", "44337": "Honeycomb Sponge", "44338": "Cenote Oyster" },
+    "Tiisol Ja": { "52012": "Pote'uka", "52013": "Harbor Cloud", "52014": "Iq Ebaji", "52015": "Yowekwa Inkhead", "52016": "Burst Lungfish" }
+  }
+}

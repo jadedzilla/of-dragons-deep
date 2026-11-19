@@ -9,15 +9,14 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/update-data.mjs && vite build",
+    "build:app": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "vite build && playwright test",
-    "fetch:fish": "node scripts/fetch-fish.mjs",
+    "data": "node scripts/update-data.mjs",
     "fetch:icons": "node scripts/fetch-icons.mjs && node scripts/webp-sheets.mjs",
-    "fetch:baits": "node scripts/fetch-baits.mjs",
-    "fixtures": "node tests/fixtures/record.mjs",
     "app-icons": "node scripts/app-icons.mjs"
   },
   "dependencies": {

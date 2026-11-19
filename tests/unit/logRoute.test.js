@@ -1,15 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { loadFishFromXivapi } from "../../src/lib/fishSource.js";
-import { OCEAN_FISHING, decode } from "../../src/lib/fishData.js";
+import { OCEAN_FISHING, loadFish } from "../../src/lib/fishData.js";
 import { loadTeamcraft } from "../../src/lib/teamcraft.js";
 import { loadTimerData } from "../../src/lib/timers.js";
-import { loadOceanRoutes, planLogRoute, withoutFish } from "../../src/lib/logRoute.js";
-import { recordedFetch } from "../fixtures/network.js";
+import { loadOceanRoutes, DELIVERY_FISH, planLogRoute, withoutFish } from "../../src/lib/logRoute.js";
 
-const raw = await loadFishFromXivapi({ fetchFn: recordedFetch });
-const fish = decode(raw.tables, raw.rows);
-const [sources, spots, td, ocean] = await Promise.all([loadTeamcraft("fishing-sources", recordedFetch), loadTeamcraft("fishing-spots", recordedFetch),
-  loadTimerData({ fetchFn: recordedFetch }), loadOceanRoutes({ fetchFn: recordedFetch })]);
+const { fish } = await loadFish();
+const [sources, spots, td, ocean] = await Promise.all([loadTeamcraft("fishing-sources"), loadTeamcraft("fishing-spots"),
+  loadTimerData(), loadOceanRoutes()]);
 const base = { sources, ocean, oceanCategory: OCEAN_FISHING, now: 1794850000,
   windows: new Map(td.fish.map(t => [t.id, t])), spotZone: new Map(spots.map(x => [x.id, x.zoneId])) };
 const fishIn = steps => steps.flatMap(s => s.fish ?? [s.f]).map(f => f.id);
@@ -52,6 +49,15 @@ describe("log route planner", () => {
     expect(ids.some(id => byId.get(id).big)).toBe(false);
     expect(p.leftOutBig).toBe(fish.filter(f => f.big).length);
     expect(ids.length + p.leftOutBig).toBe(fish.length);
+  });
+
+  it("leaves custom delivery fish out when asked", () => {
+    const p = planLogRoute({ ...base, fish, includeDelivery: false });
+    const ids = fishIn(p.steps), want = fish.filter(f => DELIVERY_FISH.has(f.id)).length;
+    expect(want).toBe(DELIVERY_FISH.size);
+    expect(ids.some(id => DELIVERY_FISH.has(id))).toBe(false);
+    expect(p.leftOutDelivery).toBe(want);
+    expect(ids.length + p.leftOutDelivery).toBe(fish.length);
   });
 
   it("drops a caught fish without changing the order", () => {

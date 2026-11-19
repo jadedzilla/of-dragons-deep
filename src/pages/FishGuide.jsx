@@ -133,9 +133,7 @@ export function FishGuide({ list, mode, data, hidden }) {
             <button type="button" className="btn small" id="markAllBtn" onClick={() => setBulk(true)}>Mark all caught</button>
             {" "}<button type="button" className="btn small" id="unmarkAllBtn" onClick={() => setBulk(false)}>Mark all uncaught</button>
           </div>
-          <div id="dataNote" className={`note${data && !data.live ? " offline" : ""}`}>{data && (data.live
-            ? `${list.length} ${what} · live game data from XIVAPI${data.patch ? ` (patch ${data.patch})` : ""}`
-            : `${list.length} ${what} · offline snapshot from ${data.fetched}${data.patch ? `, patch ${data.patch}` : ""} (couldn't reach XIVAPI: ${data.error})`)}</div>
+          <div id="dataNote" className="note">{data && `${list.length} ${what} · game data from XIVAPI${data.patch ? ` (patch ${data.patch})` : ""}`}</div>
         </div>
         <div className="legend">
           <span id="bigLegend" className={hasBig ? undefined : "off"}><i style={{ background: "var(--big)", transform: "rotate(45deg)" }} />Big fish</span>

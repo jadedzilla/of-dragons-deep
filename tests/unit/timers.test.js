@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { duration, eorzeaTime, etHour, forecastTarget, loadTimerData, nextWindow, weatherAt } from "../../src/lib/timers.js";
-import { recordedFetch } from "../fixtures/network.js";
 
-const { fish, weather } = await loadTimerData({ fetchFn: recordedFetch });
+const { fish, weather } = await loadTimerData();
 const T0 = 1794850000;
 
 /** Whether a fish can be caught at time t, checked directly: its hours, this period's weather and the one before. */

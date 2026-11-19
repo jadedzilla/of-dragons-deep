@@ -10,6 +10,7 @@ export const KEYS = {
   closedGroups: "odd-achievements-groups-closed",
   routeTimed: "odd-route-timed",            // "1" to include timed fish (off by default)
   routeBig: "odd-route-big",                // "0" to leave big fish out (included by default)
+  routeDelivery: "odd-route-delivery",      // "1" to include custom delivery fish (off by default)
   shareName: "odd-share-name",
 };
 

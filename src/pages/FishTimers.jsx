@@ -37,7 +37,7 @@ export function FishTimers({ active }) {
     </div>
     <div className="tm-summary" id="tmSummary">{data && `${shown.filter(up).length} up now · ${shown.length} of ${entries.length} timed fish shown`}</div>
     <div className="tm-list" id="tmList">
-      {error ? <div className="empty-msg">Couldn't load the catch windows ({error.message}). <button type="button" className="btn" id="tmRetry" onClick={retry}>Try again</button></div>
+      {error ? <div className="empty-msg">Couldn't load the catch windows. Check your connection, then <button type="button" className="btn" id="tmRetry" onClick={retry}>try again</button></div>
         : !data ? <Skeleton kind="timers" label="Loading catch windows…" />
         : !sorted.length ? <div className="empty-msg">No timed fish match.</div>
         : sorted.map(e => <TimerRow key={e.f.id} t={e.t} f={e.f} weather={data.weather} caught={isCaught(e.f.id)} onOpen={openFish} {...status(e, now, today)} />)}

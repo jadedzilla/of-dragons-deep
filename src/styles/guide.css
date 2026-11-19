@@ -33,7 +33,6 @@
 .tooltip .m{color:var(--muted)}
 .tooltip .t{color:var(--accent)}
 .footer .note{font-size:12px;margin-top:2px}
-.footer .note.offline{color:var(--warn)}
 .footer .showing{color:var(--accent)}
 .footer{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font-size:12px;color:var(--muted)}
 .footer > :first-child{flex:1;min-width:0}

@@ -27,7 +27,7 @@ export function FishView({ fish, onClose }) {
   const f = fish ?? shown;
   if (!f) return <Dialog open={false} className="fish-dialog" id="fishDialog" />;
 
-  const text = desc.id === f.id ? desc.text : undefined;  // undefined: loading; null: unavailable
+  const text = desc.id === f.id ? desc.text : undefined;  // undefined: loading; null: none
   const b = bait.id === f.id ? bait : { info: undefined, failed: false };
   const caught = isCaught(f.id);
   const [location, water, ...more] = basicFacts(f), aquarium = more.pop();
@@ -40,7 +40,7 @@ export function FishView({ fish, onClose }) {
     !f.spear && ["Hookset", fromBait("hookset"), { id: "fvHook", className: b.info?.hookset ? "" : "pending" }],
     !f.spear && ["Tug", fromBait("tug"), { id: "fvTug", className: b.info?.tug ? "" : "pending" }],
     aquarium,
-    ["Canvas", text === undefined ? <SkInline /> : text ? canvasFrom(text) : "Unavailable right now", { id: "fvCanvas", className: text ? "" : "pending" }],
+    ["Canvas", text === undefined ? <SkInline /> : text ? canvasFrom(text) : "Unknown", { id: "fvCanvas", className: text ? "" : "pending" }],
     ["Status", caught ? "Caught" : "Not yet caught"],
     ["Item ID", String(f.id)],
   ].filter(Boolean);
@@ -65,7 +65,7 @@ export function FishView({ fish, onClose }) {
       </dl>
       <div className="fv-desc" id="fvDesc">
         {text === undefined ? <Skeleton kind="desc" label="Loading description…" />
-          : text === null ? <span className="loading">Description unavailable right now.</span>
+          : text === null ? <span className="loading">No description.</span>
           : descriptionLines(text).map((l, i) => <div key={i} className={l.note ? "note" : undefined}>{l.text}</div>)}
       </div>
     </Dialog>
@@ -80,7 +80,7 @@ function BestBait({ b }) {
   const { groups, items, spots } = b.info;
   if (!groups.length) return "Unknown";
   const item = id => {
-    const it = items[id] ?? { name: fishById.get(id)?.name ?? `Item ${id}` };
+    const it = items.get(id) ?? { name: fishById.get(id)?.name ?? `Item ${id}` };
     return <BaitChip id={id} name={it.name} icon={it.icon} className="fv-bait-item" />;
   };
   const chain = ids => ids.map((id, i) => <Fragment key={i}>{i > 0 && <><span className="fv-arrow">→</span>{" "}</>}{item(id)}{i > 0 && <>{" "}<span className="fv-or">(mooch)</span></>}{i < ids.length - 1 && " "}</Fragment>);

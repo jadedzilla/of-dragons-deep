@@ -5,8 +5,9 @@ import { routeList } from "../lib/gatherBuddy.js";
 import { loadOceanRoutes, planLogRoute, withoutFish } from "../lib/logRoute.js";
 import { KEYS, readRaw, writeRaw } from "../lib/storage.js";
 import { baitChains, loadTeamcraft } from "../lib/teamcraft.js";
-import { duration, etHour, getTimerData, localTime } from "../lib/timers.js";
-import { xivAsset, xivRows } from "../lib/xivapi.js";
+import { duration, etHour, getTimerData, loadSpots, localTime } from "../lib/timers.js";
+import { loadItems } from "../lib/fishFacts.js";
+import rules from "../data/rules.json" with { type: "json" };
 import { useAsync } from "../hooks/useAsync.js";
 import { useNow } from "../hooks/useNow.js";
 import { BaitChip } from "../components/BaitChip.jsx";
@@ -15,17 +16,16 @@ import { Skeleton } from "../components/Skeleton.jsx";
 import { WeatherIcon } from "./FishTimers.jsx";
 
 const STEP_PAGE = 15;
-const HOOKSETS = { 1: "Powerful", 2: "Precision" };
-const TUGS = { 0: "medium (!!)", 1: "heavy (!!!)", 2: "light (!)" };
+const { hooksets: HOOKSETS, tugs: TUGS } = rules.teamcraft;
 // Teamcraft's oceanFishingTime (1 Sunset, 2 Day, 3 Night) → IKDTimeDefine.TimeOfDay (1 Day, 2 Sunset, 3 Night)
-const TC_TO_IKD_TIME = { 1: 2, 2: 1, 3: 3 };
-const IKD_TIME_NAMES = { 1: "Day", 2: "Sunset", 3: "Night" };
-const RUBY_FIRST_STOP = 8; // IKDSpot 1–7: Indigo route (from Limsa Lominsa); 8+: Ruby route (from Kugane)
+const { oceanTimeToIkd: TC_TO_IKD_TIME } = rules.teamcraft;
+// IKDSpot 1–7: Indigo route (from Limsa Lominsa); 8+: Ruby route (from Kugane)
+const { timeNames: IKD_TIME_NAMES, rubyFirstStop: RUBY_FIRST_STOP } = rules.ocean;
 
 let baseData = null; // everything the planner needs, loaded once
 const loadBase = () => {
-  baseData ??= Promise.all([loadTeamcraft("fishing-sources"), loadTeamcraft("fishing-spots"), getTimerData(), loadOceanRoutes()])
-    .then(([sources, spots, td, ocean]) => ({ sources, ocean, weather: td.weather,
+  baseData ??= Promise.all([loadTeamcraft("fishing-sources"), loadTeamcraft("fishing-spots"), getTimerData(), loadOceanRoutes(), loadItems(), loadSpots()])
+    .then(([sources, spots, td, ocean, items, places]) => ({ sources, ocean, weather: td.weather, items, places: places.spots,
       windows: new Map(td.fish.map(t => [t.id, t])), spotZone: new Map(spots.map(x => [x.id, x.zoneId])) }))
     .catch(e => { baseData = null; throw e; });
   return baseData;
@@ -40,33 +40,24 @@ export function LogRoute({ active }) {
   const { data: base, error, retry } = useAsync(loadBase, active);
   const [includeTimed, setIncludeTimed] = useState(() => readRaw(KEYS.routeTimed) === "1"); // off by default
   const [includeBig, setIncludeBig] = useState(() => readRaw(KEYS.routeBig) !== "0"); // on by default
+  const [includeDelivery, setIncludeDelivery] = useState(() => readRaw(KEYS.routeDelivery) === "1"); // off by default
   const [plan, setPlan] = useState(null);
   const [shown, setShown] = useState(STEP_PAGE);
-  const [names] = useState(() => ({ item: new Map(), spot: new Map(), weather: new Map() })); // filled in by ensureNames
   const now = useNow(active && !!plan);
 
-  function replan({ timed = includeTimed, big = includeBig } = {}) {
+  function replan({ timed = includeTimed, big = includeBig, delivery = includeDelivery } = {}) {
     setPlan(withIds(planLogRoute({ fish: fishList.filter(f => !isCaught(f.id)), sources: base.sources, windows: base.windows,
-      ocean: base.ocean, oceanCategory: OCEAN_FISHING, now: Date.now() / 1000, spotZone: base.spotZone, includeTimed: timed, includeBig: big })));
+      ocean: base.ocean, oceanCategory: OCEAN_FISHING, now: Date.now() / 1000, spotZone: base.spotZone, includeTimed: timed, includeBig: big,
+      includeDelivery: delivery })));
   }
   // planned afresh from the current time each time the page is shown
-  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- replan reads the current options
   useEffect(() => { if (active && base) replan(); }, [active, base]);
 
   // a timed step whose window has closed drops out (the fish stays uncaught; Re-plan fits it back in)
   const expired = s => s.kind === "timed" && now >= s.w.end;
   const steps = plan?.steps.filter(s => !expired(s)) ?? [];
   const missed = plan ? plan.steps.length - steps.length : 0;
-
-  // the steps on screen are shown once their names and icons are in (nice to have: else "Item 1234" / the zone)
-  const [named, setNamed] = useState(null); // { plan, steps }
-  const onScreen = steps.slice(0, shown), onScreenKey = onScreen.map(s => s.uid).join();
-  useEffect(() => {
-    if (!plan) return;
-    let live = true;
-    ensureNames(onScreen, base, names).then(() => live && setNamed({ plan, steps: onScreen }));
-    return () => { live = false; };
-  }, [plan, onScreenKey]); // eslint-disable-line react-hooks/exhaustive-deps -- the steps on screen, by id
 
   const markCaught = useCallback(id => {
     setCaught(c => new Set([...c, id]));
@@ -82,10 +73,15 @@ export function LogRoute({ active }) {
     writeRaw(KEYS.routeBig, on ? "1" : "0");
     if (base) { replan({ big: on }); setShown(STEP_PAGE); }
   };
+  const setDelivery = on => {
+    setIncludeDelivery(on);
+    writeRaw(KEYS.routeDelivery, on ? "1" : "0");
+    if (base) { replan({ delivery: on }); setShown(STEP_PAGE); }
+  };
 
-  // steps re-render only when this changes (names arrive with `named`) or, for timed steps, every second
-  const ctx = useMemo(() => ({ base, names, fishById, markCaught }), [base, names, fishById, markCaught, named]); // eslint-disable-line react-hooks/exhaustive-deps -- names is filled in place
-  const view = named && plan, visible = named?.steps.filter(s => !expired(s)) ?? [];
+  // steps re-render only when this changes or, for timed steps, every second
+  const ctx = useMemo(() => ({ base, fishById, markCaught }), [base, fishById, markCaught]);
+  const view = plan, visible = steps.slice(0, shown);
   const n = x => x.toLocaleString("en-US");
   return <>
     <div className="lr-head">
@@ -98,12 +94,14 @@ export function LogRoute({ active }) {
       <div className="lr-head-notes" id="lrNotes">{view?.left > 0 && <>
         {view.leftOut > 0 && <div className="lr-leftout">{`${n(view.leftOut)} timed fish not in the route. Tick `}<b>Include timed fish</b> to add them.</div>}
         {view.leftOutBig > 0 && <div className="lr-leftout">{`${n(view.leftOutBig)} big fish not in the route. Tick `}<b>Include big fish</b> to add them.</div>}
+        {view.leftOutDelivery > 0 && <div className="lr-leftout">{`${n(view.leftOutDelivery)} custom delivery fish not in the route. Tick `}<b>Include custom delivery fish</b> to add them.</div>}
         {missed > 0 && <div className="lr-missed">{`${missed} timed fish missed ${missed === 1 ? "its" : "their"} window. `}<b>Re-plan</b>{` to fit ${missed === 1 ? "it" : "them"} back in.`}</div>}
       </>}</div>
       <div className="lr-bar">
         <div className="lr-opts">
           <label className="tm-opt" title="Fish that can only be caught at certain Eorzea times or weather"><input type="checkbox" id="lrTimed" checked={includeTimed} onChange={e => setTimed(e.target.checked)} /> Include timed fish</label>
           <label className="tm-opt" title="Big fish, including ocean fishing's rare fish"><input type="checkbox" id="lrBig" checked={includeBig} onChange={e => setBig(e.target.checked)} /> Include big fish</label>
+          <label className="tm-opt" title="Dawntrail custom delivery fish, which only bite once Nitowikwe's or Tiisol Ja's deliveries are unlocked"><input type="checkbox" id="lrDelivery" checked={includeDelivery} onChange={e => setDelivery(e.target.checked)} /> Include custom delivery fish</label>
         </div>
         <div className="lr-actions">
           <button type="button" className="btn small" id="lrRecalc" title="Plan again from the current time" onClick={() => { if (base) { replan(); setShown(STEP_PAGE); } }}>↻ Re-plan</button>
@@ -116,7 +114,7 @@ export function LogRoute({ active }) {
           slotted in when their window opens. Times are estimates. Ocean fishing comes last, grouped by voyage stop.</div></details>
     </div>
     <div className="ns-list" id="lrList">
-      {error ? <div className="empty-msg">Couldn't plan the route ({error.message}). <button type="button" className="btn" id="lrRetry" onClick={retry}>Try again</button></div>
+      {error ? <div className="empty-msg">Couldn't plan the route. Check your connection, then <button type="button" className="btn" id="lrRetry" onClick={retry}>try again</button></div>
         : !view ? <Skeleton kind="route" label="Planning your route…" />
         : !view.left ? <div className="empty-msg">Every Fish Guide fish is caught.</div>
         : <>
@@ -165,46 +163,22 @@ async function copyText(text) {
 const entryAt = (base, id, spot) => (base.sources[id] ?? []).find(x => x.spot === spot) ?? (base.sources[id] ?? [])[0];
 const chainsAt = (base, id, spot) => { const groups = baitChains(base.sources, id); return (groups.find(g => g.spots.includes(spot)) ?? groups[0])?.chains ?? []; };
 
-async function ensureNames(steps, base, names) {
-  const items = new Set(), spots = new Set(), weathers = new Set();
-  for (const s of steps) {
-    for (const f of s.fish ?? [s.f]) {
-      const spot = s.kind === "stop" ? s.spot : s.kind === "timed" ? s.e.spot : entryAt(base, f.id)?.spot;
-      if (spot !== undefined) spots.add(spot);
-      chainsAt(base, f.id, spot).flat().forEach(id => items.add(id));
-      const e = entryAt(base, f.id, spot);
-      for (const p of e?.predators ?? []) { items.add(p.id); chainsAt(base, p.id, spot).flat().forEach(id => items.add(id)); }
-      for (const w of e?.weathers ?? []) if (!base.weather[w]) weathers.add(w);
-    }
-  }
-  const missing = (set, map) => [...set].filter(id => !map.has(id));
-  const toIcon = f => f?.Icon?.path ? xivAsset(f.Icon.path) : null;
-  const [ir, sr, wr] = await Promise.all([
-    missing(items, names.item).length ? xivRows("Item", missing(items, names.item), "Name,Icon") : [],
-    missing(spots, names.spot).length ? xivRows("FishingSpot", missing(spots, names.spot), "PlaceName.Name,TerritoryType.PlaceName.Name") : [],
-    missing(weathers, names.weather).length ? xivRows("Weather", missing(weathers, names.weather), "Name,Icon") : [],
-  ]).catch(() => [[], [], []]);
-  ir.forEach(r => names.item.set(r.row_id, { name: r.fields.Name, icon: toIcon(r.fields) }));
-  sr.forEach(r => names.spot.set(r.row_id, { name: r.fields.PlaceName?.fields?.Name || null, zone: r.fields.TerritoryType?.fields?.PlaceName?.fields?.Name || null }));
-  wr.forEach(r => names.weather.set(r.row_id, { name: r.fields.Name, icon: toIcon(r.fields) }));
-}
-
 const join = (list, sep) => list.map((x, i) => <Fragment key={i}>{i > 0 && sep}{x}</Fragment>);
 const Arrow = () => <span className="tm-arrow">→</span>;
 
 function Item({ id, ctx }) {
-  const name = ctx.fishById.get(id)?.name ?? ctx.names.item.get(id)?.name ?? `Item ${id}`;
-  return <BaitChip id={id} name={name} icon={ctx.names.item.get(id)?.icon} className="ns-item" />;
+  const name = ctx.fishById.get(id)?.name ?? ctx.base.items.get(id)?.name ?? `Item ${id}`;
+  return <BaitChip id={id} name={name} icon={ctx.base.items.get(id)?.icon} className="ns-item" />;
 }
 const HookTug = ({ e }) => {
-  const t = e ? [HOOKSETS[e.hookset], TUGS[e.tug]].filter(Boolean).join(", ") : "";
+  const t = e ? [HOOKSETS[e.hookset], TUGS[e.tug]?.toLowerCase()].filter(Boolean).join(", ") : "";
   return t ? <>{" "}<span className="ns-alt">{`(${t})`}</span></> : null;
 };
 function Spot({ spot, f, ctx }) {
-  const n = ctx.names.spot.get(spot)?.name, zone = ctx.names.spot.get(spot)?.zone ?? f.zone;
+  const [n, z] = ctx.base.places[spot] ?? [], zone = z || f.zone;
   return <><b>{n ?? zone}</b>{n && n !== zone ? `, ${zone}` : null}</>;
 }
-const Weathers = ({ ids, ctx }) => ids.map(id => <WeatherIcon key={id} w={ctx.base.weather[id] ?? ctx.names.weather.get(id)} fallback={`weather ${id}`} />);
+const Weathers = ({ ids, ctx }) => ids.map(id => <WeatherIcon key={id} w={ctx.base.weather[id]} fallback={`weather ${id}`} />);
 
 /** The bait → mooch chain to the fish (with hookset and tug per step), then intuition, lures, snagging, Gathering. */
 function CatchLine({ f, spot, ctx }) {

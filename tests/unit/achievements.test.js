@@ -1,13 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { achievementState, loadAchievements } from "../../src/lib/achievements.js";
-import { loadFishFromXivapi } from "../../src/lib/fishSource.js";
-import { decode } from "../../src/lib/fishData.js";
-import { recordedFetch } from "../fixtures/network.js";
+import { loadFish } from "../../src/lib/fishData.js";
 
-const raw = await loadFishFromXivapi({ fetchFn: recordedFetch });
-const allFish = [...decode(raw.tables, raw.rows), ...decode(raw.tables, raw.spear, true)];
+const lists = await loadFish();
+const allFish = [...lists.fish, ...lists.spear];
 const fishById = new Map(allFish.map(f => [f.id, f]));
-const data = await loadAchievements({ fetchFn: recordedFetch });
+const data = await loadAchievements();
 const state = (caught, marks = new Set()) => achievementState(data, { allFish, fishById, isCaught: id => caught.has(id), marks, progress: { at: null, items: {} } });
 
 describe("achievements", () => {

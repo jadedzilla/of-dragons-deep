@@ -1,4 +1,4 @@
-import { expect, gridReady, openApp, test } from "./fixtures.js";
+import { dataChunk, expect, gridReady, openApp, test } from "./fixtures.js";
 
 test("the fish view shows facts, bait, hookset, tug, canvas and the description", async ({ page }) => {
   const errors = await openApp(page, { storage: { "odd-caught-v2": [4776] } });
@@ -12,7 +12,7 @@ test("the fish view shows facts, bait, hookset, tug, canvas and the description"
   await expect(view.locator("#fvBait .fv-bait-item").first()).toBeVisible();
   await expect(view.locator("#fvHook")).not.toHaveClass(/pending/);
   await expect(view.locator("#fvTug")).toHaveText(/\((!+)\)/);
-  await expect(view.locator("#fvCanvas")).not.toContainText("Unavailable");
+  await expect(view.locator("#fvCanvas")).not.toHaveText("Unknown");
   await expect(view.locator("#fvDesc div").first()).toBeVisible();
   await expect(view.locator("#fvDesc")).not.toContainText("[Suitable for"); // shown as facts instead
   await page.keyboard.press("Escape");
@@ -20,12 +20,13 @@ test("the fish view shows facts, bait, hookset, tug, canvas and the description"
   expect(errors).toEqual([]);
 });
 
-test("a fish without a recorded description says so", async ({ page }) => {
+test("if the descriptions can't load, the fish view says so", async ({ page }) => {
+  await page.route(dataChunk("descriptions"), route => route.abort());
   await openApp(page);
   await gridReady(page);
   await page.locator(".tile[data-id]").nth(5).click();
-  await expect(page.locator("#fvDesc")).toHaveText("Description unavailable right now.");
-  await expect(page.locator("#fvCanvas")).toHaveText("Unavailable right now");
+  await expect(page.locator("#fvDesc")).toHaveText("No description.");
+  await expect(page.locator("#fvCanvas")).toHaveText("Unknown");
 });
 
 test("clicking a bait shows where to get it, over the fish view", async ({ page }) => {

@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { baitChains, hooksetAndTug, loadTeamcraft } from "../../src/lib/teamcraft.js";
-import { recordedFetch } from "../fixtures/network.js";
 
-const sources = await loadTeamcraft("fishing-sources", recordedFetch);
+const sources = await loadTeamcraft("fishing-sources");
 
 describe("bait and hooksets", () => {
   it("follows mooch chains back to a real bait", () => {

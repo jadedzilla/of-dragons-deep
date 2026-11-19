@@ -1,4 +1,4 @@
-import { CAUGHT, expect, openApp, test } from "./fixtures.js";
+import { dataChunk, CAUGHT, expect, openApp, test } from "./fixtures.js";
 
 test("draws the progress card and downloads it", async ({ page }) => {
   const errors = await openApp(page, { path: "#share", storage: { "odd-caught-v2": CAUGHT, "odd-achievements-v1": [2557] } });
@@ -35,7 +35,7 @@ test("remembers the name and redraws with it", async ({ page }) => {
 });
 
 test("without achievements the card still shows the fish", async ({ page }) => {
-  await page.route(/sheets=Achievement/, route => route.fulfill({ status: 500 }));
+  await page.route(dataChunk("achievements"), route => route.abort());
   await openApp(page, { path: "#share" });
   await expect(page.locator("#shImg")).toHaveAttribute("alt", /spearfish, \d+ \/ \d+ big fish$/);
 });

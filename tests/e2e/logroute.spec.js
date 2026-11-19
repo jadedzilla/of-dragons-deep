@@ -8,7 +8,7 @@ test("plans the route: summary, Next step, bait to bring", async ({ page }) => {
   await expect(page.locator(".lr-step").first().locator(".lr-when")).toHaveText("Next");
   await expect(page.locator(".lr-step").first()).toContainText("Bring:");
   await expect(page.locator(".lr-step")).toHaveCount(15);
-  await expect(page.locator(".lr-leftout")).toContainText("timed fish not in the route"); // timed fish are off by default
+  await expect(page.locator(".lr-leftout", { hasText: "timed fish" })).toContainText("timed fish not in the route"); // timed fish are off by default
   await page.locator("#lrMore").click();
   await expect(page.locator(".lr-step")).toHaveCount(30);
   expect(errors).toEqual([]);
@@ -44,7 +44,7 @@ test("Include timed fish is remembered", async ({ page }) => {
   await openApp(page, { path: "#route", clock: T0 });
   await expect(page.locator(".lr-step").first()).toBeVisible();
   await page.locator("#lrTimed").check();
-  await expect(page.locator(".lr-leftout")).toHaveCount(0);
+  await expect(page.locator(".lr-leftout", { hasText: "timed fish" })).toHaveCount(0);
   await page.reload();
   await expect(page.locator("#lrTimed")).toBeChecked();
 });
@@ -58,6 +58,17 @@ test("Include big fish is ticked by default; unticking leaves them out and is re
   await expect(page.locator(".lr-leftout", { hasText: "big fish" })).toContainText(/^\d+ big fish not in the route/);
   await page.reload();
   await expect(page.locator("#lrBig")).not.toBeChecked();
+});
+
+test("Include custom delivery fish is off by default; ticking adds them and is remembered", async ({ page }) => {
+  await openApp(page, { path: "#route", clock: T0 });
+  await expect(page.locator(".lr-step").first()).toBeVisible();
+  await expect(page.locator("#lrDelivery")).not.toBeChecked();
+  await expect(page.locator(".lr-leftout", { hasText: "custom delivery" })).toContainText(/^10 custom delivery fish not in the route/);
+  await page.locator("#lrDelivery").check();
+  await expect(page.locator(".lr-leftout", { hasText: "custom delivery" })).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator("#lrDelivery")).toBeChecked();
 });
 
 test("GatherBuddy copies the route as an auto-gather list", async ({ page, context }) => {

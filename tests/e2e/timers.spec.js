@@ -1,4 +1,4 @@
-import { CAUGHT, T0, expect, openApp, test } from "./fixtures.js";
+import { dataChunk, CAUGHT, T0, expect, openApp, test } from "./fixtures.js";
 
 test("lists timed fish, up now first, with ticking countdowns", async ({ page }) => {
   const errors = await openApp(page, { path: "#timers", clock: { install: T0 }, storage: { "odd-caught-v2": CAUGHT } });
@@ -29,9 +29,9 @@ test("filters: hide caught, big fish only, search", async ({ page }) => {
   await expect(page.locator(".empty-msg")).toHaveText("No timed fish match.");
 });
 
-test("shows an error with Try again when the data can't load", async ({ page }) => {
+test("shows an error when the data can't load; try again reloads", async ({ page }) => {
   let fail = true;
-  await page.route(/fishing-sources\.json/, route => fail ? route.fulfill({ status: 500 }) : route.fallback());
+  await page.route(dataChunk("teamcraft"), route => fail ? route.abort() : route.fallback());
   await openApp(page, { path: "#timers", clock: T0 });
   await expect(page.locator("#tmList .empty-msg")).toContainText("Couldn't load the catch windows");
   fail = false;

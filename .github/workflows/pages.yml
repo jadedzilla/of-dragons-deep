@@ -1,10 +1,14 @@
-# Builds the app and deploys it to GitHub Pages on every push to main.
+# Builds the app and deploys it to GitHub Pages on every push to main, and once a day so new game data (a patch, Teamcraft
+# fixes) goes live without a push. The game data is refreshed first and the tests run on it; if they fail, nothing is
+# deployed and the site keeps the last good version.
 # One-time setup: repo Settings → Pages → Build and deployment → Source: "GitHub Actions".
 name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "17 11 * * *" # daily, 11:17 UTC
   workflow_dispatch:
 
 permissions:
@@ -26,9 +30,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run data
       - run: npm run lint
       - run: npm test
-      - run: npm run build
+      - run: npm run build:app
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -1,43 +1,19 @@
-// Fisher achievements (XIVAPI Achievement rows in AchievementCategory 34) and their progress.
+// Fisher achievements (XIVAPI Achievement rows in AchievementCategory 34, bundled) and their progress.
 // Requirements: Type 1 = counter Key reaches Data[0]; Type 2 = all of the achievements Key + Data[]; Type 27 = every
 // fish at an ocean fishing stop. Counters worked out from caught fish (the top tiers equal these totals exactly):
 //   202 unique fish (Fish Guide + spearfishing) · 267 big fish ARR+HW+SB · 826 ShB · 1000 EW · 1145 DT
-import { XIVAPI, SCHEMA_PARAM, getJson, xivAsset } from "./xivapi.js";
+import rules from "../data/rules.json" with { type: "json" };
+import { xivAsset } from "./xivapi.js";
 
-const FISHER_CATEGORY = 34;
-const UNIQUE_FISH = 202;
-const BIG_FISH_COUNTERS = { 267: [0, 1, 2], 826: [3], 1000: [4], 1145: [5] }; // counter → categories
+const { uniqueFishCounter: UNIQUE_FISH, bigFishCounters: BIG_FISH_COUNTERS } = rules.achievements; // counter → categories
 
-const refValue = v => (v && typeof v === "object" ? v.value ?? v.row_id : v);
-
-/** { achievements: [{ id, name, desc, points, icon, order, type, key, data }], oceanSpots: [{ names, main, sub }] }. */
-export async function loadAchievements({ fetchFn = fetch, signal } = {}) {
-  const opts = { fetchFn, signal }, results = [];
-  // @as(raw): plain numbers; without it Key/Data expand the linked rows (~250 KB instead of ~50 KB)
-  let page = await getJson(`${XIVAPI}/search?sheets=Achievement&query=${encodeURIComponent(`AchievementCategory=${FISHER_CATEGORY}`)}`
-    + `&limit=500&fields=Name,Description,Points,Type@as(raw),Key@as(raw),Data@as(raw),Order,Icon&${SCHEMA_PARAM}`, opts);
-  results.push(...page.results);
-  while (page.next) {
-    page = await getJson(`${XIVAPI}/search?cursor=${encodeURIComponent(page.next)}&limit=500`, opts);
-    results.push(...page.results);
-  }
-
-  const spots = await getJson(`${XIVAPI}/sheet/IKDSpot?limit=500&fields=PlaceName.Name,SpotMain.PlaceName.Name,SpotMain.Item[].Name,SpotSub.Item[].Name&${SCHEMA_PARAM}`, opts);
-  const fishOf = spot => (spot?.fields?.Item ?? []).map(i => i.row_id).filter(id => id > 0);
-  const oceanSpots = spots.rows.filter(r => r.row_id > 0).map(r => ({
-    // as the descriptions spell them: "outer Galadion Bay", "the Ruby Sea" → lower case, no leading "the"
-    names: [r.fields.PlaceName?.fields?.Name, r.fields.SpotMain?.fields?.PlaceName?.fields?.Name]
-      .filter(Boolean).map(n => n.toLowerCase().replace(/^the /, "")),
-    main: fishOf(r.fields.SpotMain), sub: fishOf(r.fields.SpotSub),
-  }));
-
-  const achievements = results.map(({ row_id, fields: f }) => ({
-    id: row_id, name: f.Name, desc: f.Description, points: f.Points, order: f.Order,
-    type: refValue(f["Type@as(raw)"] ?? f.Type), key: refValue(f["Key@as(raw)"] ?? f.Key),
-    data: (f["Data@as(raw)"] ?? f.Data ?? []).map(refValue).filter(v => v > 0),
-    icon: f.Icon?.path_hr1 ? xivAsset(f.Icon.path_hr1) : f.Icon?.path ? xivAsset(f.Icon.path) : null,
-  })).sort((a, b) => a.order - b.order || a.id - b.id);
-  return { achievements, oceanSpots };
+/**
+ * src/data/achievements.json: { achievements: [{ id, name, desc, points, icon, order, type, key, data }],
+ * oceanSpots: [{ names, main, sub }] }.
+ */
+export async function loadAchievements() {
+  const { achievements, oceanSpots } = (await import("../data/achievements.json", { with: { type: "json" } })).default;
+  return { achievements: achievements.map(a => ({ ...a, icon: xivAsset(a.icon) })), oceanSpots };
 }
 
 let cached = null; // loaded once; dropped on failure so it's retried

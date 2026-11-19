@@ -4,42 +4,38 @@
 //    ones after a stop in their zone if open then; leftovers window by window.
 //    Rough durations: 2 min per fish (+1 per mooch step), 6 min per timed fish, 1.5 min travel per stop.
 // 3. Ocean fishing last, by voyage stop.
-// includeTimed / includeBig false leave time/weather-limited fish / big fish (ocean rares too) out of the route.
-import { XIVAPI, SCHEMA_PARAM, getJson } from "./xivapi.js";
+// includeTimed / includeBig / includeDelivery false leave time/weather-limited fish / big fish (ocean rares too) /
+// custom delivery fish out of the route.
 import { baitChains, isTimedEntry } from "./teamcraft.js";
 import { nextWindow } from "./timers.js";
+import deliveryFish from "../data/delivery-fish.json" with { type: "json" };
 
 const MIN = 60, PER_FISH = 2 * MIN, PER_MOOCH = MIN, PER_TIMED = 6 * MIN, TRAVEL = 90, TOO_LATE = 3 * MIN;
 const RARE = 3 * 3600;
 
+/** Item ids of the custom delivery fish that only bite once their client is unlocked (src/data/delivery-fish.json). */
+export const DELIVERY_FISH = new Set(Object.values(deliveryFish.clients).flatMap(c => Object.keys(c).map(Number)));
+
 let oceanRoutes = null;
-/** Ocean fishing: { spots: [{ id, name, main, sub }] (FishingSpot ids), routes: [{ stops: [[ikdSpot, timeOfDay]…] }] }. */
-export function loadOceanRoutes({ fetchFn = fetch } = {}) {
-  oceanRoutes ??= Promise.all([
-    // @as(raw): row ids only (plain SpotMain would expand whole FishingSpot rows: ~730 KB instead of ~9 KB)
-    getJson(`${XIVAPI}/sheet/IKDSpot?limit=500&fields=PlaceName.Name,SpotMain@as(raw),SpotSub@as(raw)&${SCHEMA_PARAM}`, { fetchFn }),
-    getJson(`${XIVAPI}/sheet/IKDRoute?limit=500&fields=Spot@as(raw),Time[].TimeOfDay&${SCHEMA_PARAM}`, { fetchFn }),
-  ]).then(([spots, routes]) => ({
-    spots: spots.rows.filter(r => r.row_id > 0).map(r => ({ id: r.row_id, name: r.fields.PlaceName?.fields?.Name ?? "",
-      main: r.fields["SpotMain@as(raw)"], sub: r.fields["SpotSub@as(raw)"] })),
-    routes: routes.rows.filter(r => r.row_id > 0).map(r => ({
-      stops: r.fields["Spot@as(raw)"].map((s, i) => [s, r.fields.Time[i]?.fields?.TimeOfDay]).filter(([s]) => s > 0) })),
-  })).catch(e => { oceanRoutes = null; throw e; });
+/** Ocean fishing (src/data/ocean.json): { spots: [{ id, name, main, sub }] (FishingSpot ids), routes: [{ stops: [[ikdSpot, timeOfDay]…] }] }. */
+export function loadOceanRoutes() {
+  oceanRoutes ??= import("../data/ocean.json", { with: { type: "json" } }).then(m => m.default).catch(e => { oceanRoutes = null; throw e; });
   return oceanRoutes;
 }
 
 /**
  * Plans the route. spotZone: Map(spot → zone id) so stops group by the spot's own zone.
- * Returns { steps, left, leftOut (timed fish left out), leftOutBig (big fish left out), minutes }; a step is
+ * Returns { steps, left, leftOut (timed fish left out), leftOutBig (big fish left out), leftOutDelivery, minutes }; a step is
  *   { kind: "stop", at, spot, fish } | { kind: "timed", at, f, e, w } | { kind: "ocean", stop, fish }
  *   | { kind: "nowindow", fish } | { kind: "nodata", fish }   (at = planned start, Unix seconds)
  */
-export function planLogRoute({ fish, sources, windows, ocean, oceanCategory, now, spotZone = new Map(), includeTimed = true, includeBig = true }) {
+export function planLogRoute({ fish, sources, windows, ocean, oceanCategory, now, spotZone = new Map(), includeTimed = true, includeBig = true, includeDelivery = true }) {
   const index = new Map(fish.map((f, i) => [f.id, i]));
-  const timed = [], untimed = [], oceanFish = [], noData = [], noWindow = [], leftOut = [], leftOutBig = [];
+  const timed = [], untimed = [], oceanFish = [], noData = [], noWindow = [], leftOut = [], leftOutBig = [], leftOutDelivery = [];
   for (const f of fish) {
     const es = sources[f.id];
-    if (!includeBig && f.big) leftOutBig.push(f);
+    if (!includeDelivery && DELIVERY_FISH.has(f.id)) leftOutDelivery.push(f);
+    else if (!includeBig && f.big) leftOutBig.push(f);
     else if (f.cat === oceanCategory) oceanFish.push(f);
     else if (!es?.length) noData.push(f);
     else if (windows.has(f.id)) (includeTimed ? timed : leftOut).push(f);
@@ -136,7 +132,7 @@ export function planLogRoute({ fish, sources, windows, ocean, oceanCategory, now
   steps.push(...[...byStop.values()].sort((a, b) => (a.stop?.id ?? 99) - (b.stop?.id ?? 99)));
   if (noWindow.length) steps.push({ kind: "nowindow", fish: noWindow });
   if (noData.length) steps.push({ kind: "nodata", fish: noData });
-  return { steps, left: fish.length, leftOut: leftOut.length, leftOutBig: leftOutBig.length, minutes: Math.round((clock - now) / 60) };
+  return { steps, left: fish.length, leftOut: leftOut.length, leftOutBig: leftOutBig.length, leftOutDelivery: leftOutDelivery.length, minutes: Math.round((clock - now) / 60) };
 }
 
 /** The plan without one fish (marked caught): order stays as it was. */

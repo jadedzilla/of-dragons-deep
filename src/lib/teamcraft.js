@@ -1,18 +1,14 @@
-// FFXIV Teamcraft's fishing data (github.com/ffxiv-teamcraft/ffxiv-teamcraft, libs/data/src/lib/json; CORS *):
-//   fishing-sources.json       { itemId: [{ spot, bait, hookset, tug, spawn?, duration?, weathers?, weathersFrom?, … }] }
-//   spearfishing-sources.json  { itemId: [{ spawn?, duration?, … }] }
-//   fishing-spots.json         [{ id (FishingSpot), zoneId (PlaceName), … }]
-export const TEAMCRAFT_DATA = "https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/staging/libs/data/src/lib/json";
+// FFXIV Teamcraft's fishing data, bundled as src/data/teamcraft.json by scripts/update-data.mjs:
+//   fishing-sources       { itemId: [{ spot, bait, hookset, tug, spawn?, duration?, weathers?, weathersFrom?, … }] }
+//   spearfishing-sources  { itemId: [{ spawn?, duration?, … }] }
+//   fishing-spots         [{ id (FishingSpot), zoneId (PlaceName) }]
+import rules from "../data/rules.json" with { type: "json" };
 
-const files = new Map(); // name → Promise; dropped on failure so the next call retries
-export function loadTeamcraft(name, fetchFn = fetch) {
-  if (!files.has(name)) {
-    files.set(name, fetchFn(`${TEAMCRAFT_DATA}/${name}.json`).then(r => {
-      if (!r.ok) throw new Error(`Teamcraft HTTP ${r.status}`);
-      return r.json();
-    }).catch(e => { files.delete(name); throw e; }));
-  }
-  return files.get(name);
+let data = null;
+/** One of the files above (loaded on first use). */
+export function loadTeamcraft(name) {
+  data ??= import("../data/teamcraft.json", { with: { type: "json" } }).then(m => m.default).catch(e => { data = null; throw e; });
+  return data.then(d => d[name]);
 }
 
 /**
@@ -43,8 +39,7 @@ export function baitChains(sources, itemId) {
 }
 
 // Teamcraft's codes (checked against the FFXIV Fish Tracker's labels); anything else is unknown.
-const HOOKSETS = { 1: "Powerful", 2: "Precision" };
-const TUGS = { 0: "Medium (!!)", 1: "Heavy (!!!)", 2: "Light (!)" };
+export const { hooksets: HOOKSETS, tugs: TUGS } = rules.teamcraft;
 
 /** Hookset and tug as text, joined with "or" when they differ by spot; null if unknown. */
 export function hooksetAndTug(sources, itemId) {

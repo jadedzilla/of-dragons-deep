@@ -1,6 +1,8 @@
-// Every page gets the recorded network (nothing reaches the internet) and, optionally, saved progress and a fixed clock.
+// Nothing reaches the internet: the game data is bundled, game images (XIVAPI assets) are a 1px PNG and fonts are blocked.
+// Pages can also start with saved progress and a fixed clock.
 import { test as base, expect } from "@playwright/test";
-import { PNG_1PX, recorded } from "../fixtures/network.js";
+
+const PNG_1PX = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
 
 export { expect };
 export const T0 = 1794850000; // ET 05:42
@@ -9,14 +11,9 @@ export const CAUGHT = [4776, 4869, 4870, 7678, 12713, 20144, 28937];
 export const test = base.extend({
   context: async ({ context }, use) => {
     await context.route(url => !["127.0.0.1", "localhost"].includes(url.hostname), route => {
-      const url = route.request().url(), { hostname, pathname } = new URL(url);
-      const json = (body, status = 200) => route.fulfill({ status, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify(body) });
+      const { hostname, pathname } = new URL(route.request().url());
       if (hostname === "v2.xivapi.com" && pathname === "/api/asset") return route.fulfill({ contentType: "image/png", headers: { "access-control-allow-origin": "*" }, body: PNG_1PX });
-      if (hostname === "v2.xivapi.com" || hostname === "raw.githubusercontent.com") {
-        const body = recorded(url);
-        return body ? json(body) : json({ message: "not recorded" }, 404);
-      }
-      return route.abort("blockedbyclient"); // fonts
+      return route.abort("blockedbyclient");
     });
     await use(context);
   },
@@ -42,3 +39,6 @@ export async function openApp(page, { path = "", storage = {}, clock } = {}) {
 
 export const exportJson = (fish, achievements) => JSON.stringify({ source: "OfDragonsDeep", version: 2, fish, ...(achievements && { achievements }) });
 export const gridReady = page => expect(page.locator(".tile[data-id]").first()).toBeVisible();
+
+/** Makes a bundled data file (e.g. "fish" for src/data/fish.json) fail to load, or wait for `held` first. */
+export const dataChunk = name => new RegExp(`/assets/${name}-[\\w-]+\\.js$`);

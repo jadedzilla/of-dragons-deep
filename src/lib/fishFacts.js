@@ -1,7 +1,8 @@
-// Facts for the fish view: what needs no loading, the in-game description (XIVAPI) and bait/hookset/tug (Teamcraft).
+// Facts for the fish view: what needs no loading, the in-game description and bait/hookset/tug (all bundled in src/data).
 import { CATEGORIES, OCEAN_FISHING } from "./fishData.js";
-import { XIVAPI, SCHEMA_PARAM, xivAsset, xivRows } from "./xivapi.js";
+import { xivAsset } from "./xivapi.js";
 import { baitChains, hooksetAndTug, loadTeamcraft } from "./teamcraft.js";
+import { loadSpots } from "./timers.js";
 
 // AquariumFish size 1–4 (S/M/L/XL) is also the smallest tank tier that holds the fish.
 const aquariumText = a => a ? `${a.water}, tier ${a.size} tanks and up (size ${["", "S", "M", "L", "XL"][a.size]})` : "Not suitable";
@@ -15,15 +16,20 @@ export const basicFacts = f => [
   ["Aquarium", aquariumText(f.aquarium)],
 ].filter(Boolean);
 
-const descriptions = new Map(); // item id → Promise<string|null>
-/** The item description, or null if it can't be loaded (retried next time). */
+let descriptions = null;
+/** The item description (src/data/descriptions.json), or null if there's none or it can't be loaded. */
 export function loadDescription(id) {
-  if (!descriptions.has(id)) {
-    descriptions.set(id, fetch(`${XIVAPI}/sheet/Item/${id}?fields=Description&${SCHEMA_PARAM}`)
-      .then(r => r.ok ? r.json() : null).then(d => d?.fields?.Description || null, () => null)
-      .then(text => { if (text === null) descriptions.delete(id); return text; }));
-  }
-  return descriptions.get(id);
+  descriptions ??= import("../data/descriptions.json", { with: { type: "json" } }).then(m => m.default).catch(() => { descriptions = null; return {}; });
+  return descriptions.then(d => d[id] ?? null);
+}
+
+let items = null;
+/** Names and icons of fish, baits and mooches (src/data/items.json): Map(id → { name, icon }). */
+export function loadItems() {
+  items ??= import("../data/items.json", { with: { type: "json" } })
+    .then(m => new Map(Object.entries(m.default).map(([id, [name, icon]]) => [+id, { name, icon: xivAsset(icon) }])))
+    .catch(e => { items = null; throw e; });
+  return items;
 }
 
 // Canvas and aquarium notes are shown as their own facts, so they're left out of the description.
@@ -39,17 +45,12 @@ export function canvasFrom(text) {
   return /Use item to acquire/i.test(text) ? "Can't be printed (minion item)" : "Can't be printed";
 }
 
-const baitInfo = new Map(); // fish id → Promise<{ groups, items: { id: { name, icon } }, spots: { id: name }, hookset, tug }>
+const baitInfo = new Map(); // fish id → Promise<{ groups, items: Map(id → { name, icon }), spots: { id: name }, hookset, tug }>
 export function loadBait(id) {
   if (!baitInfo.has(id)) {
-    baitInfo.set(id, loadTeamcraft("fishing-sources").then(async sources => {
+    baitInfo.set(id, Promise.all([loadTeamcraft("fishing-sources"), loadItems(), loadSpots()]).then(([sources, items, places]) => {
       const groups = baitChains(sources, id);
-      const [itemRows, spotRows] = await Promise.all([
-        groups.length ? xivRows("Item", groups.flatMap(g => g.chains.flat()), "Name,Icon") : [],
-        groups.length > 1 ? xivRows("FishingSpot", groups.flatMap(g => g.spots), "PlaceName.Name") : [],
-      ]);
-      const items = Object.fromEntries(itemRows.map(r => [r.row_id, { name: r.fields.Name, icon: r.fields.Icon?.path ? xivAsset(r.fields.Icon.path) : null }]));
-      const spots = Object.fromEntries(spotRows.map(r => [r.row_id, r.fields.PlaceName?.fields?.Name || `Spot ${r.row_id}`]));
+      const spots = Object.fromEntries(groups.flatMap(g => g.spots).map(s => [s, places.spots[s]?.[0] || `Spot ${s}`]));
       return { groups, items, spots, ...hooksetAndTug(sources, id) };
     }).catch(e => { baitInfo.delete(id); throw e; }));
   }

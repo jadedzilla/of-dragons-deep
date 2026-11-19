@@ -36,7 +36,7 @@ export function Achievements({ active }) {
     </div>
     <div className="ac-imported" id="acImported">{s && progress.at ? `Last imported from the plugin ${new Date(progress.at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}.` : ""}</div>
     <div className="ac-list" id="acList">
-      {error ? <div className="empty-msg">Couldn't load the achievements ({error.message}). <button type="button" className="btn" id="acRetry" onClick={retry}>Try again</button></div>
+      {error ? <div className="empty-msg">Couldn't load the achievements. Check your connection, then <button type="button" className="btn" id="acRetry" onClick={retry}>try again</button></div>
         : !s ? <Skeleton kind="achievements" label="Loading achievements…" />
         : <Sections data={data} s={s} hideDone={hideDone} open={open} closedGroups={closedGroups}
             onSection={(key, on) => toggle(open, setOpen, key, on)} onGroup={(id, on) => toggle(closedGroups, setClosedGroups, id, !on)}

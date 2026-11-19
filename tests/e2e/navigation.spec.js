@@ -1,4 +1,4 @@
-import { expect, gridReady, openApp, test } from "./fixtures.js";
+import { dataChunk, expect, gridReady, openApp, test } from "./fixtures.js";
 
 test("the nav bar switches pages by address, so Back works", async ({ page }) => {
   await openApp(page);
@@ -18,7 +18,7 @@ test("the nav bar switches pages by address, so Back works", async ({ page }) =>
 test("a page opened directly shows a placeholder until the fish list arrives", async ({ page }) => {
   let release;
   const held = new Promise(r => { release = r; });
-  await page.route(/sheet\/FishParameter/, async route => { await held; await route.fallback(); });
+  await page.route(dataChunk("fish"), async route => { await held; await route.fallback(); });
   await openApp(page, { path: "#timers" });
   await expect(page.locator("#timersView .sk").first()).toBeVisible();
   await expect(page.locator("#guideView")).toBeHidden();
@@ -29,7 +29,7 @@ test("a page opened directly shows a placeholder until the fish list arrives", a
 test("the Fish Guide shows shimmering tiles while it loads", async ({ page }) => {
   let release;
   const held = new Promise(r => { release = r; });
-  await page.route(/sheet\/FishParameter/, async route => { await held; await route.fallback(); });
+  await page.route(dataChunk("fish"), async route => { await held; await route.fallback(); });
   await openApp(page);
   await expect(page.locator(".tile.sk")).toHaveCount(100);
   release();

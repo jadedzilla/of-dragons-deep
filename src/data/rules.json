@@ -1,0 +1,26 @@
+{
+  "about": "Hand-kept game rules the data feeds don't spell out. Expansions are indexes into CATEGORIES (0 A Realm Reborn … 5 Dawntrail).",
+  "levelBands": [50, 60, 70, 80, 90],
+  "regionExpansion": {
+    "Dravania": 1, "Abalathia's Spine": 1,
+    "Gyr Abania": 2, "Othard": 2, "Hingashi": 2,
+    "Norvrandt": 3,
+    "The Northern Empty": 4, "Ilsabard": 4, "The Sea of Stars": 4, "The World Unsundered": 4,
+    "Yok Tural": 5, "Xak Tural": 5, "Unlost World": 5
+  },
+  "oceanRegion": "The High Seas",
+  "achievements": {
+    "fisherCategory": 34,
+    "uniqueFishCounter": 202,
+    "bigFishCounters": { "267": [0, 1, 2], "826": [3], "1000": [4], "1145": [5] }
+  },
+  "teamcraft": {
+    "hooksets": { "1": "Powerful", "2": "Precision" },
+    "tugs": { "0": "Medium (!!)", "1": "Heavy (!!!)", "2": "Light (!)" },
+    "oceanTimeToIkd": { "1": 2, "2": 1, "3": 3 }
+  },
+  "ocean": {
+    "timeNames": { "1": "Day", "2": "Sunset", "3": "Night" },
+    "rubyFirstStop": 8
+  }
+}

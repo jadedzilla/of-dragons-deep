@@ -1,7 +1,6 @@
 // Catch windows: when each time/weather-limited fish can next be caught. Windows come from Teamcraft, zone weather odds
-// from XIVAPI (FishingSpot / SpearfishingNotebook → TerritoryType → WeatherRate), and weather is forecast with the
-// game's own formula (as in SaintCoinach).
-import { XIVAPI, SCHEMA_PARAM, getJson, xivAsset, xivRows } from "./xivapi.js";
+// from XIVAPI (src/data/spots.json), and weather is forecast with the game's own formula (as in SaintCoinach).
+import { xivAsset } from "./xivapi.js";
 import { isTimedEntry, loadTeamcraft } from "./teamcraft.js";
 
 const EORZEA_HOUR = 175;                 // real seconds
@@ -26,55 +25,36 @@ export function forecastTarget(unixSeconds) {
   return step2 % 100;
 }
 
+let spots = null;
+/** src/data/spots.json: { spots: { id: [name, zone, territory] }, spear: { itemId: territory }, rates, weather }. */
+export function loadSpots() {
+  spots ??= import("../data/spots.json", { with: { type: "json" } }).then(m => m.default).catch(e => { spots = null; throw e; });
+  return spots;
+}
+
 /**
  * { fish: [window…], weather: { id: { name, icon } } }; a window is { id, start, end (ET hours; start === end = all day),
  * weather: Set|null, prev: Set|null, territory, rates: [[weatherId, cumulative %]…] }. Ocean fishing is left out.
  */
-export async function loadTimerData({ fetchFn = fetch, signal } = {}) {
-  const [line, spear] = await Promise.all([loadTeamcraft("fishing-sources", fetchFn), loadTeamcraft("spearfishing-sources", fetchFn)]);
+export async function loadTimerData() {
+  const [line, spear, places] = await Promise.all([loadTeamcraft("fishing-sources"), loadTeamcraft("spearfishing-sources"), loadSpots()]);
   const timedOf = sources => Object.entries(sources).flatMap(([id, entries]) => {
     if (entries.some(e => e.oceanFishingTime !== undefined)) return [];
     const e = entries.find(isTimedEntry);
     return e ? [{ id: +id, e }] : [];
   });
-  const lineTimed = timedOf(line), spearTimed = timedOf(spear);
-
-  const W = ["Weather[].Name", "Weather[].Icon", "Rate"].map(f => "TerritoryType.WeatherRate." + f);
-  const spotRows = await xivRows("FishingSpot", lineTimed.map(t => t.e.spot), W.join(","), { fetchFn, signal });
-  let spearRows = [];
-  if (spearTimed.length) {
-    const query = encodeURIComponent(spearTimed.map(t => `Item=${t.id}`).join(" "));
-    spearRows = (await getJson(`${XIVAPI}/search?sheets=SpearfishingItem&limit=500&query=${query}`
-      + `&fields=Item.Name,${W.map(f => "SpearfishingNotebook." + f).join(",")}&${SCHEMA_PARAM}`, { fetchFn, signal })).results;
-  }
-  const rates = {}, weather = {};
-  function addTerritory(tt) {
-    const w = tt?.fields?.WeatherRate?.fields;
-    if (!w || rates[tt.row_id]) return tt?.row_id;
-    let cumulative = 0;
-    rates[tt.row_id] = [];
-    w.Weather.forEach((x, i) => {
-      if (!(w.Rate[i] > 0)) return;
-      cumulative += w.Rate[i];
-      rates[tt.row_id].push([x.row_id, cumulative]);
-      weather[x.row_id] ??= { name: x.fields?.Name ?? "", icon: x.fields?.Icon?.path ? xivAsset(x.fields.Icon.path) : null };
-    });
-    return tt.row_id;
-  }
-  const spotTerritory = new Map(spotRows.map(r => [r.row_id, addTerritory(r.fields.TerritoryType)]));
-  const spearTerritory = new Map(spearRows.map(r => [r.fields.Item?.value, addTerritory(r.fields.SpearfishingNotebook?.fields?.TerritoryType)]));
-
   // Teamcraft rounds durations to 2 decimals: snap the end to the ET minute.
   const toMinute = h => Math.round(h * 60) / 60;
-  const fish = [...lineTimed.map(t => ({ ...t, territory: spotTerritory.get(t.e.spot) })),
-    ...spearTimed.map(t => ({ ...t, territory: spearTerritory.get(t.id) }))].map(({ id, e, territory }) => ({
+  const fish = [...timedOf(line).map(t => ({ ...t, territory: places.spots[t.e.spot]?.[2] })),
+    ...timedOf(spear).map(t => ({ ...t, territory: places.spear[t.id] }))].map(({ id, e, territory }) => ({
     id,
     start: e.spawn ?? 0,
     end: e.spawn === undefined || !(e.duration < 24) ? e.spawn ?? 0 : toMinute((e.spawn + e.duration) % 24),
     weather: e.weathers?.length ? new Set(e.weathers) : null,
     prev: e.weathersFrom?.length ? new Set(e.weathersFrom) : null,
-    territory, rates: rates[territory],
+    territory, rates: places.rates[territory],
   })).filter(f => f.rates?.length);
+  const weather = Object.fromEntries(Object.entries(places.weather).map(([id, [name, icon]]) => [id, { name, icon: xivAsset(icon) }]));
   return { fish, weather };
 }
 

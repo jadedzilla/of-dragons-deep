@@ -7,7 +7,7 @@ test("shows the Fish Guide in log order, 100 to a page", async ({ page }) => {
   await expect(page.locator(".tile[data-id]").first()).toHaveAttribute("data-id", "4776"); // Malm Kelp, first in the game's log
   await expect(page.locator("#totalCount")).toHaveText(/^1,?5\d\d$/);
   await expect(page.locator("#caughtCount")).toHaveText("6"); // spearfish 20144 counts on the other tab
-  await expect(page.locator("#dataNote")).toContainText("live game data from XIVAPI");
+  await expect(page.locator("#dataNote")).toContainText(/game data from XIVAPI \(patch \d/);
   await expect(page.locator(".pg.active")).toHaveText("1");
   await page.locator(".pg", { hasText: "2" }).click();
   await expect(page.locator(".pg.active")).toHaveText("2");
@@ -52,14 +52,6 @@ test("phones get one toolbar row and 5 page slots", async ({ browser }) => {
   const mids = await page.locator(".toolbar > :is(.pages, .search, .filter-btn)").evaluateAll(els => els.map(e => { const r = e.getBoundingClientRect(); return Math.round(r.top + r.height / 2); }));
   expect(new Set(mids).size).toBe(1);
   await page.close();
-});
-
-test("falls back to the snapshot when XIVAPI is down", async ({ page }) => {
-  await page.route(/v2\.xivapi\.com\/api\/sheet\/FishParameter/, route => route.fulfill({ status: 503, body: "down" }));
-  await openApp(page);
-  await gridReady(page);
-  await expect(page.locator("#dataNote")).toHaveClass(/offline/);
-  await expect(page.locator("#dataNote")).toContainText("offline snapshot");
 });
 
 test("switches light and dark mode and remembers it", async ({ page }) => {
