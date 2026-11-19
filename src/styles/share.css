@@ -7,5 +7,9 @@
 .sh-name:focus{border-color:var(--accent)}
 .sh-preview{display:flex;justify-content:center;padding:8px;border-radius:var(--r);background:var(--well-bg);min-height:120px;border:0;}
 .sh-preview img{display:block;max-width:100%;height:auto;max-height:70vh;filter:var(--shadow-drop)} /* follows the torn paper edge, not the image box */
+.sh-stack{display:grid;max-width:100%} /* the card, and the previous one fading out on top of it */
+.sh-stack > img{grid-area:1 / 1}
+.sh-leaving{pointer-events:none;animation:sh-fade-out .45s ease forwards}
+@keyframes sh-fade-out{to{opacity:0}}
 .sh-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
 .sh-status{font-size:12px;color:var(--muted)}

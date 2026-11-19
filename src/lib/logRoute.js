@@ -4,6 +4,7 @@
 //    ones after a stop in their zone if open then; leftovers window by window.
 //    Rough durations: 2 min per fish (+1 per mooch step), 6 min per timed fish, 1.5 min travel per stop.
 // 3. Ocean fishing last, by voyage stop.
+// includeTimed / includeBig false leave time/weather-limited fish / big fish (ocean rares too) out of the route.
 import { XIVAPI, SCHEMA_PARAM, getJson } from "./xivapi.js";
 import { baitChains, isTimedEntry } from "./teamcraft.js";
 import { nextWindow } from "./timers.js";
@@ -28,17 +29,18 @@ export function loadOceanRoutes({ fetchFn = fetch } = {}) {
 }
 
 /**
- * Plans the route. spotZone: Map(spot → zone id) so stops group by the spot's own zone; includeTimed false leaves
- * time/weather-limited fish out. Returns { steps, left, leftOut, minutes }; a step is
+ * Plans the route. spotZone: Map(spot → zone id) so stops group by the spot's own zone.
+ * Returns { steps, left, leftOut (timed fish left out), leftOutBig (big fish left out), minutes }; a step is
  *   { kind: "stop", at, spot, fish } | { kind: "timed", at, f, e, w } | { kind: "ocean", stop, fish }
  *   | { kind: "nowindow", fish } | { kind: "nodata", fish }   (at = planned start, Unix seconds)
  */
-export function planLogRoute({ fish, sources, windows, ocean, oceanCategory, now, spotZone = new Map(), includeTimed = true }) {
+export function planLogRoute({ fish, sources, windows, ocean, oceanCategory, now, spotZone = new Map(), includeTimed = true, includeBig = true }) {
   const index = new Map(fish.map((f, i) => [f.id, i]));
-  const timed = [], untimed = [], oceanFish = [], noData = [], noWindow = [], leftOut = [];
+  const timed = [], untimed = [], oceanFish = [], noData = [], noWindow = [], leftOut = [], leftOutBig = [];
   for (const f of fish) {
     const es = sources[f.id];
-    if (f.cat === oceanCategory) oceanFish.push(f);
+    if (!includeBig && f.big) leftOutBig.push(f);
+    else if (f.cat === oceanCategory) oceanFish.push(f);
     else if (!es?.length) noData.push(f);
     else if (windows.has(f.id)) (includeTimed ? timed : leftOut).push(f);
     else untimed.push(f);
@@ -134,7 +136,7 @@ export function planLogRoute({ fish, sources, windows, ocean, oceanCategory, now
   steps.push(...[...byStop.values()].sort((a, b) => (a.stop?.id ?? 99) - (b.stop?.id ?? 99)));
   if (noWindow.length) steps.push({ kind: "nowindow", fish: noWindow });
   if (noData.length) steps.push({ kind: "nodata", fish: noData });
-  return { steps, left: fish.length, leftOut: leftOut.length, minutes: Math.round((clock - now) / 60) };
+  return { steps, left: fish.length, leftOut: leftOut.length, leftOutBig: leftOutBig.length, minutes: Math.round((clock - now) / 60) };
 }
 
 /** The plan without one fish (marked caught): order stays as it was. */

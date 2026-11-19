@@ -8,7 +8,8 @@ export const KEYS = {
   seen: "odd-achievements-seen-v1",         // { id: ms } when each achievement was first seen obtained
   openSections: "odd-achievements-open",
   closedGroups: "odd-achievements-groups-closed",
-  routeTimed: "odd-route-timed",
+  routeTimed: "odd-route-timed",            // "1" to include timed fish (off by default)
+  routeBig: "odd-route-big",                // "0" to leave big fish out (included by default)
   shareName: "odd-share-name",
 };
 

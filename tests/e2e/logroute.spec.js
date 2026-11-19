@@ -49,6 +49,17 @@ test("Include timed fish is remembered", async ({ page }) => {
   await expect(page.locator("#lrTimed")).toBeChecked();
 });
 
+test("Include big fish is ticked by default; unticking leaves them out and is remembered", async ({ page }) => {
+  await openApp(page, { path: "#route", clock: T0 });
+  await expect(page.locator(".lr-step").first()).toBeVisible();
+  await expect(page.locator("#lrBig")).toBeChecked();
+  await expect(page.locator(".lr-leftout", { hasText: "big fish" })).toHaveCount(0);
+  await page.locator("#lrBig").uncheck();
+  await expect(page.locator(".lr-leftout", { hasText: "big fish" })).toContainText(/^\d+ big fish not in the route/);
+  await page.reload();
+  await expect(page.locator("#lrBig")).not.toBeChecked();
+});
+
 test("GatherBuddy copies the route as an auto-gather list", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await openApp(page, { path: "#route", clock: T0 });

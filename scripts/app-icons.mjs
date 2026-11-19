@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Makes the home-screen icons from the transparent Nepto Dragon (public/neptodragon-icon-clean-512x.png): the dragon
+// Makes the home-screen icons from the transparent Nepto Dragon (src/assets/neptodragon.png): the dragon
 // on the app's dark blue background (home screens show transparency as black or white), pixel art scaled without
 // smoothing. Writes public/app-icon-180.png (iOS apple-touch-icon), app-icon-192.png and app-icon-512.png (manifest)
 // and app-icon-maskable-512.png (Android adaptive icons crop to a circle, so the dragon sits in the middle 60%).
@@ -8,7 +8,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { chromium } from "@playwright/test";
 
 const root = new URL("..", import.meta.url);
-const src = (await readFile(new URL("public/neptodragon-icon-clean-512x.png", root))).toString("base64");
+const src = (await readFile(new URL("src/assets/neptodragon.png", root))).toString("base64");
 const ICONS = [["app-icon-180.png", 180, 0.8], ["app-icon-192.png", 192, 0.8], ["app-icon-512.png", 512, 0.8], ["app-icon-maskable-512.png", 512, 0.6]];
 
 const browser = await chromium.launch();

@@ -46,6 +46,14 @@ describe("log route planner", () => {
     expect(fishIn(p.steps).length + p.leftOut).toBe(fish.length);
   });
 
+  it("leaves big fish out when asked, ocean rares included", () => {
+    const p = planLogRoute({ ...base, fish, includeBig: false });
+    const ids = fishIn(p.steps), byId = new Map(fish.map(f => [f.id, f]));
+    expect(ids.some(id => byId.get(id).big)).toBe(false);
+    expect(p.leftOutBig).toBe(fish.filter(f => f.big).length);
+    expect(ids.length + p.leftOutBig).toBe(fish.length);
+  });
+
   it("drops a caught fish without changing the order", () => {
     const first = plan.steps.find(s => s.kind === "stop").fish[0];
     const p = withoutFish(plan, first.id);

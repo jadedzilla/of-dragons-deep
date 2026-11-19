@@ -6,6 +6,7 @@ import { KEYS, readRaw, writeRaw } from "../lib/storage.js";
 import { useTheme } from "../hooks/useTheme.js";
 import { Skeleton } from "../components/Skeleton.jsx";
 
+const FADE_MS = 450; // the old card fading out over the new one when the mode changes
 const fileName = () => `of-dragons-deep-${new Date().toISOString().slice(0, 10)}.png`;
 
 /** Share: a PNG card of your progress to download, share (phones) or copy. Redrawn each time the page is shown. */
@@ -13,28 +14,39 @@ export function Share({ active }) {
   const { fish, spear, allFish, fishById, isCaught } = useApp();
   const [name, setName] = useState(() => readRaw(KEYS.shareName) ?? "");
   const [card, setCard] = useState(null); // { url, blob, alt, w, h, canShare }
+  const [leaving, setLeaving] = useState(null); // the previous card, fading out
+  const shown = useRef(null);
   const [busy, setBusy] = useState(true);
   const [status, setStatus] = useState("");
   const token = useRef(0);
 
-  async function draw(who) {
+  async function draw(who, fade = false) {
     const my = ++token.current;
     const stats = await shareStats({ fishList: fish, spearList: spear, allFish, fishById, isCaught, categories: CATEGORIES, oceanCategory: OCEAN_FISHING });
     const canvas = await drawShareCard(stats, { name: who });
     const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
     if (my !== token.current) return;
-    setCard(old => {
-      if (old) URL.revokeObjectURL(old.url);
-      return { url: URL.createObjectURL(blob), blob, alt: shareAlt(stats), w: canvas.width, h: canvas.height,
-        canShare: !!navigator.canShare?.({ files: [new File([blob], fileName(), { type: "image/png" })] }) };
-    });
+    const old = shown.current;
+    shown.current = { url: URL.createObjectURL(blob), blob, alt: shareAlt(stats), w: canvas.width, h: canvas.height,
+      canShare: !!navigator.canShare?.({ files: [new File([blob], fileName(), { type: "image/png" })] }) };
+    setCard(shown.current);
+    if (old && fade && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setLeaving(old);
+      setTimeout(() => { setLeaving(l => (l === old ? null : l)); URL.revokeObjectURL(old.url); }, FADE_MS);
+    } else if (old) URL.revokeObjectURL(old.url);
     setBusy(false);
   }
 
   const [wasActive, setWasActive] = useState(false);
   if (active !== wasActive) { setWasActive(active); setStatus(""); if (active) setBusy(true); }
   const theme = useTheme();
-  useEffect(() => { if (active) draw(name); }, [active, theme]); // eslint-disable-line react-hooks/exhaustive-deps -- redrawn when shown and when the mode changes
+  useEffect(() => { if (active) draw(name); }, [active]); // eslint-disable-line react-hooks/exhaustive-deps -- redrawn each time the page is shown
+  const drawnTheme = useRef(theme);
+  useEffect(() => { // and when the mode changes, fading from the old card to the new one
+    if (theme === drawnTheme.current) return;
+    drawnTheme.current = theme;
+    if (active) draw(name, true);
+  }, [theme]); // eslint-disable-line react-hooks/exhaustive-deps -- only on a mode change
   const typing = useRef(null);
   const rename = v => {
     setName(v);
@@ -68,7 +80,10 @@ export function Share({ active }) {
       </div>
     </div>
     <div className="sh-preview" id="shPreview">
-      {card ? <img id="shImg" alt={card.alt} width={card.w} height={card.h} src={card.url} /> : <Skeleton kind="share" label="Drawing your card…" />}
+      {card ? <div className="sh-stack">
+        <img id="shImg" alt={card.alt} width={card.w} height={card.h} src={card.url} />
+        {leaving && <img className="sh-leaving" key={leaving.url} alt="" aria-hidden="true" width={leaving.w} height={leaving.h} src={leaving.url} />}
+      </div> : <Skeleton kind="share" label="Drawing your card…" />}
     </div>
     <div className="sh-actions">
       <button type="button" className="btn primary" id="shDownload" disabled={busy} onClick={download}>Download PNG</button>

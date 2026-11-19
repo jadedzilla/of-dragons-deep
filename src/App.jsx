@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dragon from "./assets/neptodragon.png";
 import { AppContext } from "./context.js";
 import { loadFish } from "./lib/fishData.js";
 import { decodeImportLink, parseImport } from "./lib/importFormat.js";
@@ -96,7 +97,7 @@ export function App() {
       </nav>
       <div className="window">
         <div className="titlebar">
-          <h1>Of Dragons Deep</h1>
+          <h1><img className="title-icon" src={dragon} alt="" />Of Dragons Deep</h1>
           <ThemeButton />
           <div className="progress" hidden={view !== "guide"}><b id="caughtCount">{caughtHere}</b> / <span id="totalCount">{list.length}</span> caught</div>
         </div>

@@ -39,14 +39,15 @@ export function LogRoute({ active }) {
   const { fish: fishList, fishById, isCaught, setCaught } = useApp();
   const { data: base, error, retry } = useAsync(loadBase, active);
   const [includeTimed, setIncludeTimed] = useState(() => readRaw(KEYS.routeTimed) === "1"); // off by default
+  const [includeBig, setIncludeBig] = useState(() => readRaw(KEYS.routeBig) !== "0"); // on by default
   const [plan, setPlan] = useState(null);
   const [shown, setShown] = useState(STEP_PAGE);
   const [names] = useState(() => ({ item: new Map(), spot: new Map(), weather: new Map() })); // filled in by ensureNames
   const now = useNow(active && !!plan);
 
-  function replan(timed = includeTimed) {
+  function replan({ timed = includeTimed, big = includeBig } = {}) {
     setPlan(withIds(planLogRoute({ fish: fishList.filter(f => !isCaught(f.id)), sources: base.sources, windows: base.windows,
-      ocean: base.ocean, oceanCategory: OCEAN_FISHING, now: Date.now() / 1000, spotZone: base.spotZone, includeTimed: timed })));
+      ocean: base.ocean, oceanCategory: OCEAN_FISHING, now: Date.now() / 1000, spotZone: base.spotZone, includeTimed: timed, includeBig: big })));
   }
   // planned afresh from the current time each time the page is shown
   // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
@@ -74,7 +75,12 @@ export function LogRoute({ active }) {
   const setTimed = on => {
     setIncludeTimed(on);
     writeRaw(KEYS.routeTimed, on ? "1" : "0");
-    if (base) { replan(on); setShown(STEP_PAGE); }
+    if (base) { replan({ timed: on }); setShown(STEP_PAGE); }
+  };
+  const setBig = on => {
+    setIncludeBig(on);
+    writeRaw(KEYS.routeBig, on ? "1" : "0");
+    if (base) { replan({ big: on }); setShown(STEP_PAGE); }
   };
 
   // steps re-render only when this changes (names arrive with `named`) or, for timed steps, every second
@@ -91,10 +97,14 @@ export function LogRoute({ active }) {
         </> : <div className="lr-stat lr-done"><b>Fish Guide complete!</b></div>}</div>
       <div className="lr-head-notes" id="lrNotes">{view?.left > 0 && <>
         {view.leftOut > 0 && <div className="lr-leftout">{`${n(view.leftOut)} timed fish not in the route. Tick `}<b>Include timed fish</b> to add them.</div>}
+        {view.leftOutBig > 0 && <div className="lr-leftout">{`${n(view.leftOutBig)} big fish not in the route. Tick `}<b>Include big fish</b> to add them.</div>}
         {missed > 0 && <div className="lr-missed">{`${missed} timed fish missed ${missed === 1 ? "its" : "their"} window. `}<b>Re-plan</b>{` to fit ${missed === 1 ? "it" : "them"} back in.`}</div>}
       </>}</div>
       <div className="lr-bar">
-        <label className="tm-opt" title="Fish that can only be caught at certain Eorzea times or weather"><input type="checkbox" id="lrTimed" checked={includeTimed} onChange={e => setTimed(e.target.checked)} /> Include timed fish</label>
+        <div className="lr-opts">
+          <label className="tm-opt" title="Fish that can only be caught at certain Eorzea times or weather"><input type="checkbox" id="lrTimed" checked={includeTimed} onChange={e => setTimed(e.target.checked)} /> Include timed fish</label>
+          <label className="tm-opt" title="Big fish, including ocean fishing's rare fish"><input type="checkbox" id="lrBig" checked={includeBig} onChange={e => setBig(e.target.checked)} /> Include big fish</label>
+        </div>
         <div className="lr-actions">
           <button type="button" className="btn small" id="lrRecalc" title="Plan again from the current time" onClick={() => { if (base) { replan(); setShown(STEP_PAGE); } }}>↻ Re-plan</button>
           {" "}<CopyButton plan={plan} />
